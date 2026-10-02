@@ -109,9 +109,9 @@ label.chk{display:flex;gap:6px;align-items:center;font-size:13px;cursor:pointer}
 #wpBar[hidden]{display:none}
 #wpBar .tt{display:flex;align-items:center;gap:6px;margin-bottom:6px;font-size:13px}
 #wpBar .tt b{flex:1}
-#wpBar .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
+#wpBar .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
 #wpBar .grid .btn{padding:4px 2px;font-size:12px}
-#wpBar .main{grid-column:span 3;display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:2px}
+#wpBar .main{grid-column:span 4;display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:2px}
 #wpBar .acts{font-size:12px;color:var(--mute);margin-top:6px;max-height:210px;overflow:auto}
 #wpBar{width:300px}
 #wpBar .hrow{display:flex;flex-wrap:wrap;align-items:center;gap:3px;margin-top:6px;font-size:12px}
@@ -163,7 +163,7 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
 <body>
 <div class="app">
 <header>
-  <div class="brand"><h1>TU:bit V2 競賽路徑規劃器</h1><span class="ver" id="ver" title="更新紀錄">v1.3.0</span></div>
+  <div class="brand"><h1>TU:bit V2 競賽路徑規劃器</h1><span class="ver" id="ver" title="更新紀錄">v1.3.1</span></div>
   <div class="hgroup">
     <select id="gameSel" aria-label="競賽項目">
       <option value="energy">物資能源爭霸戰 300×300</option>
@@ -325,7 +325,7 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
         <div class="tt"><b id="wpTitle">P1 到點動作</b><button class="btn small" id="wpClose" aria-label="關閉">✕</button></div>
         <div class="grid">
           <div class="main"><button class="btn primary" data-wp="grab">在這裡夾取</button><button class="btn primary" data-wp="place">在這裡放置</button></div>
-          <button class="btn" data-wp="clawClose">夾爪夾緊</button><button class="btn" data-wp="clawOpen">夾爪張開</button><button class="btn" data-wp="lift">抬升</button>
+          <button class="btn" data-wp="clawClose">夾爪夾緊</button><button class="btn" data-wp="clawOpen">夾爪張開</button><button class="btn" data-wp="lift">抬升</button><button class="btn" data-wp="lower">下降</button>
           <button class="btn" data-wp="pan">旋轉夾爪</button><button class="btn" data-wp="turn">BNO 轉正</button><button class="btn" data-wp="align">IR 校正</button>
           <button class="btn" data-wp="wait">等待</button><button class="btn" data-wp="fire">發射</button><button class="btn danger" data-wp="del">刪除此點</button>
         </div>
@@ -355,6 +355,7 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
         <button class="btn small" data-add="clawOpen">夾爪張開</button>
         <button class="btn small" data-add="clawClose">夾爪夾緊</button>
         <button class="btn small" data-add="lift">抬升</button>
+        <button class="btn small" data-add="lower">下降</button>
         <button class="btn small" data-add="pan">旋轉夾爪</button>
         <button class="btn small" data-add="turn">BNO 轉正</button>
         <button class="btn small" data-add="align">IR 校正</button>
@@ -393,6 +394,7 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
 </dialog>
 <dialog id="logDlg">
   <h3 style="margin-top:0">更新紀錄</h3>
+  <p><b>v1.3.1</b>（2026-10-02）到點動作與步驟工具列新增「下降」按鈕（降到夾取高度）；手臂高度動作依角度顯示為「抬升」或「下降」。</p>
   <p><b>v1.3.0</b>（2026-10-02）到點動作工具列可逐一刪除、直接修改角度；可設定該點車頭旋轉角度（-90、0、90、180、±15°）；程式產生時會略過未勾選元件的步驟（例如沒勾 IR 校正卻有校正步驟），避免編譯錯誤；已用 ESP32 3.1.3 與兔比積木函式庫實際編譯驗證。</p>
   <p><b>v1.2.0</b>（2026-10-02）路徑點改用 P1、P2… 編號；任何模式點既有路徑點都是選取，不再新增點；選取路徑點會出現「到點動作」工具列（夾取、放置、夾緊、張開、抬升、旋轉、轉正、IR 校正、等待、發射）；步驟清單依路徑點分組。</p>
   <p><b>v1.1.0</b>（2026-10-02）新增自訂空白場地（任意長寬）；依兔比積木原始碼加入超聲波（Liang 版，Arduino 可用）、PS3 搖桿、V7RC 藍牙遙控、HuskyLens 程式碼；新增 BNO055 轉正步驟（修正 0°/360° 換算與停止條件）；機器人 A 自動化後按 B 鍵才切換遙控。</p>
@@ -404,7 +406,7 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
 <script>
 'use strict';
 /* ================= 基本工具 ================= */
-const VERSION = 'v1.3.0';
+const VERSION = 'v1.3.1';
 const STORE_KEY = 'tubit-planner-v1';
 const uid = () => Math.random().toString(36).slice(2, 9);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -718,6 +720,9 @@ function mapAxes(S, from, to){
   const z = S.axes.zCW ? -dh : dh;
   return {X:a, Y:b, Z:z};
 }
+function liftName(S, s){ return num(s.deg) <= num(S.arm.liftDown, 0) ? '下降' : '抬升'; }
+function stepName(S, s){ return s.type === 'lift' ? liftName(S, s) : TYPE_NAMES_CORE[s.type]; }
+const TYPE_NAMES_CORE = {turn:'BNO 轉正', move:'移動', claw:'夾爪', lift:'抬升', pan:'旋轉夾爪', align:'IR 校正', wait:'等待', fire:'發射乒乓球', code:'自訂程式'};
 function stepLabels(S){
   let k = 0, sub = 0; const out = [];
   for (const s of S.steps){
@@ -869,7 +874,7 @@ function genCode(S, sim){
         break;
       case 'lift':
         if (!M.atarm){ L.push(`${ind}// ${n} 抬升略過：未勾選機械手臂 ATARM`); break; }
-        L.push(`${ind}// ${n} 抬升到 ${fmt(num(s.deg))}°`);
+        L.push(`${ind}// ${n} 手臂${liftName(S, s)}到 ${fmt(num(s.deg))}°`);
         L.push(`${ind}ATARM_LiftSet(${fmt(num(s.deg))}, ${sec});`);
         if (settle) L.push(`${ind}delay(${settle});`);
         break;
@@ -1225,7 +1230,7 @@ function drawPath(){
   drawRobot(S.robot.start, {stroke:gear, lw:2, dash:[5, 3], fill:gear, alpha:sel && sel.kind === 'start' ? .25 : .08});
   // 路徑點
   let idx = 0;
-  const SHORT = {claw:null, lift:'抬', pan:'轉爪', turn:'轉正', align:'IR', wait:'等', fire:'射', code:'碼'};
+  const SHORT = {claw:null, lift:null, pan:'轉爪', turn:'轉正', align:'IR', wait:'等', fire:'射', code:'碼'};
   S.steps.forEach((s, i) => {
     const ps = sim.pose[i]; if (!ps) return;
     if (s.type === 'move'){
@@ -1233,7 +1238,7 @@ function drawPath(){
       // 收集到點動作
       const acts = [];
       for (let j = i + 1; j < S.steps.length && S.steps[j].type !== 'move'; j++){
-        const a = S.steps[j]; acts.push(a.type === 'claw' ? (a.close ? '夾' : '放') : SHORT[a.type]);
+        const a = S.steps[j]; acts.push(a.type === 'claw' ? (a.close ? '夾' : '放') : a.type === 'lift' ? (liftName(S, a) === '下降' ? '降' : '抬') : SHORT[a.type]);
       }
       const p = ps.after, isSel = sel && sel.kind === 'step' && sel.id === s.id;
       if (S.ui.ghosts || isSel) drawRobot(p, {stroke:isSel ? gear : pathC, lw:isSel ? 2 : 1, dash:isSel ? [] : [3, 3], clawClosed:ps.clawClosed});
@@ -1291,7 +1296,7 @@ function renderWpBar(s){
     else if (a.type === 'wait') ed = `<input type="number" data-af="ms" value="${num(a.ms)}" step="100" title="毫秒">`;
     else if (a.type === 'align') ed = `<select data-af="main">${IR_DIRS.map(d => `<option value="${d}" ${a.main === d ? 'selected' : ''}>主${IR_NAMES[d]}</option>`).join('')}</select>`;
     const unit = {lift:'°', pan:'°', turn:'°', wait:'ms'}[a.type] || '';
-    rows.push(`<div class="ar" data-aid="${a.id}"><span class="k">${j - i}</span><span>${TYPE_NAMES[a.type]}</span><span>${ed}${unit ? ' ' + unit : ''}</span><button class="x" data-adel title="刪除這個動作" aria-label="刪除">✕</button></div>`);
+    rows.push(`<div class="ar" data-aid="${a.id}"><span class="k">${j - i}</span><span>${stepName(S, a)}</span><span>${ed}${unit ? ' ' + unit : ''}</span><button class="x" data-adel title="刪除這個動作" aria-label="刪除">✕</button></div>`);
   }
   $('#wpActs').innerHTML = rows.length ? rows.join('') : '到這個點後還沒有動作，按上方按鈕加入。';
   $('#wpBar').dataset.mv = s.id; wpDirty = false;
@@ -1356,7 +1361,7 @@ $('#wpBar').addEventListener('click', e => {
     S.steps.splice(end, 0, A({type:'lift', deg:S.arm.liftPlace, sec:0}), A({type:'claw', close:false, sec:0}), A({type:'lift', deg:S.arm.liftUp, sec:0}));
     toast('已設定：到點後放低、張開、抬起');
   } else {
-    const map = {clawClose:{type:'claw', close:true, sec:0}, clawOpen:{type:'claw', close:false, sec:0}, lift:{type:'lift', deg:S.arm.liftUp, sec:0},
+    const map = {clawClose:{type:'claw', close:true, sec:0}, clawOpen:{type:'claw', close:false, sec:0}, lift:{type:'lift', deg:S.arm.liftUp, sec:0}, lower:{type:'lift', deg:S.arm.liftDown, sec:0},
       pan:{type:'pan', deg:90, sec:0}, turn:{type:'turn', h:mv.h}, align:{type:'align', main:'IR_L', sub:'IR_UP', reset:false, rx:Math.round(mv.x), ry:Math.round(mv.y), rh:mv.h},
       wait:{type:'wait', ms:500}, fire:{type:'fire'}};
     S.steps.splice(end, 0, A(map[k]));
@@ -1564,7 +1569,7 @@ function stepFields(s){
     case 'turn': return `<div class="sb">${f('車頭 °', 'h', 'step="15"')}<label class="f" style="grid-column:span 3"><span>BNO 目標</span><input type="text" value="${bnoTarget(S, s.h)}°（開機方向為 0°）" disabled></label>
       ${S.modules.bno ? '' : '<p class="hint wide">請先在「感測元件」勾選 BNO055。</p>'}</div>`;
     case 'claw': return `<div class="sb"><label class="f" style="grid-column:span 2"><span>動作</span><select data-f="close"><option value="0" ${!s.close ? 'selected' : ''}>張開（false）</option><option value="1" ${s.close ? 'selected' : ''}>夾緊（true）</option></select></label>${f('秒數(整數)', 'sec', 'step="1" min="0"')}</div>`;
-    case 'lift': return `<div class="sb">${f('角度 0–65', 'deg', 'step="1"')}${f('秒數(整數)', 'sec', 'step="1" min="0"')}</div>`;
+    case 'lift': return `<div class="sb">${f('角度 0–65（小＝下降）', 'deg', 'step="1"')}${f('秒數(整數)', 'sec', 'step="1" min="0"')}</div>`;
     case 'pan': return `<div class="sb">${f('角度 55–125', 'deg', 'step="1"')}${f('秒數(整數)', 'sec', 'step="1" min="0"')}</div>`;
     case 'align': return `<div class="sb"><label class="f" style="grid-column:span 2"><span>主校正</span>${selIR('main')}</label><label class="f" style="grid-column:span 2"><span>次校正</span>${selIR('sub')}</label>
       <div class="wide">${ck('校正後把位置重設為', 'reset')}</div>
@@ -1589,7 +1594,7 @@ function renderSteps(){
     else if (s.type === 'turn') sub = fmt(num(s.h)) + '°';
     const t = sim.durations[s.id];
     const child = s.type !== 'move';
-    const name = s.type === 'move' ? `路徑點 ${LB[i]}` : TYPE_NAMES[s.type];
+    const name = s.type === 'move' ? `路徑點 ${LB[i]}` : stepName(S, s);
     const tip = s.type === 'move' && selMv === s ? '<div class="grouphint">在畫布上的工具列加入到點動作</div>' : '';
     return `<div class="step t-${s.type} ${child ? 'child' : ''} ${sel && sel.kind === 'step' && sel.id === s.id ? 'sel' : ''} ${hitIds.has(s.id) ? 'hit' : ''}" data-id="${s.id}">
       <div class="sh"><span class="n">${child ? '↳' : ''}</span><span class="ty">${name}${sub ? '・' + sub : ''}</span>
@@ -1632,6 +1637,7 @@ $$('[data-add]').forEach(b => b.onclick = () => {
   if (t === 'clawOpen') s = {id:uid(), type:'claw', close:false, sec:0};
   if (t === 'clawClose') s = {id:uid(), type:'claw', close:true, sec:0};
   if (t === 'lift') s = {id:uid(), type:'lift', deg:S.arm.liftUp, sec:0};
+  if (t === 'lower') s = {id:uid(), type:'lift', deg:S.arm.liftDown, sec:0};
   if (t === 'pan') s = {id:uid(), type:'pan', deg:90, sec:0};
   if (t === 'align') s = {id:uid(), type:'align', main:'IR_L', sub:'IR_UP', reset:false, rx:Math.round(L.x), ry:Math.round(L.y), rh:L.h};
   if (t === 'turn') s = {id:uid(), type:'turn', h:L.h};
