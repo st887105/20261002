@@ -103,7 +103,7 @@
         <tr><td>BNO055</td><td><code>#include &lt;EasyBNO055_ESP.h&gt;</code>、<code>EasyBNO055_ESP bno;</code>、<code>bno.start();</code>、<code>mtc.bnoMoveClosed(0,0,誤差×係數,bno.orientationZ);</code></td></tr>
         <tr><td>OLED 文字</td><td><code>Adafruit_SH1106G display(128, 64, &amp;Wire);</code>、<code>display.print(...)</code></td></tr>
         <tr><td>MTC Robot</td><td><code>mtc.driveVectorOpen(X,Y,R);</code>、<code>mtc.angleToXY(角度,速度);</code>、<code>mtc.moveCurveSCurve(X,Y,旋轉,弧度,最高速,加速,-(加速),0,0);</code>、<code>mtc.setMtcParameters(6,3,20,20);</code></td></tr>
-        <tr><td>遙控移動與按鍵對應</td><td>自動產生 <code>remoteControl()</code>：前進／後退＝左搖桿上下、左右平移＝左搖桿左右、旋轉＝右搖桿（或方向鍵＋L1／R1）；速度、旋轉速度、死區寫成 <code>DRIVE_SPEED</code>、<code>TURN_SPEED</code>、<code>DEADZONE</code> 常數；按鍵對應可一鍵套用官方手臂車／發射車配置（<code>ATARM_LiftAdd</code>、<code>ATARM_PanAdd</code>、<code>PPGUN_HeadAdd</code>、<code>PPGUN_PanAdd</code>…，依 4 個官方 .tb 範例）</td></tr>
+        <tr><td>遙控移動與按鍵對應</td><td>自動產生 <code>remoteControl()</code>。「搖桿控制」與「方向鍵控制」各自選功能：移動車子、調整瞄準（手臂／砲台／雲台，產生 <code>aimPan()</code>、<code>aimTilt()</code>）或不使用，兩者可同時移動車子（數值相加後限制在 ±255）；速度、旋轉速度、瞄準速度、死區寫成 <code>DRIVE_SPEED</code>、<code>TURN_SPEED</code>、<code>AIM_SPEED</code>、<code>DEADZONE</code> 常數；V7RC 右側 8 方向鍵用 <code>v7Key(n)</code> 判斷；按鍵對應可一鍵套用官方手臂車／發射車配置（<code>ATARM_LiftAdd</code>、<code>ATARM_PanAdd</code>、<code>PPGUN_HeadAdd</code>、<code>PPGUN_PanAdd</code>…，依 4 個官方 .tb 範例）</td></tr>
         <tr><td>PS3 組合鍵</td><td>按鍵對應每一列可設「按住」某鍵（例如按住 ○ 時，方向鍵改調雲台／砲台／手臂），產生 <code>shiftHeld</code> 判斷；沒有組合鍵的列在按住時不會動作。伺服累加用 <code>servoDeg[]</code> 記住目前角度。「PS3 按鍵被按下時」也能設組合鍵，且會等放開按鍵才結束，避免一直重複觸發</td></tr>
         <tr><td>PS3 手把</td><td><code>#include &lt;Ps3Controller.h&gt;</code>、<code>Ps3.begin("MAC");</code>、<code>Ps3.isConnected()</code>、<code>Ps3.data.analog.stick.lx</code>、<code>Ps3.data.button.cross</code>、<code>Ps3.setRumble(強度,毫秒);</code></td></tr>
         <tr><td>V7RC</td><td><code>#include &lt;V7RC_BT.h&gt;</code>、<code>V7RC_BT v7rc;</code>、<code>v7rc.setupBLE("名稱");</code>、<code>v7rc.connect()</code>、<code>v7rc.setMode("SRT")</code>、<code>v7rc.readSRTdata(1~4)</code>（Wi-Fi 版為 <code>V7RC_WIFI</code>、<code>v7rc.setupWIFI(ssid, password, channel);</code>）</td></tr>
@@ -202,8 +202,26 @@
       mapRow('7', 'clawOpen'), mapRow('5', 'clawClose')],
     v7gun: () => [mapRow('1', 'headAdd', { v: 0.45 }), mapRow('2', 'headAdd', { v: -0.45 }), mapRow('8', 'gPanAdd', { v: -0.45 }), mapRow('6', 'gPanAdd', { v: 0.45 }), mapRow('7', 'fire')]
   };
-  const PS3_DRIVES = [['stick', '左搖桿移動＋右搖桿旋轉（官方）'], ['dpad', '方向鍵移動＋L1／R1 旋轉'], ['none', '不產生移動（自己寫）']];
-  const V7_DRIVES = [['stick', '左搖桿移動＋右側 ← → 旋轉（官方）'], ['none', '不產生移動（自己寫）']];
+  // 搖桿與方向鍵各自指定功能（移動車子／調整瞄準／不使用）
+  const STICK_FN = {
+    ps3: [['move', '移動車子：左搖桿前後左右、右搖桿旋轉（官方）'], ['moveAim', '左搖桿移動車子、右搖桿調整瞄準'], ['aim', '左搖桿調整瞄準（右搖桿不用）'], ['none', '不使用']],
+    v7rc: [['move', '移動車子：左搖桿前後左右（官方）'], ['aim', '調整瞄準'], ['none', '不使用']]
+  };
+  const DPAD_FN = {
+    ps3: [['none', '不使用（交給按鍵對應；官方配置有用到方向鍵）'], ['move', '移動車子：↑↓ 前後、←→ 平移、L1／R1 旋轉'], ['aim', '調整瞄準：←→ 旋轉、↑↓ 升降／仰角']],
+    v7rc: [['turn', '← → 原地旋轉（官方）'], ['move', '移動車子：↑↓ 前後、←→ 平移、↖ ↗ 旋轉'], ['aim', '調整瞄準：←→ 旋轉、↑↓ 升降／仰角'], ['none', '不使用（交給按鍵對應）']]
+  };
+  const aimTarget = on => on.arm ? { pan: '手臂旋轉', tilt: '手臂升降' } : on.gun ? { pan: '砲台旋轉', tilt: '砲管仰角' } : { pan: '雲台 S0 旋轉', tilt: 'S1 仰角' };
+  // 舊版 drive 設定轉成新版「搖桿／方向鍵」各自的功能
+  function normalizeRemote(R, rk) {
+    if (!R) return;
+    if (!STICK_FN[rk].some(x => x[0] === R.stick) || !DPAD_FN[rk].some(x => x[0] === R.dpad)) {
+      const d = R.drive || 'stick';
+      if (rk === 'ps3') { R.stick = d === 'stick' ? 'move' : 'none'; R.dpad = d === 'dpad' ? 'move' : 'none'; }
+      else { R.stick = d === 'none' ? 'none' : 'move'; R.dpad = d === 'none' ? 'none' : 'turn'; }
+    }
+    if (R.aim === undefined || R.aim === '') R.aim = rk === 'ps3' ? 0.3 : 0.45;
+  }
   const ACTIONS = {
     motor: { label: '馬達移動', level: 'basic' },
     single: { label: '單顆馬達', level: 'basic' },
@@ -296,8 +314,8 @@
     arm: { pan: 'S0', lift: 'S7', claw: 'S6', open: 80, close: 150, down: 0, up: 65, panMin: 55, panMax: 125 },
     gun: { pan: 'S0', head: 'S1', shoot: 'S2' },
     ultra: { trig: 23, echo: 15 },
-    ps3: { mac: '20:00:00:00:63:93', drive: 'stick', speed: 128, turn: 128, dead: 8, map: [] },
-    v7rc: { mode: 'BT', name: 'MTC_ARM_U01', ssid: 'V7RC_AP', pass: '12345678', ch: '1', drive: 'stick', speed: 250, turn: 180, dead: 20, map: [] },
+    ps3: { mac: '20:00:00:00:63:93', stick: 'move', dpad: 'none', speed: 128, turn: 128, dead: 8, aim: 0.3, map: [] },
+    v7rc: { mode: 'BT', name: 'MTC_ARM_U01', ssid: 'V7RC_AP', pass: '12345678', ch: '1', stick: 'move', dpad: 'turn', speed: 250, turn: 180, dead: 20, aim: 0.45, map: [] },
     mode: { on: false, autoKey: 'ps3:start', manKey: 'ps3:select', after: 'stay', oled: true, rumble: true },
     ir: { f: '33', b: '32', lf: '35', lb: '34', rf: '39', rb: '36', tf: 25, tb: 25, tlf: 25, tlb: 25, trf: 25, trb: 25 }
   });
@@ -364,6 +382,7 @@
     return false;
   }
   function normalizeMode() {
+    normalizeRemote(state.kits.ps3, 'ps3'); normalizeRemote(state.kits.v7rc, 'v7rc');
     const M = state.kits.mode, on = state.kits.on;
     if (!['stay', 'repeat', 'back'].includes(M.after)) M.after = M.back ? 'back' : 'stay';   // 舊版勾選框轉換
     const def = on.ps3 ? ['ps3:start', 'ps3:select'] : on.v7rc ? ['v7:5', 'btnB'] : ['btnA', 'btnB'];
@@ -649,40 +668,75 @@
     });
     if (remote) {
       const R = K[remote];
-      const drive = R.drive === 'none' || (remote === 'ps3' && R.drive === 'dpad') ? R.drive : 'stick';
-      const sp = clampInt(R.speed, 0, 255, remote === 'ps3' ? 128 : 250);
-      const tn = clampInt(R.turn, 0, 255, remote === 'ps3' ? 128 : 180);
-      const dz = clampInt(R.dead, 0, 200, remote === 'ps3' ? 8 : 20);
+      const isP = remote === 'ps3';
+      const sf = R.stick, df = R.dpad;
+      const sp = clampInt(R.speed, 0, 255, isP ? 128 : 250);
+      const tn = clampInt(R.turn, 0, 255, isP ? 128 : 180);
+      const dz = clampInt(R.dead, 0, 200, isP ? 8 : 20);
+      const aimSp = Math.max(0, num(R.aim, isP ? 0.3 : 0.45));
+      const moving = ['move', 'moveAim'].includes(sf) || ['move', 'turn'].includes(df);
+      const aiming = ['aim', 'moveAim'].includes(sf) || df === 'aim';
       need[remote] = true;
-      if (drive !== 'none') need.mtc = true;
+      if (moving) need.mtc = true;
       rcDefs.push('', '// ===== 遙控可調參數（可直接改數字） =====');
-      rcDefs.push('const int DRIVE_SPEED = ' + sp + ';   // 移動最高速度' + (remote === 'ps3' ? '（128＝官方範例原值）' : '（250＝官方範例原值）'));
-      rcDefs.push('const int TURN_SPEED = ' + tn + ';    // 旋轉速度' + (remote === 'ps3' ? '（128＝官方範例原值）' : '（180＝官方範例原值）'));
+      rcDefs.push('const int DRIVE_SPEED = ' + sp + ';   // 移動最高速度' + (isP ? '（128＝官方範例原值）' : '（250＝官方範例原值）'));
+      rcDefs.push('const int TURN_SPEED = ' + tn + ';    // 旋轉速度' + (isP ? '（128＝官方範例原值）' : '（180＝官方範例原值）'));
       rcDefs.push('const int DEADZONE = ' + dz + ';       // 死區：搖桿小於這個值當作 0，放手時車子不會慢慢飄');
-      if (remote === 'ps3') {
+      if (aiming) rcDefs.push('const float AIM_SPEED = ' + plain(aimSp) + ';   // 瞄準調整速度：搖桿推到底或按住方向鍵時，每圈轉幾度');
+      if (aiming) {
+        const T = aimTarget(K.on);
+        let pan, tilt;
+        if (K.on.arm) { need.arm = true; pan = ['ATARM_PanAdd(d);']; tilt = ['ATARM_LiftAdd(d);']; }
+        else if (K.on.gun) { need.gun = true; pan = ['PPGUN_PanAdd(d);']; tilt = ['PPGUN_HeadAdd(d);']; }
+        else {
+          need.servoArr = true; (need.servoPins = need.servoPins || new Set()).add('S0'); need.servoPins.add('S1');
+          pan = ['servoDeg[0] = constrain(servoDeg[0] + d, 0, 180);', 'tubit.setServoAngle(S0, (int)servoDeg[0]);'];
+          tilt = ['servoDeg[1] = constrain(servoDeg[1] + d, 0, 180);', 'tubit.setServoAngle(S1, (int)servoDeg[1]);'];
+        }
+        rcFns.push('', 'void aimPan(float d) {   // 瞄準：' + T.pan + '（正值往左）');
+        pan.forEach(l => rcFns.push('  ' + l)); rcFns.push('}');
+        rcFns.push('', 'void aimTilt(float d) {   // 瞄準：' + T.tilt + '（正值往上）');
+        tilt.forEach(l => rcFns.push('  ' + l)); rcFns.push('}');
+      }
+      const body = [];
+      if (moving) body.push('  int x = 0, y = 0, r = 0;   // 車子移動量：x 左右平移、y 前後、r 旋轉');
+      if (aiming) body.push('  float ap = 0, at = 0;      // 瞄準調整量：ap 旋轉、at 升降／仰角');
+      if (isP) {
+        const lx = 'stickVal(Ps3.data.analog.stick.lx)', ly = 'stickVal(Ps3.data.analog.stick.ly)', rx = 'stickVal(Ps3.data.analog.stick.rx)', ry = 'stickVal(Ps3.data.analog.stick.ry)';
+        const B = b => '(int)Ps3.data.button.' + b;
+        if (sf === 'move') body.push('  // 搖桿：左搖桿上下＝前進／後退、左右＝平移；右搖桿左右＝原地旋轉', '  x += ' + lx + ' * DRIVE_SPEED / 128;', '  y -= ' + ly + ' * DRIVE_SPEED / 128;   // 往上推 ly 是負值', '  r += ' + rx + ' * TURN_SPEED / 128;');
+        if (sf === 'moveAim') body.push('  // 搖桿：左搖桿移動車子；右搖桿左右＝瞄準旋轉、上下＝升降／仰角', '  x += ' + lx + ' * DRIVE_SPEED / 128;', '  y -= ' + ly + ' * DRIVE_SPEED / 128;', '  ap -= ' + rx + ' * AIM_SPEED / 128.0;', '  at -= ' + ry + ' * AIM_SPEED / 128.0;');
+        if (sf === 'aim') body.push('  // 搖桿：左搖桿左右＝瞄準旋轉、上下＝升降／仰角', '  ap -= ' + lx + ' * AIM_SPEED / 128.0;', '  at -= ' + ly + ' * AIM_SPEED / 128.0;');
+        if (df !== 'none') {
+          const g = ps3Mods.length ? '  ' : '';
+          if (ps3Mods.length) body.push('  if (!shiftHeld) {   // 按住組合鍵時，方向鍵改做按鍵對應裡設定的功能');
+          if (df === 'move') body.push(g + '  // 方向鍵：↑↓＝前進／後退、←→＝平移；L1／R1＝原地左轉／右轉', g + '  x += (' + B('right') + ' - ' + B('left') + ') * DRIVE_SPEED;', g + '  y += (' + B('up') + ' - ' + B('down') + ') * DRIVE_SPEED;', g + '  r += (' + B('r1') + ' - ' + B('l1') + ') * TURN_SPEED;');
+          if (df === 'aim') body.push(g + '  // 方向鍵：←→＝瞄準旋轉、↑↓＝升降／仰角', g + '  ap += (' + B('left') + ' - ' + B('right') + ') * AIM_SPEED;', g + '  at += (' + B('up') + ' - ' + B('down') + ') * AIM_SPEED;');
+          if (ps3Mods.length) body.push('  }');
+        }
         rcFns.push('', 'int stickVal(int v) {   // 套用死區', '  return abs(v) < DEADZONE ? 0 : v;', '}');
         rcFns.push('', 'void remoteControl() {   // 手動遙控（PS3）', '  if (!Ps3.isConnected()) {', '    tubit.stopAllMotors();   // 手把斷線就停車', '    return;', '  }');
         if (ps3Mods.length) rcFns.push('  bool shiftHeld = ' + shiftExpr + ';   // 是否按住組合鍵（' + ps3Mods.map(b => (PS3_BTNS.find(x => x[0] === b) || ['', b])[1]).join('、') + '）');
-        if (drive === 'stick') rcFns.push('  // 前進／後退＝左搖桿上下，左右平移＝左搖桿左右，原地旋轉＝右搖桿左右',
-          '  int x = stickVal(Ps3.data.analog.stick.lx) * DRIVE_SPEED / 128;', '  int y = -stickVal(Ps3.data.analog.stick.ly) * DRIVE_SPEED / 128;   // 往上推 ly 是負值',
-          '  int r = stickVal(Ps3.data.analog.stick.rx) * TURN_SPEED / 128;', '  mtc.driveVectorOpen(x, y, r);');
-        if (drive === 'dpad') rcFns.push('  // 前進／後退＝方向鍵 ↑↓，左右平移＝方向鍵 ←→，原地旋轉＝L1（左）／R1（右）',
-          '  int x = ((int)Ps3.data.button.right - (int)Ps3.data.button.left) * DRIVE_SPEED;', '  int y = ((int)Ps3.data.button.up - (int)Ps3.data.button.down) * DRIVE_SPEED;',
-          '  int r = ((int)Ps3.data.button.r1 - (int)Ps3.data.button.l1) * TURN_SPEED;');
-        if (drive === 'dpad' && ps3Mods.length) rcFns.push('  if (shiftHeld) { x = 0; y = 0; r = 0; }   // 按住組合鍵時，方向鍵改做下面設定的功能');
-        if (drive === 'dpad') rcFns.push('  mtc.driveVectorOpen(x, y, r);');
-        mapLines(R.map, (b, mod) => ps3Cond(b, mod, true), '  ').forEach(l => rcFns.push(l));
-        rcFns.push('}');
       } else {
+        const K2 = n => '(int)v7Key(' + n + ')';
+        if (sf === 'move') body.push('  // 左搖桿：上下（通道 2）＝前進／後退、左右（通道 1）＝平移', '  x += v7Axis(1) * DRIVE_SPEED / 500;', '  y += v7Axis(2) * DRIVE_SPEED / 500;');
+        if (sf === 'aim') body.push('  // 左搖桿：左右＝瞄準旋轉、上下＝升降／仰角', '  ap -= v7Axis(1) * AIM_SPEED / 500.0;', '  at += v7Axis(2) * AIM_SPEED / 500.0;');
+        if (df === 'turn') body.push('  // 右側方向鍵：← → ＝原地左轉／右轉（官方）', '  r += (' + K2(4) + ' - ' + K2(3) + ') * TURN_SPEED;');
+        if (df === 'move') body.push('  // 右側方向鍵：↑↓＝前進／後退、←→＝平移、↖ ↗＝原地左轉／右轉', '  y += (' + K2(1) + ' - ' + K2(2) + ') * DRIVE_SPEED;', '  x += (' + K2(4) + ' - ' + K2(3) + ') * DRIVE_SPEED;', '  r += (' + K2(7) + ' - ' + K2(5) + ') * TURN_SPEED;');
+        if (df === 'aim') body.push('  // 右側方向鍵：←→＝瞄準旋轉、↑↓＝升降／仰角', '  ap += (' + K2(3) + ' - ' + K2(4) + ') * AIM_SPEED;', '  at += (' + K2(1) + ' - ' + K2(2) + ') * AIM_SPEED;');
         rcFns.push('', 'int v7Axis(int ch) {   // GAME ADV 搖桿：1500 為中間，回傳 -500～500（含死區）', '  int d = v7rc.readSRTdata(ch) - 1500;', '  return abs(d) < DEADZONE ? 0 : d;', '}');
+        rcFns.push('', 'bool v7Key(int n) {   // GAME ADV 右側 8 方向鍵：1↑ 2↓ 3← 4→ 5↖ 6↙ 7↗ 8↘', '  int a = v7rc.readSRTdata(3), b = v7rc.readSRTdata(4);', '  switch (n) {',
+          '    case 1: return a == 2000 && b == 1500;', '    case 2: return a == 1000 && b == 1500;', '    case 3: return a == 1500 && b == 1000;', '    case 4: return a == 1500 && b == 2000;',
+          '    case 5: return a == 2000 && b == 1000;', '    case 6: return a == 1000 && b == 1000;', '    case 7: return a == 2000 && b == 2000;', '    case 8: return a == 1000 && b == 2000;', '  }', '  return false;', '}');
         rcFns.push('', 'void remoteControl() {   // 手動遙控（V7RC，App 選 GAME ADV）', '  if (!v7rc.connect()) {', '    tubit.stopAllMotors();   // 斷線就停車', '    return;', '  }',
           '  if (!v7rc.setMode("SRT")) return;   // 不是 GAME ADV 送來的資料就不動作');
-        if (drive === 'stick') rcFns.push('  // 前進／後退＝左搖桿上下（通道 2），左右平移＝左搖桿左右（通道 1），原地旋轉＝右側 ← → 鍵',
-          '  int x = v7Axis(1) * DRIVE_SPEED / 500;', '  int y = v7Axis(2) * DRIVE_SPEED / 500;',
-          '  int r = ' + v7Btn(3) + ' * -TURN_SPEED + ' + v7Btn(4) + ' * TURN_SPEED;', '  mtc.driveVectorOpen(x, y, r);');
-        mapLines(R.map, b => v7Btn(b), '  ').forEach(l => rcFns.push(l));
-        rcFns.push('  delay(5);', '}');
       }
+      body.forEach(l => rcFns.push(l));
+      if (moving) rcFns.push('  mtc.driveVectorOpen(constrain(x, -255, 255), constrain(y, -255, 255), constrain(r, -255, 255));');
+      if (aiming) rcFns.push('  if (ap != 0) aimPan(ap);', '  if (at != 0) aimTilt(at);');
+      mapLines(R.map, isP ? (b, mod) => ps3Cond(b, mod, true) : b => 'v7Key(' + b + ')', '  ').forEach(l => rcFns.push(l));
+      if (!isP) rcFns.push('  delay(5);');
+      rcFns.push('}');
     }
     if (modeOn) {
       const after = { stay: 0, repeat: 1, back: 2 }[M.after] || 0;
@@ -875,15 +929,33 @@
     if (remote) {
       const R = K[remote];
       const btnOpts = remote === 'ps3' ? PS3_BTNS : Object.entries(V7_BTNS).map(([k, b]) => [k, k + ' ' + b[0]]);
-      const drives = remote === 'ps3' ? PS3_DRIVES : V7_DRIVES;
-      h += '<b style="width:100%">' + (remote === 'ps3' ? 'PS3' : 'V7RC') + ' 遙控移動（手動模式）</b>' + o(remote, 'drive', '移動方式', drives, R.drive) +
-        f(remote, 'speed', '移動速度 0–255', R.speed) + f(remote, 'turn', '旋轉速度 0–255', R.turn) + f(remote, 'dead', remote === 'ps3' ? '搖桿死區（0–127）' : '搖桿死區（µs）', R.dead);
-      const dmap = remote === 'ps3'
-        ? (R.drive === 'dpad' ? [['前進／後退', '方向鍵 ↑ ／ ↓'], ['向左／向右平移', '方向鍵 ← ／ →'], ['原地左轉／右轉', 'L1 ／ R1']]
-          : R.drive === 'none' ? [] : [['前進／後退', '左搖桿 往上推／往下推'], ['向左／向右平移', '左搖桿 往左推／往右推'], ['原地左轉／右轉', '右搖桿 往左推／往右推']])
-        : (R.drive === 'none' ? [] : [['前進／後退', '左搖桿 往上／往下（通道 2）'], ['向左／向右平移', '左搖桿 往左／往右（通道 1）'], ['原地左轉／右轉', '右側 ← ／ → 鍵（按鈕 3、4）']]);
-      if (dmap.length) h += '<div class="table-wrap" style="width:100%;margin:4px 0 2px"><table><thead><tr><th>車子動作</th><th>操作</th></tr></thead><tbody>' +
+      const isP = remote === 'ps3';
+      const T = aimTarget(K.on);
+      h += '<b style="width:100%">' + (isP ? 'PS3' : 'V7RC') + ' 遙控（手動模式）：搖桿與方向鍵各自設定</b>';
+      h += '<div class="card" style="width:100%;margin:0;padding:10px 12px"><b>' + (isP ? '🕹 搖桿控制（左／右搖桿）' : '🕹 左搖桿控制') + '</b><div class="act-fields" style="margin-top:6px">' + o(remote, 'stick', '功能', STICK_FN[remote], R.stick) + '</div></div>';
+      h += '<div class="card" style="width:100%;margin:0;padding:10px 12px"><b>' + (isP ? '✚ 方向鍵控制（↑↓←→' + (R.dpad === 'move' ? '＋L1／R1' : '') + '）' : '✚ 右側方向鍵控制（8 方向）') + '</b><div class="act-fields" style="margin-top:6px">' + o(remote, 'dpad', '功能', DPAD_FN[remote], R.dpad) + '</div></div>';
+      const moving = ['move', 'moveAim'].includes(R.stick) || ['move', 'turn'].includes(R.dpad);
+      const aiming = ['aim', 'moveAim'].includes(R.stick) || R.dpad === 'aim';
+      if (moving) h += f(remote, 'speed', '移動速度 0–255', R.speed) + f(remote, 'turn', '旋轉速度 0–255', R.turn);
+      if (aiming) h += f(remote, 'aim', '瞄準速度（每圈幾度）', R.aim);
+      h += f(remote, 'dead', isP ? '搖桿死區（0–127）' : '搖桿死區（µs）', R.dead);
+      const dmap = [];
+      if (isP) {
+        if (R.stick === 'move') dmap.push(['左搖桿 上／下', '前進／後退'], ['左搖桿 左／右', '向左／向右平移'], ['右搖桿 左／右', '原地左轉／右轉']);
+        if (R.stick === 'moveAim') dmap.push(['左搖桿 上／下', '前進／後退'], ['左搖桿 左／右', '向左／向右平移'], ['右搖桿 左／右', T.pan], ['右搖桿 上／下', T.tilt]);
+        if (R.stick === 'aim') dmap.push(['左搖桿 左／右', T.pan], ['左搖桿 上／下', T.tilt]);
+        if (R.dpad === 'move') dmap.push(['方向鍵 ↑／↓', '前進／後退'], ['方向鍵 ←／→', '向左／向右平移'], ['L1／R1', '原地左轉／右轉']);
+        if (R.dpad === 'aim') dmap.push(['方向鍵 ←／→', T.pan], ['方向鍵 ↑／↓', T.tilt]);
+      } else {
+        if (R.stick === 'move') dmap.push(['左搖桿 上／下（通道 2）', '前進／後退'], ['左搖桿 左／右（通道 1）', '向左／向右平移']);
+        if (R.stick === 'aim') dmap.push(['左搖桿 左／右', T.pan], ['左搖桿 上／下', T.tilt]);
+        if (R.dpad === 'turn') dmap.push(['右側 ← ／ →（按鈕 3、4）', '原地左轉／右轉']);
+        if (R.dpad === 'move') dmap.push(['右側 ↑ ／ ↓', '前進／後退'], ['右側 ← ／ →', '向左／向右平移'], ['右側 ↖ ／ ↗', '原地左轉／右轉']);
+        if (R.dpad === 'aim') dmap.push(['右側 ← ／ →', T.pan], ['右側 ↑ ／ ↓', T.tilt]);
+      }
+      if (dmap.length) h += '<div class="table-wrap" style="width:100%;margin:4px 0 2px"><table><thead><tr><th>操作</th><th>車子／套件動作</th></tr></thead><tbody>' +
         dmap.map(r => '<tr><td>' + r[0] + '</td><td>' + r[1] + '</td></tr>').join('') + '</tbody></table></div>';
+      if (aiming) h += '<span class="muted" style="width:100%">瞄準對象依勾選的套件：' + (K.on.arm ? '手臂 ATARM' : K.on.gun ? '發射器 PPGUN' : '沒有手臂／發射器，改控制伺服 S0（旋轉）、S1（仰角）') + '。</span>';
       h += '<b style="width:100%">按鍵對應（按住時持續執行）</b>';
       h += '<div style="width:100%;display:flex;flex-wrap:wrap;gap:6px">' +
         '<button type="button" class="btn small" data-mapoff="' + remote + 'arm">套用官方手臂車配置</button>' +
@@ -937,10 +1009,16 @@
       if (dup.length) warn.push('⚠ ' + [...new Set(dup)].join('、') + ' 對應了兩個以上的動作（會同時執行）。');
       const mods = [...new Set((R.map || []).map(m => m.mod).filter(Boolean))];
       const plainUsed = (R.map || []).filter(m => !m.mod).map(m => m.btn);
-      if (mods.some(b => plainUsed.includes(b))) warn.push('⚠ 組合鍵 ' + mods.filter(b => plainUsed.includes(b)).map(bl).join('、') + ' 自己也有單鍵動作：按住它切換方向鍵時，單鍵動作也會一起執行，建議換一個組合鍵（例如 L2、R2）。');
-      if (mods.length) warn.push('組合鍵：按住 ' + mods.map(bl).join('、') + ' 時，只執行「按住＋按鍵」那幾列；放開後恢復原本的按鍵功能' + (R.drive === 'dpad' ? '，方向鍵移動也會暫停' : '') + '。');
-      if (remote === 'ps3' && R.drive === 'dpad' && (R.map || []).some(m => !m.mod && ['up', 'down', 'left', 'right', 'l1', 'r1'].includes(m.btn))) warn.push('⚠ 方向鍵與 L1／R1 已用來移動，按鍵對應裡有重複使用（可改成「按住組合鍵＋方向鍵」）。');
-      if (remote === 'v7rc' && R.drive !== 'none' && used.some(b => b === '3' || b === '4')) warn.push('⚠ V7RC 按鈕 3、4（← →）已用來旋轉。');
+      if (mods.some(b => plainUsed.includes(b))) warn.push('⚠ 組合鍵 ' + mods.filter(b => plainUsed.includes(b)).map(bl).join('、') + ' 自己也有單鍵動作：按住它切換方向鍵時，單鍵動作也會一起執行，建議換一個沒有單鍵動作的組合鍵，或刪掉那一列單鍵動作。');
+      if (mods.length) warn.push('組合鍵：按住 ' + mods.map(bl).join('、') + ' 時，只執行「按住＋按鍵」那幾列；放開後恢復原本的按鍵功能' + (R.dpad !== 'none' && remote === 'ps3' ? '，方向鍵控制也會暫停' : '') + '。');
+      const dkeys = remote === 'ps3' ? ({ move: ['up', 'down', 'left', 'right', 'l1', 'r1'], aim: ['up', 'down', 'left', 'right'] }[R.dpad] || [])
+        : ({ turn: ['3', '4'], move: ['1', '2', '3', '4', '5', '7'], aim: ['1', '2', '3', '4'] }[R.dpad] || []);
+      const clash = [...new Set((R.map || []).filter(m => !m.mod && dkeys.includes(String(m.btn))).map(m => bl(m.btn)))];
+      const canMove = ['move', 'moveAim'].includes(R.stick) || ['move', 'turn'].includes(R.dpad);
+      const canTurn = remote === 'ps3' ? (R.stick === 'move' || R.dpad === 'move') : ['move', 'turn'].includes(R.dpad);
+      if (canMove && !canTurn) warn.push('提醒：目前沒有任何按鍵能讓車子原地旋轉。');
+      if (!canMove) warn.push('提醒：搖桿與方向鍵都沒有設成移動車子，手動模式車子不會走。');
+      if (clash.length) warn.push('⚠ ' + clash.join('、') + ' 已由「方向鍵控制」使用，按鍵對應裡又用了一次（會同時執行）。可把方向鍵控制改成「不使用」，或把那幾列改成「按住組合鍵＋方向鍵」。');
       if (K.mode.on) {
         const mk2 = [K.mode.autoKey, K.mode.manKey].map(x => String(x).replace(/^(ps3|v7):/, ''));
         if (used.some(b => mk2.includes(b))) warn.push('⚠ 自動鍵／手動鍵和按鍵對應重複，請換一個按鍵。');
@@ -951,7 +1029,7 @@
       warn.push('一鍵自動：每個動作做完會檢查手動鍵，若要中止正在進行的長距離移動，要等那一步走完。');
     }
     if (K.on.ps3) warn.push('PS3：上傳後長按手把中間的 PS 鈕連線。');
-    if (K.on.v7rc) warn.push('V7RC：App 控制中心的控制介面要選 GAME ADV；右側 ← → 鍵已用來旋轉，按鈕觸發請避開 3、4。');
+    if (K.on.v7rc) warn.push('V7RC：App 控制中心的控制介面要選 GAME ADV。');
     if (K.on.ir) warn.push('先用「OLED 顯示 IR 數值」把車貼牆讀出各感測器數值，再填入目標值。');
     document.getElementById('kitWarn').textContent = warn.join(' ');
   }
@@ -1039,7 +1117,7 @@
       R.map = (R.map || []).filter(m => !(m.mod === mod && ['up', 'down', 'left', 'right'].includes(m.btn))).concat(shiftLayer(mod, state.kits.on));
       render(); return;
     }
-    if (b.dataset.mapoff) { R.map = OFFICIAL_MAP[b.dataset.mapoff](); setKit(/arm$/.test(b.dataset.mapoff) ? 'arm' : 'gun', true); render(); }
+    if (b.dataset.mapoff) { R.map = OFFICIAL_MAP[b.dataset.mapoff](); R.stick = 'move'; R.dpad = rk === 'ps3' ? 'none' : 'turn'; setKit(/arm$/.test(b.dataset.mapoff) ? 'arm' : 'gun', true); render(); }
     else if (b.dataset.mapadd) { R.map = (R.map || []).concat([mapRow(rk === 'ps3' ? 'cross' : '1', 'stop')]); render(); }
     else if (b.dataset.mapclear) { R.map = []; render(); }
     else if (b.dataset.mapdel !== undefined) { R.map.splice(+b.dataset.mapdel, 1); render(); }
