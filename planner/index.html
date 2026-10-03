@@ -1,0 +1,1894 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="TU:bit V2 競賽路徑規劃器：1 公分座標畫布規劃機器人路徑與到點動作，自動產生可在兔比積木 Arduino IDE 燒錄的程式碼。適用 2026 全國 AI 智創機器人競賽（扶輪盃）。">
+<meta name="theme-color" content="#E5A400">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%A4%96%3C/text%3E%3C/svg%3E">
+<title>TU:bit V2 競賽路徑規劃器</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  --bg:#E6EAF0; --panel:#F5F7FA; --card:#FFFFFF; --line:#CCD4DE; --ink:#1D2940; --mute:#5A6678;
+  --red:#C8243A; --blue:#1C5DB8; --gear:#E5A400; --gearInk:#3A2A00;
+  --ok:#2C8A55; --warn:#B86E00; --bad:#C8243A;
+  --mat:#FBFCFE; --g1:#EDF2F8; --g5:#DCE6F1; --g10:#BCCDE0; --g50:#7F9BBC; --wall:#283041;
+  --path:#1D2940; --chip:#EEF1F5;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#141922; --panel:#1A202B; --card:#202836; --line:#33405A; --ink:#E4E9F1; --mute:#9AA6B8;
+    --red:#F0566A; --blue:#5B9BFF; --gear:#F2B92B; --gearInk:#2A1E00;
+    --ok:#4CC383; --warn:#F2A33A; --bad:#F0566A;
+    --mat:#1C2330; --g1:#222B3A; --g5:#28324A; --g10:#3A4964; --g50:#5E7598; --wall:#C9D2E0;
+    --path:#E4E9F1; --chip:#273042;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#141922; --panel:#1A202B; --card:#202836; --line:#33405A; --ink:#E4E9F1; --mute:#9AA6B8;
+  --red:#F0566A; --blue:#5B9BFF; --gear:#F2B92B; --gearInk:#2A1E00;
+  --ok:#4CC383; --warn:#F2A33A; --bad:#F0566A;
+  --mat:#1C2330; --g1:#222B3A; --g5:#28324A; --g10:#3A4964; --g50:#5E7598; --wall:#C9D2E0;
+  --path:#E4E9F1; --chip:#273042;
+}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{height:100%;margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;font-size:14px;line-height:1.5}
+*,*::before,*::after{box-sizing:border-box}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--gear);outline-offset:2px}
+.app{display:grid;grid-template-rows:auto 1fr;height:100%}
+header{display:flex;align-items:center;gap:14px;padding:10px 16px;background:var(--panel);border-bottom:1px solid var(--line);flex-wrap:wrap}
+.brand{display:flex;align-items:baseline;gap:10px}
+.brand h1{font-size:18px;margin:0;font-weight:700;letter-spacing:.02em}
+.brand .ver{font-size:12px;color:var(--mute);cursor:pointer;text-decoration:underline dotted}
+.hgroup{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.spacer{flex:1}
+select,input[type=number],input[type=text]{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:4px 6px;min-width:0}
+input[type=number]{width:100%}
+.btn{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:5px 10px;cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:var(--mute)}
+.btn.primary{background:var(--gear);border-color:var(--gear);color:var(--gearInk);font-weight:700}
+.btn.on{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+.btn.small{padding:2px 7px;font-size:12px}
+.btn.danger{color:var(--bad)}
+main{display:grid;grid-template-columns:300px minmax(0,1fr) 370px;min-height:0}
+aside{background:var(--panel);min-height:0;display:flex;flex-direction:column}
+aside.left{border-right:1px solid var(--line)}
+aside.right{border-left:1px solid var(--line)}
+.tabs{display:flex;border-bottom:1px solid var(--line)}
+.tabs button{flex:1;background:none;border:0;border-bottom:3px solid transparent;padding:8px 4px;cursor:pointer;color:var(--mute)}
+.tabs button.on{color:var(--ink);border-bottom-color:var(--gear);font-weight:700}
+.pane{overflow:auto;padding:12px;flex:1;min-height:0;display:none}
+.pane.on{display:block}
+.sec{margin-bottom:16px}
+.sec h3{font-size:13px;margin:0 0 8px;color:var(--mute);font-weight:700}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:6px 8px;margin-bottom:6px}
+.row3{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+label.f{display:flex;flex-direction:column;font-size:12px;color:var(--mute);gap:2px}
+label.f span{white-space:nowrap}
+label.chk{display:flex;gap:6px;align-items:center;font-size:13px;cursor:pointer}
+.hint{font-size:12px;color:var(--mute);margin:4px 0 0}
+.center{display:grid;grid-template-rows:auto 1fr auto;min-height:0;min-width:0}
+.toolbar{display:flex;gap:6px;align-items:center;padding:8px 10px;flex-wrap:wrap;border-bottom:1px solid var(--line);background:var(--panel)}
+.toolbar .sep{width:1px;height:22px;background:var(--line);margin:0 4px}
+#wrap{position:relative;min-height:0;overflow:hidden;background:var(--bg)}
+#cv{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:crosshair}
+.status{display:flex;gap:16px;padding:6px 12px;font-size:12px;color:var(--mute);border-top:1px solid var(--line);background:var(--panel);flex-wrap:wrap}
+.status b{color:var(--ink);font-weight:500;font-variant-numeric:tabular-nums}
+.objlist{max-height:220px;overflow:auto;border:1px solid var(--line);border-radius:6px;background:var(--card)}
+.objlist div{padding:4px 8px;font-size:12px;cursor:pointer;display:flex;gap:6px;align-items:center;border-bottom:1px solid var(--g1)}
+.objlist div.sel{background:var(--chip);font-weight:700}
+.sw{width:10px;height:10px;border-radius:2px;flex:none;border:1px solid var(--line)}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{display:flex;align-items:center;gap:5px;padding:3px 8px;border-radius:14px;border:1px solid var(--line);background:var(--card);cursor:pointer;font-size:12px}
+.chip.on{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.dot{width:10px;height:10px;border-radius:50%}
+.rec{border:1px solid var(--line);border-radius:8px;padding:10px;margin-bottom:8px;background:var(--card)}
+.rec .t{display:flex;justify-content:space-between;align-items:center;gap:6px}
+.rec .t b{font-size:13px}
+.lv{font-size:11px;padding:1px 7px;border-radius:10px;border:1px solid currentColor;white-space:nowrap}
+.lv.must{color:var(--bad)} .lv.rec1{color:var(--warn)} .lv.opt{color:var(--mute)} .lv.no{color:var(--mute);text-decoration:line-through}
+.rec p{margin:6px 0 0;font-size:12px;color:var(--mute)}
+.addbar{display:flex;flex-wrap:wrap;gap:5px;padding:10px 12px;border-bottom:1px solid var(--line)}
+#steps{padding:10px 12px;overflow:auto}
+.step{border:1px solid var(--line);border-left:4px solid var(--line);border-radius:6px;background:var(--card);padding:6px 8px;margin-bottom:6px}
+.step.sel{border-color:var(--gear);border-left-color:var(--gear)}
+.step.t-move{border-left-color:var(--path)} .step.t-claw,.step.t-lift,.step.t-pan{border-left-color:var(--gear)} .step.t-align{border-left-color:var(--blue)} .step.t-fire{border-left-color:var(--red)}
+.step.hit{border-left-color:var(--bad)}
+.step.child{margin-left:18px;padding-top:4px;padding-bottom:4px}
+.step.child .sh .n{color:var(--gear)}
+.grouphint{font-size:11px;color:var(--mute);margin:-2px 0 6px 18px}
+#wpBar{position:absolute;z-index:5;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px;width:276px;box-shadow:0 6px 18px rgba(20,30,50,.18)}
+#wpBar[hidden]{display:none}
+#wpBar .tt{display:flex;align-items:center;gap:6px;margin-bottom:6px;font-size:13px}
+#wpBar .tt b{flex:1}
+#wpBar .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
+#wpBar .grid .btn{padding:4px 2px;font-size:12px}
+#wpBar .main{grid-column:span 4;display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:2px}
+#wpBar .acts{font-size:12px;color:var(--mute);margin-top:6px;max-height:210px;overflow:auto}
+#wpBar{width:300px}
+#wpBar .hrow{display:flex;flex-wrap:wrap;align-items:center;gap:3px;margin-top:6px;font-size:12px}
+#wpBar .hrow input{width:58px}
+#wpBar .hrow .btn{padding:1px 5px}
+#wpBar .ar{display:grid;grid-template-columns:18px 1fr auto 24px;align-items:center;gap:4px;padding:3px 0;border-top:1px solid var(--g1);color:var(--ink)}
+#wpBar .ar input,#wpBar .ar select{width:84px;padding:2px 4px;font-size:12px}
+#wpBar .ar .x{border:0;background:none;color:var(--bad);cursor:pointer;font-size:14px;padding:0}
+#wpBar .ar .k{color:var(--gear);font-size:11px}
+.sh{display:flex;align-items:center;gap:6px;cursor:pointer}
+.sh .n{font-variant-numeric:tabular-nums;font-size:12px;color:var(--mute);min-width:22px}
+.sh .ty{font-weight:700;font-size:13px;flex:1}
+.sh .tm{font-size:11px;color:var(--mute)}
+.sb{display:grid;grid-template-columns:repeat(4,1fr);gap:4px 6px;margin-top:6px}
+.sb label.f{font-size:11px}
+.sb .wide{grid-column:1/-1}
+.sb textarea{width:100%;min-height:54px;font-family:"JetBrains Mono",Consolas,monospace;font-size:12px;border:1px solid var(--line);border-radius:6px;background:var(--card);padding:4px}
+.checks{list-style:none;margin:0;padding:12px}
+.checks li{padding:7px 8px 7px 28px;position:relative;border-bottom:1px solid var(--line);font-size:13px}
+.checks li::before{position:absolute;left:6px;top:7px;font-weight:700}
+.checks li.ok::before{content:"✓";color:var(--ok)}
+.checks li.warn::before{content:"!";color:var(--warn)}
+.checks li.bad::before{content:"✕";color:var(--bad)}
+.codebar{display:flex;gap:6px;padding:10px 12px;flex-wrap:wrap;border-bottom:1px solid var(--line)}
+pre#code{margin:0;padding:12px;font-family:"JetBrains Mono",Consolas,monospace;font-size:12px;line-height:1.55;white-space:pre;overflow:auto;flex:1;min-height:0;background:var(--card)}
+#paneCode.on{display:flex;flex-direction:column;padding:0}
+table.ref{width:100%;border-collapse:collapse;font-size:12px}
+table.ref td{border-bottom:1px solid var(--line);padding:5px 4px;vertical-align:top}
+table.ref code{font-family:"JetBrains Mono",Consolas,monospace;font-size:11px;word-break:break-all}
+table.ref td:first-child{color:var(--mute);width:36%}
+dialog{border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--ink);max-width:640px;width:92vw;padding:16px}
+dialog::backdrop{background:rgba(10,15,25,.45)}
+dialog textarea{width:100%;height:280px;font-family:"JetBrains Mono",Consolas,monospace;font-size:12px;border:1px solid var(--line);border-radius:6px;background:var(--card);padding:8px}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--panel);padding:8px 16px;border-radius:8px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s}
+.toast.show{opacity:1}
+kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:0 4px;background:var(--card)}
+@media (max-width:1180px){
+  .app{height:auto;min-height:100%}
+  main{grid-template-columns:1fr;grid-template-rows:auto}
+  .center{order:-1;height:72vh}
+  aside{max-height:none}
+  .pane{max-height:70vh}
+  #steps{max-height:60vh}
+  pre#code{max-height:60vh}
+}
+@media (prefers-reduced-motion: reduce){.toast{transition:none}}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <div class="brand"><h1>TU:bit V2 競賽路徑規劃器</h1><span class="ver" id="ver" title="更新紀錄">v1.3.2</span><a class="ver" href="../index.html" title="回課程網站">← 課程網站</a></div>
+  <div class="hgroup">
+    <select id="gameSel" aria-label="競賽項目">
+      <option value="energy">物資能源爭霸戰 300×300</option>
+      <option value="target">標靶爭奪賽 360×360</option>
+      <option value="custom">自訂空白場地</option>
+    </select>
+    <select id="robotSel" aria-label="機器人"></select>
+  </div>
+  <div class="spacer"></div>
+  <div class="hgroup">
+    <button class="btn" id="undoBtn" title="Ctrl+Z">復原</button>
+    <button class="btn" id="ioBtn">匯入／匯出方案</button>
+    <button class="btn" id="themeBtn" title="切換深淺色">深淺色</button>
+  </div>
+</header>
+<main>
+  <aside class="left">
+    <div class="tabs" role="tablist">
+      <button class="on" data-tab="paneField">場地</button>
+      <button data-tab="paneSensor">感測元件</button>
+      <button data-tab="paneParam">參數</button>
+      <button data-tab="paneRef">積木對照</button>
+    </div>
+    <div class="pane on" id="paneField">
+      <div class="sec" id="customSize" hidden>
+        <h3>自訂場地大小</h3>
+        <div class="row">
+          <label class="f"><span>寬 X（cm）</span><input type="number" min="30" max="2000" step="1" data-bind="field.W"></label>
+          <label class="f"><span>高 Y（cm）</span><input type="number" min="30" max="2000" step="1" data-bind="field.H"></label>
+        </div>
+        <div class="chips" id="sizePresets">
+          <button class="chip" data-size="120,120">120×120</button><button class="chip" data-size="180,120">180×120</button>
+          <button class="chip" data-size="240,240">240×240</button><button class="chip" data-size="300,300">300×300</button>
+          <button class="chip" data-size="360,360">360×360</button>
+        </div>
+        <p class="hint">空白場地沒有任何物件，用「畫障礙」拖出牆面、「放物資」放夾取物，單位都是 1 cm。</p>
+      </div>
+      <div class="sec">
+        <h3>新增物件</h3>
+        <p class="hint" style="margin:0 0 6px">選「物資」工具後點場地放置，顏色：</p>
+        <div class="chips" id="colorChips"></div>
+        <div class="row" style="margin-top:8px">
+          <button class="btn small" id="resetField">重設為大會場地</button>
+          <button class="btn small" id="clearItems">清除所有物資</button>
+        </div>
+      </div>
+      <div class="sec" id="objEditor"></div>
+      <div class="sec">
+        <h3>場地物件</h3>
+        <div class="objlist" id="objList"></div>
+        <p class="hint">場地座標依實施計畫圖面換算，原點 (0,0) 為左下角，單位 1 公分。實際位置以大會公告與現場為準，可直接拖曳或輸入數值修正。</p>
+      </div>
+      <div class="sec">
+        <h3>顯示</h3>
+        <label class="chk"><input type="checkbox" data-bind="ui.grid1"> 顯示 1 cm 細格線（放大時）</label>
+        <label class="chk"><input type="checkbox" data-bind="ui.ghosts"> 在每個路徑點顯示車體</label>
+        <label class="chk"><input type="checkbox" data-bind="ui.sweep"> 顯示車體掃過範圍</label>
+      </div>
+    </div>
+    <div class="pane" id="paneSensor"><div id="recList"></div></div>
+    <div class="pane" id="paneParam">
+      <div class="sec"><h3>車體</h3>
+        <div class="row">
+          <label class="f"><span>車寬 (左右) cm</span><input type="number" step="0.5" data-bind="robot.w"></label>
+          <label class="f"><span>車長 (前後) cm</span><input type="number" step="0.5" data-bind="robot.l"></label>
+          <label class="f"><span>夾爪中心離車心 cm</span><input type="number" step="0.5" data-bind="robot.clawOff"></label>
+          <label class="f"><span>輪徑 cm</span><input type="number" step="0.1" data-bind="motion.wheelD"></label>
+        </div>
+      </div>
+      <div class="sec"><h3>起始姿態</h3>
+        <div class="row3">
+          <label class="f"><span>X cm</span><input type="number" step="1" data-bind="robot.start.x"></label>
+          <label class="f"><span>Y cm</span><input type="number" step="1" data-bind="robot.start.y"></label>
+          <label class="f"><span>車頭 °</span><input type="number" step="15" data-bind="robot.start.h"></label>
+        </div>
+        <p class="hint">車頭 0° 朝上 (+Y)，90° 朝左，180° 朝下，-90° 朝右（逆時針為正）。</p>
+      </div>
+      <div class="sec"><h3>預設移動參數 (moveSCurve)</h3>
+        <div class="row3">
+          <label class="f"><span>最高速度 deg/s</span><input type="number" step="10" data-bind="motion.vm"></label>
+          <label class="f"><span>加速度</span><input type="number" step="10" data-bind="motion.a"></label>
+          <label class="f"><span>減速度</span><input type="number" step="10" data-bind="motion.ad"></label>
+        </div>
+        <p class="hint">減速度輸入正值，程式會自動輸出為負值，與積木產生的 <code>-(a)</code> 一致。</p>
+      </div>
+      <div class="sec"><h3>座標換算（請先燒錄軸向測試程式確認）</h3>
+        <label class="f"><span>輸出座標系</span>
+          <select data-bind="axes.frame">
+            <option value="body">機身座標：依當下車頭換算（建議）</option>
+            <option value="field">場地座標：直接輸出 ΔX、ΔY</option>
+          </select></label>
+        <label class="f" style="margin-top:6px"><span>MTC 軸向</span>
+          <select data-bind="axes.map">
+            <option value="xr_yf">X = 右移，Y = 前進</option>
+            <option value="xf_yl">X = 前進，Y = 左移</option>
+          </select></label>
+        <div class="row" style="margin-top:6px">
+          <label class="chk"><input type="checkbox" data-bind="axes.invX"> X 反向</label>
+          <label class="chk"><input type="checkbox" data-bind="axes.invY"> Y 反向</label>
+          <label class="chk"><input type="checkbox" data-bind="axes.zCW"> 旋轉順時針為正</label>
+          <label class="chk"><input type="checkbox" data-bind="axes.invBulge"> 弧線方向反向</label>
+        </div>
+      </div>
+      <div class="sec"><h3>BNO055 轉正</h3>
+        <div class="row3">
+          <label class="f"><span>比例增益</span><input type="number" step="0.05" data-bind="turn.gain"></label>
+          <label class="f"><span>容許誤差 °</span><input type="number" step="0.1" data-bind="turn.tol"></label>
+          <label class="f"><span>逾時 ms</span><input type="number" step="500" data-bind="turn.timeout"></label>
+        </div>
+        <p class="hint">預設值取自你的「轉正.tb」（-1.65）。若車子越轉越偏，把增益改成正值。BNO 角度以開機時的車頭為 0°、順時針增加。</p>
+      </div>
+      <div class="sec"><h3>機械手臂 ATARM</h3>
+        <div class="row3">
+          <label class="f"><span>旋轉腳位</span><select data-bind="arm.pan" class="servoSel"></select></label>
+          <label class="f"><span>抬升腳位</span><select data-bind="arm.lift" class="servoSel"></select></label>
+          <label class="f"><span>夾爪腳位</span><select data-bind="arm.claw" class="servoSel"></select></label>
+        </div>
+        <div class="row" style="margin-top:6px">
+          <label class="f"><span>夾取時抬升角度</span><input type="number" data-bind="arm.liftDown"></label>
+          <label class="f"><span>搬運時抬升角度</span><input type="number" data-bind="arm.liftUp"></label>
+          <label class="f"><span>放置時抬升角度</span><input type="number" data-bind="arm.liftPlace"></label>
+          <label class="f"><span>伺服等待 ms</span><input type="number" step="50" data-bind="arm.settle"></label>
+        </div>
+        <p class="hint">函式庫預設：夾爪開 70°／關 160°，抬升 0–65°，旋轉 55–125°（中間 90°）。秒數參數是整數型別，填 0.2 會被當成 0 直接轉到位，所以本工具以整數秒＋等待毫秒處理。</p>
+      </div>
+      <div class="sec"><h3>TuIRAlign 紅外線校正</h3>
+        <label class="f"><span>6 路腳位（逗號分隔）</span><input type="text" data-bind="ir.pins"></label>
+        <label class="f" style="margin-top:6px"><span>6 路目標值</span><input type="text" data-bind="ir.targets"></label>
+      </div>
+      <div class="sec"><h3>路徑工具</h3>
+        <label class="chk"><input type="checkbox" data-bind="ui.snap90"> 自動夾取／放置時車頭鎖 90° 倍數</label>
+        <label class="f" style="margin-top:6px"><span>格點吸附 cm</span>
+          <select data-bind="ui.snap"><option value="1">1</option><option value="5">5</option><option value="10">10</option></select></label>
+        <label class="f" style="margin-top:6px"><span>放置後後退 cm</span><input type="number" data-bind="ui.backoff"></label>
+      </div>
+    </div>
+    <div class="pane" id="paneRef"><div id="refTable"></div></div>
+  </aside>
+
+  <section class="center">
+    <div class="toolbar">
+      <div class="hgroup" role="group" aria-label="工具">
+        <button class="btn on" data-mode="select" title="V">選取</button>
+        <button class="btn" data-mode="path" title="P">畫路徑</button>
+        <button class="btn" data-mode="wall" title="W">畫障礙</button>
+        <button class="btn" data-mode="item" title="I">放物資</button>
+        <button class="btn" data-mode="pan" title="H">平移</button>
+      </div>
+      <span class="sep"></span>
+      <button class="btn" id="zoomOut" aria-label="縮小">－</button>
+      <button class="btn" id="zoomFit">全場</button>
+      <button class="btn" id="zoomIn" aria-label="放大">＋</button>
+      <span class="sep"></span>
+      <button class="btn primary" id="playBtn">模擬執行</button>
+      <select id="speedSel" aria-label="模擬倍速"><option value="1">1×</option><option value="2" selected>2×</option><option value="4">4×</option></select>
+    </div>
+    <div id="wrap"><canvas id="cv"></canvas>
+      <div id="wpBar" hidden>
+        <div class="tt"><b id="wpTitle">P1 到點動作</b><button class="btn small" id="wpClose" aria-label="關閉">✕</button></div>
+        <div class="grid">
+          <div class="main"><button class="btn primary" data-wp="grab">在這裡夾取</button><button class="btn primary" data-wp="place">在這裡放置</button></div>
+          <button class="btn" data-wp="clawClose">夾爪夾緊</button><button class="btn" data-wp="clawOpen">夾爪張開</button><button class="btn" data-wp="lift">抬升</button><button class="btn" data-wp="lower">下降</button>
+          <button class="btn" data-wp="pan">旋轉夾爪</button><button class="btn" data-wp="turn">BNO 轉正</button><button class="btn" data-wp="align">IR 校正</button>
+          <button class="btn" data-wp="wait">等待</button><button class="btn" data-wp="fire">發射</button><button class="btn danger" data-wp="del">刪除此點</button>
+        </div>
+        <div class="hrow"><span>車頭</span><input type="number" step="15" id="wpH" aria-label="車頭角度">
+          <button class="btn small" data-hd="-15">-15</button><button class="btn small" data-hd="15">+15</button>
+          <button class="btn small" data-hs="0">0°</button><button class="btn small" data-hs="90">90°</button><button class="btn small" data-hs="180">180°</button><button class="btn small" data-hs="-90">-90°</button></div>
+        <div class="acts" id="wpActs"></div>
+      </div>
+    </div>
+    <div class="status">
+      <span>游標 <b id="stCur">–</b></span>
+      <span>終點姿態 <b id="stEnd">–</b></span>
+      <span>估算時間 <b id="stTime">–</b></span>
+      <span id="stHint">畫路徑模式：點空白處新增路徑點（加在最後）；點既有路徑點可設定到點動作；點物資自動產生夾取動作；點放置區或觸發裝置自動產生放置動作。<kbd>Q</kbd><kbd>E</kbd> 旋轉選取點車頭。</span>
+    </div>
+  </section>
+
+  <aside class="right">
+    <div class="tabs" role="tablist">
+      <button class="on" data-tab="paneSteps">動作步驟</button>
+      <button data-tab="paneCheck">賽規檢查</button>
+      <button data-tab="paneCode">程式碼</button>
+    </div>
+    <div class="pane on" id="paneSteps" style="padding:0">
+      <div class="addbar">
+        <button class="btn small" data-add="move">移動</button>
+        <button class="btn small" data-add="clawOpen">夾爪張開</button>
+        <button class="btn small" data-add="clawClose">夾爪夾緊</button>
+        <button class="btn small" data-add="lift">抬升</button>
+        <button class="btn small" data-add="lower">下降</button>
+        <button class="btn small" data-add="pan">旋轉夾爪</button>
+        <button class="btn small" data-add="turn">BNO 轉正</button>
+        <button class="btn small" data-add="align">IR 校正</button>
+        <button class="btn small" data-add="wait">等待</button>
+        <button class="btn small" data-add="fire">發射</button>
+        <button class="btn small" data-add="code">自訂程式</button>
+        <button class="btn small" id="mirrorBtn" title="把整份路徑轉成對手方">換邊</button>
+        <button class="btn small danger" id="clearSteps">清空</button>
+      </div>
+      <div id="steps"></div>
+    </div>
+    <div class="pane" id="paneCheck"><ul class="checks" id="checks"></ul></div>
+    <div class="pane" id="paneCode">
+      <div class="codebar">
+        <button class="btn primary" id="copyCode">複製程式碼</button>
+        <button class="btn" id="testCodeBtn">軸向測試程式</button>
+        <a class="btn" href="https://tubitblock.trgreat.com/arduino-ide.html" target="_blank" rel="noopener">開啟兔比 Arduino IDE</a>
+      </div>
+      <pre id="code"></pre>
+    </div>
+  </aside>
+</main>
+</div>
+
+<dialog id="ioDlg">
+  <h3 style="margin-top:0">匯入／匯出方案</h3>
+  <p class="hint">複製下方 JSON 保存方案；要匯入時貼上 JSON 或選擇檔案，再按「匯入」。</p>
+  <textarea id="ioText" spellcheck="false"></textarea>
+  <div class="hgroup" style="margin-top:8px">
+    <input type="file" id="ioFile" accept=".json,application/json">
+    <span class="spacer"></span>
+    <button class="btn" id="ioCopy">複製 JSON</button>
+    <button class="btn primary" id="ioImport">匯入</button>
+    <button class="btn" id="ioClose">關閉</button>
+  </div>
+</dialog>
+<dialog id="logDlg">
+  <h3 style="margin-top:0">更新紀錄</h3>
+  <p><b>v1.3.2</b>（2026-10-03）超音波預設腳位改為 MTC V2 官方組裝說明的 Trig 23、Echo 15；收錄於 TU:bit V2 課程網站 planner/，標題旁新增「回課程網站」連結。</p>
+  <p><b>v1.3.1</b>（2026-10-02）到點動作與步驟工具列新增「下降」按鈕（降到夾取高度）；手臂高度動作依角度顯示為「抬升」或「下降」。</p>
+  <p><b>v1.3.0</b>（2026-10-02）到點動作工具列可逐一刪除、直接修改角度；可設定該點車頭旋轉角度（-90、0、90、180、±15°）；程式產生時會略過未勾選元件的步驟（例如沒勾 IR 校正卻有校正步驟），避免編譯錯誤；已用 ESP32 3.1.3 與兔比積木函式庫實際編譯驗證。</p>
+  <p><b>v1.2.0</b>（2026-10-02）路徑點改用 P1、P2… 編號；任何模式點既有路徑點都是選取，不再新增點；選取路徑點會出現「到點動作」工具列（夾取、放置、夾緊、張開、抬升、旋轉、轉正、IR 校正、等待、發射）；步驟清單依路徑點分組。</p>
+  <p><b>v1.1.0</b>（2026-10-02）新增自訂空白場地（任意長寬）；依兔比積木原始碼加入超聲波（Liang 版，Arduino 可用）、PS3 搖桿、V7RC 藍牙遙控、HuskyLens 程式碼；新增 BNO055 轉正步驟（修正 0°/360° 換算與停止條件）；機器人 A 自動化後按 B 鍵才切換遙控。</p>
+  <p><b>v1.0.0</b>（2026-10-02）首版：兩項賽事場地、1 cm 座標畫布、路徑與動作步驟、碰撞與賽規檢查、感測元件建議、TU:bit V2 程式碼產生、軸向測試程式、方案匯入匯出。</p>
+  <button class="btn" onclick="this.closest('dialog').close()">關閉</button>
+</dialog>
+<div class="toast" id="toast"></div>
+
+<script>
+'use strict';
+/* ================= 基本工具 ================= */
+const VERSION = 'v1.3.2';
+const STORE_KEY = 'tubit-planner-v1';
+const uid = () => Math.random().toString(36).slice(2, 9);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const rad = d => d * Math.PI / 180;
+const deg = r => r * 180 / Math.PI;
+const normDeg = d => ((d + 180) % 360 + 360) % 360 - 180;
+const fmt = v => { const r = Math.round(v * 10) / 10; return (Object.is(r, -0) ? 0 : r).toString(); };
+const num = (v, d = 0) => { const n = parseFloat(v); return isFinite(n) ? n : d; };
+const clone = o => JSON.parse(JSON.stringify(o));
+
+const COLORS = {
+  red:   {hex:'#D7263D', name:'紅・太陽能'},
+  blue:  {hex:'#1F63C9', name:'藍・水力'},
+  green: {hex:'#2E9E4F', name:'綠・風力'},
+  black: {hex:'#2E2E2E', name:'黑・火力'},
+  gear:  {hex:'#E5A400', name:'齒輪物資'},
+  yellow:{hex:'#E9C400', name:'黃 3 分'},
+  purple:{hex:'#7A3FB0', name:'紫 2 分'},
+};
+const ITEM_COLORS = {energy:['red','blue','green','black','gear'], target:['yellow','purple','black'], custom:['red','blue','green','black','gear','yellow','purple']};
+const SERVOS = ['S0','S1','S2','S3','S4','S5','S6','S7'];
+const IR_DIRS = ['IR_NONE','IR_L','IR_R','IR_UP','IR_BACK'];
+const IR_NAMES = {IR_NONE:'無', IR_L:'左', IR_R:'右', IR_UP:'前', IR_BACK:'後'};
+
+const ROBOTS = {
+  energyA:      {game:'energy', name:'機器人 A（全自動）', maxW:35, maxL:35, limit:120},
+  targetArm:    {game:'target', name:'手臂機器人', maxW:35, maxL:35, limit:180},
+  targetShooter:{game:'target', name:'射擊機器人', maxW:25, maxL:25, limit:180},
+  customArm:    {game:'custom', name:'手臂機器人（自訂）', maxW:35, maxL:35, limit:0},
+  customShooter:{game:'custom', name:'射擊機器人（自訂）', maxW:25, maxL:25, limit:0},
+};
+
+/* ================= 場地預設 ================= */
+function mk(o){ return Object.assign({id:uid(), type:'zone', shape:'rect', solid:false, label:'', color:'', team:''}, o); }
+function rot180(o, W, H){ return Object.assign({}, o, {x:W - o.x - o.w, y:H - o.y - o.h}); }
+function flipY(o, H){ return Object.assign({}, o, {y:H - o.y - o.h}); }
+
+function presetEnergy(){
+  const W = 300, H = 300, out = [];
+  const red = [
+    {type:'zone', kind:'start', x:0, y:265, w:70, h:35, color:'red', label:'紅方出發區'},
+    {type:'zone', kind:'store', x:0, y:0, w:100, h:95, color:'red', label:'紅方自動化倉儲區'},
+    {type:'wall', x:0, y:93, w:60, h:2, solid:true, label:'紅方倉儲牆（上）'},
+    {type:'gate', x:60, y:93, w:40, h:2, solid:true, color:'red', label:'紅方倉儲閘門'},
+    {type:'wall', x:98, y:0, w:2, h:93, solid:true, label:'紅方倉儲牆（右）'},
+    {type:'trigger', x:0, y:96, w:14, h:14, solid:true, color:'red', label:'紅方觸發閘門裝置'},
+    {type:'drop', x:120, y:0, w:20, h:20, solid:true, color:'red', label:'紅方放置區・紅'},
+    {type:'drop', x:140, y:0, w:20, h:20, solid:true, color:'green', label:'紅方放置區・綠'},
+    {type:'drop', x:160, y:0, w:20, h:20, solid:true, color:'black', label:'紅方放置區・黑'},
+    {type:'wall', x:37, y:233, w:5, h:30, solid:true, label:'迷宮隔板'},
+    {type:'wall', x:80, y:230, w:30, h:5, solid:true, label:'迷宮隔板'},
+    {type:'wall', x:106, y:200, w:5, h:30, solid:true, label:'迷宮隔板'},
+    {type:'wall', x:0, y:186, w:30, h:5, solid:true, label:'迷宮隔板'},
+    {type:'wall', x:39, y:145, w:30, h:5, solid:true, label:'迷宮隔板'},
+    {type:'wall', x:69, y:133, w:5, h:30, solid:true, label:'迷宮隔板'},
+    {type:'item', shape:'circle', x:72.5, y:172.5, w:5, h:5, color:'gear', label:'紅方齒輪物資'},
+  ];
+  [31, 52, 72].forEach(cx => [28, 48, 68].forEach(cy =>
+    red.push({type:'item', shape:'circle', x:cx - 2.5, y:cy - 2.5, w:5, h:5, color:'red', label:'太陽能物資'})));
+  red.forEach(o => {
+    out.push(mk(Object.assign({team:'red'}, o)));
+    const m = rot180(o, W, H);
+    m.label = (o.label || '').replace('紅方', '藍方').replace('太陽能', '水力');
+    if (m.color === 'red') m.color = 'blue';
+    if (o.label === '紅方放置區・紅') m.label = '藍方放置區・藍';
+    out.push(mk(Object.assign({team:'blue'}, m)));
+  });
+  out.push(mk({type:'zone', kind:'neutral', x:135, y:90, w:30, h:120, label:'中立物資區'}));
+  let k = 0;
+  for (let r = 0; r < 7; r++) for (let c = 0; c < 3; c++) {
+    const cx = 141 + c * 9, cy = 98 + r * 17.3;
+    out.push(mk({type:'item', shape:'circle', x:cx - 2.5, y:cy - 2.5, w:5, h:5,
+      color: k % 2 === 0 ? 'green' : 'black', label: k % 2 === 0 ? '風力物資' : '火力物資'}));
+    k++;
+  }
+  return {W, H, objects:out};
+}
+
+function presetTarget(){
+  const W = 360, H = 360, out = [];
+  const red = [
+    {type:'zone', kind:'start', x:150, y:0, w:60, h:60, color:'red', label:'紅方出發區'},
+    {type:'zone', kind:'tzone', x:0, y:0, w:30, h:60, color:'red', label:'紅方標靶放置區'},
+    {type:'zone', kind:'tzone', x:330, y:0, w:30, h:60, color:'red', label:'紅方標靶放置區'},
+    {type:'wall', x:53, y:29, w:10, h:67, solid:true, label:'場地隔板'},
+    {type:'wall', x:53, y:87, w:28, h:9, solid:true, label:'場地隔板'},
+    {type:'wall', x:300, y:29, w:10, h:67, solid:true, label:'場地隔板'},
+    {type:'wall', x:281, y:87, w:29, h:9, solid:true, label:'場地隔板'},
+    {type:'wall', x:141, y:122, w:79, h:9, solid:true, label:'場地隔板'},
+    {type:'wall', x:141, y:103, w:10, h:19, solid:true, label:'場地隔板'},
+    {type:'wall', x:210, y:103, w:10, h:19, solid:true, label:'場地隔板'},
+    {type:'target', x:8, y:8, w:15, h:4, solid:true, color:'red', label:'方形標靶 1 分'},
+    {type:'target', x:8, y:40, w:15, h:4, solid:true, color:'red', label:'圓形標靶 2 分'},
+    {type:'target', x:337, y:8, w:15, h:4, solid:true, color:'red', label:'三角形標靶 3 分'},
+  ];
+  [[88,50],[271,50],[180,110],[7,132],[353,132]].forEach(([cx, cy]) =>
+    red.push({type:'drop', kind:'occupy', x:cx - 7, y:cy - 7, w:14, h:14, solid:true, color:'red', label:'紅方佔領台'}));
+  red.forEach(o => {
+    out.push(mk(Object.assign({team:'red'}, o)));
+    const m = flipY(o, H);
+    m.label = (o.label || '').replace('紅方', '藍方');
+    if (m.color === 'red') m.color = 'blue';
+    out.push(mk(Object.assign({team:'blue'}, m)));
+  });
+  out.push(mk({type:'zone', kind:'neutral', x:0, y:140, w:102, h:80, label:'中立物資區'}));
+  out.push(mk({type:'zone', kind:'neutral', x:258, y:140, w:102, h:80, label:'中立物資區'}));
+  out.push(mk({type:'zone', kind:'neutral', x:102, y:179, w:156, h:2, label:'中線'}));
+  return {W, H, objects:out};
+}
+
+/* ================= 狀態 ================= */
+function defaultModules(robot){
+  const base = {bno:true, irAlign:false, atarm:true, ppgun:false, sharp:false, sharpPin:26,
+    ultra:false, trig:23, echo:15, stopSrc:'ultra', husky:false};
+  if (robot === 'targetShooter' || robot === 'customShooter') return Object.assign(base, {atarm:false, ppgun:true});
+  if (robot === 'energyA') return Object.assign(base, {irAlign:true});
+  return base;
+}
+function demoSteps(){
+  const mv = (x, y, h) => ({id:uid(), type:'move', x, y, h, curve:false, bulge:0, vm:'', a:'', ad:'', stopCm:0});
+  return [
+    {id:uid(), type:'align', main:'IR_R', sub:'IR_BACK', reset:true, rx:20, ry:282, rh:180},
+    mv(20, 215, 180),
+    mv(55, 205, 180),
+    {id:uid(), type:'claw', close:false, sec:0},
+    {id:uid(), type:'lift', deg:0, sec:0},
+    mv(75, 195, 180),
+    {id:uid(), type:'claw', close:true, sec:0},
+    {id:uid(), type:'lift', deg:40, sec:0},
+  ];
+}
+function presetCustom(W, H){ return {W, H, objects:[]}; }
+function newState(game, robot, W, H){
+  game = game || 'energy';
+  robot = robot || ({energy:'energyA', target:'targetArm', custom:'customArm'})[game];
+  const f = game === 'energy' ? presetEnergy() : game === 'target' ? presetTarget() : presetCustom(W || 200, H || 200);
+  const st = {
+    v:1, game, rtype:robot, field:{W:f.W, H:f.H}, objects:f.objects,
+    robot: {w:28, l:28, clawOff:20, start: game === 'energy' ? {x:35, y:282, h:180} : {x:Math.round(f.W / 2), y:30, h:0}},
+    motion:{vm:600, a:800, ad:800, wheelD:6},
+    axes:{frame:'body', map:'xr_yf', invX:false, invY:false, zCW:false, invBulge:false},
+    arm:{pan:'S0', lift:'S7', claw:'S6', liftDown:0, liftUp:40, liftPlace:20, settle:400},
+    ir:{pins:'33,32,35,34,39,36', targets:'25,25,25,25,25,25'},
+    ppgun:{pan:'S0', head:'S1', launch:'S2'},
+    remote:{type:'none', mac:'20:00:00:00:63:93', ble:'車城本校01'},
+    turn:{gain:-1.65, tol:0.3, timeout:3000},
+    modules: defaultModules(robot),
+    ui:{grid1:true, ghosts:true, sweep:true, snap:'1', snap90:true, backoff:10, color: game === 'energy' ? 'green' : 'yellow'},
+    steps: game === 'energy' && robot === 'energyA' ? demoSteps() : [],
+  };
+  if (robot === 'targetShooter' || robot === 'customShooter'){ st.robot.w = 24; st.robot.l = 24; }
+  return st;
+}
+/* 舊版方案補齊新欄位 */
+function upgradeState(o){
+  const d = newState(o.game, o.rtype, o.field && o.field.W, o.field && o.field.H);
+  const fill = (a, b) => { for (const k in b){ if (a[k] === undefined) a[k] = clone(b[k]); else if (b[k] && typeof b[k] === 'object' && !Array.isArray(b[k]) && a[k] && typeof a[k] === 'object') fill(a[k], b[k]); } };
+  ['robot','motion','axes','arm','ir','ppgun','remote','turn','modules','ui'].forEach(k => { if (!o[k]) o[k] = clone(d[k]); else fill(o[k], d[k]); });
+  o.v = 1; return o;
+}
+
+/* ================= 幾何 ================= */
+const fwdVec = h => ({x:-Math.sin(rad(h)), y:Math.cos(rad(h))});
+const rightVec = h => ({x:Math.cos(rad(h)), y:Math.sin(rad(h))});
+function robotPoly(S, x, y, h){
+  const R = rightVec(h), F = fwdVec(h), hw = S.robot.w / 2, hl = S.robot.l / 2;
+  return [[-hw,-hl],[hw,-hl],[hw,hl],[-hw,hl]].map(([bx, by]) => ({x:x + bx*R.x + by*F.x, y:y + bx*R.y + by*F.y}));
+}
+function rectPoly(o){ return [{x:o.x,y:o.y},{x:o.x+o.w,y:o.y},{x:o.x+o.w,y:o.y+o.h},{x:o.x,y:o.y+o.h}]; }
+function project(poly, ax){ let mn = Infinity, mx = -Infinity; for (const p of poly){ const d = p.x*ax.x + p.y*ax.y; if (d < mn) mn = d; if (d > mx) mx = d; } return [mn, mx]; }
+function polysHit(a, b){
+  for (const poly of [a, b]){
+    for (let i = 0; i < poly.length; i++){
+      const p = poly[i], q = poly[(i + 1) % poly.length];
+      const ax = {x:-(q.y - p.y), y:q.x - p.x};
+      const [a1, a2] = project(a, ax), [b1, b2] = project(b, ax);
+      if (a2 <= b1 + 1e-6 || b2 <= a1 + 1e-6) return false;
+    }
+  }
+  return true;
+}
+const center = o => ({x:o.x + o.w / 2, y:o.y + o.h / 2});
+const inRect = (p, o, pad = 0) => p.x >= o.x - pad && p.x <= o.x + o.w + pad && p.y >= o.y - pad && p.y <= o.y + o.h + pad;
+
+/* ================= 路徑段與時間 ================= */
+function segPoint(seg, u){
+  const {from:a, to:b} = seg;
+  let x, y;
+  if (seg.curve){
+    const cx = seg.ctrl.x, cy = seg.ctrl.y, v = 1 - u;
+    x = v*v*a.x + 2*v*u*cx + u*u*b.x; y = v*v*a.y + 2*v*u*cy + u*u*b.y;
+  } else { x = a.x + (b.x - a.x) * u; y = a.y + (b.y - a.y) * u; }
+  return {x, y, h:a.h + seg.dh * u};
+}
+function trapTime(D, v, a, d){
+  if (D <= 0) return 0;
+  if (v <= 0 || a <= 0 || d <= 0) return 0;
+  const da = v*v/(2*a), dd = v*v/(2*d);
+  if (da + dd <= D) return v/a + v/d + (D - da - dd)/v;
+  const vp = Math.sqrt(2*D*a*d/(a + d));
+  return vp/a + vp/d;
+}
+function buildSeg(S, from, s){
+  const to = {x:num(s.x), y:num(s.y), h:num(s.h)};
+  const dh = normDeg(to.h - from.h);
+  const seg = {from, to, dh, curve:!!s.curve && Math.abs(num(s.bulge)) > 0.01, bulge:num(s.bulge), stepId:s.id};
+  if (seg.curve){
+    const dx = to.x - from.x, dy = to.y - from.y, L = Math.hypot(dx, dy) || 1;
+    const n = {x:-dy / L, y:dx / L};
+    seg.ctrl = {x:(from.x + to.x)/2 + n.x * 2 * seg.bulge, y:(from.y + to.y)/2 + n.y * 2 * seg.bulge};
+  }
+  let len = 0, prev = segPoint(seg, 0);
+  for (let i = 1; i <= 40; i++){ const p = segPoint(seg, i/40); len += Math.hypot(p.x - prev.x, p.y - prev.y); prev = p; }
+  seg.len = len;
+  const vm = num(s.vm, S.motion.vm) || S.motion.vm, ac = num(s.a, S.motion.a) || S.motion.a, ad = Math.abs(num(s.ad, S.motion.ad) || S.motion.ad);
+  const cpd = Math.PI * S.motion.wheelD / 360;
+  const k = (S.robot.w + S.robot.l) / 4;
+  const D = len + k * Math.abs(rad(dh));
+  seg.time = D > 0.01 ? trapTime(D, vm*cpd, ac*cpd, ad*cpd) * 1.12 + 0.1 : 0;
+  // 碰撞取樣
+  const nS = Math.max(2, Math.ceil(len / 2), Math.ceil(Math.abs(dh) / 5));
+  const solids = S.objects.filter(o => o.solid);
+  seg.hits = []; seg.hitIds = new Set(); seg.oob = false;
+  for (let i = 0; i <= nS; i++){
+    const p = segPoint(seg, i / nS), poly = robotPoly(S, p.x, p.y, p.h);
+    let hit = false;
+    if (poly.some(c => c.x < -0.01 || c.y < -0.01 || c.x > S.field.W + 0.01 || c.y > S.field.H + 0.01)){ hit = true; seg.oob = true; }
+    for (const o of solids) if (polysHit(poly, rectPoly(o))){ hit = true; seg.hitIds.add(o.id); }
+    if (hit) seg.hits.push(p);
+  }
+  return seg;
+}
+function clawPoint(S, p){ const F = fwdVec(p.h); return {x:p.x + F.x * S.robot.clawOff, y:p.y + F.y * S.robot.clawOff}; }
+
+/* ================= 模擬 ================= */
+function simulate(S){
+  let p = Object.assign({}, S.robot.start);
+  const res = {pose:[], segs:[], timeline:[], total:0, notes:[], clawClosed:false, triggerDone:false, multiGrab:false, doubleClose:false,
+    neutralShooter:false, crossLine:false, placed:[], grabbed:[], durations:{}};
+  let clawClosed = false, holding = [];
+  const items = S.objects.filter(o => o.type === 'item');
+  for (const s of S.steps){
+    res.pose.push({id:s.id, before:Object.assign({}, p)});
+    let dur = 0;
+    if (s.type === 'move'){
+      const seg = buildSeg(S, Object.assign({}, p), s);
+      res.segs.push(seg); dur = seg.time + (s.fix ? 0.4 : 0);
+      res.timeline.push({kind:'move', seg, t0:res.total, dur});
+      // 規則：射擊機器人不可越過中立物資區；手臂機器人不可跨入對方陣線
+      const neutral = S.objects.filter(o => o.kind === 'neutral');
+      for (let i = 0; i <= 20; i++){
+        const q = segPoint(seg, i / 20);
+        if (S.rtype === 'targetShooter' && neutral.some(o => inRect(q, o))) res.neutralShooter = true;
+        if (S.rtype === 'targetArm'){
+          const red = S.robot.start.y < S.field.H / 2;
+          if (red ? q.y > S.field.H / 2 + 0.5 : q.y < S.field.H / 2 - 0.5) res.crossLine = true;
+        }
+      }
+      p = Object.assign({}, seg.to);
+    } else {
+      const settle = num(S.arm.settle, 400) / 1000;
+      if (s.type === 'claw'){
+        dur = Math.max(0, Math.round(num(s.sec))) + settle;
+        const cp = clawPoint(S, p);
+        if (s.close){
+          if (clawClosed) res.doubleClose = true;
+          const got = items.filter(o => !holding.includes(o.id) && Math.hypot(center(o).x - cp.x, center(o).y - cp.y) <= 4.5);
+          if (got.length > 1) res.multiGrab = true;
+          holding = got.map(o => o.id);
+          if (got.length) res.grabbed.push({step:s.id, items:got.map(o => o.label || o.color)});
+          clawClosed = true;
+        } else {
+          if (holding.length){
+            const tgt = S.objects.find(o => (o.type === 'trigger' || o.type === 'drop') && inRect(cp, o, 1));
+            const it = items.find(o => o.id === holding[0]);
+            if (tgt){
+              res.placed.push({step:s.id, target:tgt, item:it});
+              if (tgt.type === 'trigger' && it && it.color === 'gear') res.triggerDone = true;
+            }
+          }
+          holding = []; clawClosed = false;
+        }
+      } else if (s.type === 'lift' || s.type === 'pan'){ dur = Math.max(0, Math.round(num(s.sec))) + settle; }
+      else if (s.type === 'align'){ dur = 1.5; if (s.reset) p = {x:num(s.rx), y:num(s.ry), h:num(s.rh)}; }
+      else if (s.type === 'turn'){ const dh = Math.abs(normDeg(num(s.h) - p.h)); dur = 0.3 + dh / 120; p = {x:p.x, y:p.y, h:num(s.h)}; }
+      else if (s.type === 'wait'){ dur = num(s.ms) / 1000; }
+      else if (s.type === 'fire'){ dur = 0.6; }
+      res.timeline.push({kind:s.type, step:s, t0:res.total, dur, pose:Object.assign({}, p), clawClosed});
+    }
+    res.durations[s.id] = dur;
+    res.total += dur;
+    res.pose[res.pose.length - 1].after = Object.assign({}, p);
+    res.pose[res.pose.length - 1].clawClosed = clawClosed;
+  }
+  res.end = p; res.clawClosed = clawClosed;
+  return res;
+}
+
+/* ================= 程式碼產生 ================= */
+function mapAxes(S, from, to){
+  const dx = to.x - from.x, dy = to.y - from.y, dh = normDeg(to.h - from.h);
+  let a, b;
+  if (S.axes.frame === 'field'){ a = dx; b = dy; }
+  else {
+    const c = Math.cos(rad(from.h)), s = Math.sin(rad(from.h));
+    const right = dx * c + dy * s, fwd = -dx * s + dy * c;
+    if (S.axes.map === 'xf_yl'){ a = fwd; b = -right; } else { a = right; b = fwd; }
+  }
+  if (S.axes.invX) a = -a;
+  if (S.axes.invY) b = -b;
+  const z = S.axes.zCW ? -dh : dh;
+  return {X:a, Y:b, Z:z};
+}
+function liftName(S, s){ return num(s.deg) <= num(S.arm.liftDown, 0) ? '下降' : '抬升'; }
+function stepName(S, s){ return s.type === 'lift' ? liftName(S, s) : TYPE_NAMES_CORE[s.type]; }
+const TYPE_NAMES_CORE = {turn:'BNO 轉正', move:'移動', claw:'夾爪', lift:'抬升', pan:'旋轉夾爪', align:'IR 校正', wait:'等待', fire:'發射乒乓球', code:'自訂程式'};
+function stepLabels(S){
+  let k = 0, sub = 0; const out = [];
+  for (const s of S.steps){
+    if (s.type === 'move'){ k++; sub = 0; out.push('P' + k); }
+    else { sub++; out.push(k ? `P${k}-${sub}` : `出發前-${sub}`); }
+  }
+  return out;
+}
+function bnoTarget(S, h){ let v = ((num(S.robot.start.h) - num(h)) % 360 + 360) % 360; return Math.round(v * 10) / 10; }
+function distOn(M){ return M.ultra || M.sharp; }
+function distSrc(M){ if (M.ultra && M.sharp) return M.stopSrc === 'sharp' ? 'sharp' : 'ultra'; return M.ultra ? 'ultra' : 'sharp'; }
+function irList(str){ return String(str).split(',').map(v => v.trim()).filter(Boolean).join(','); }
+
+function genCode(S, sim){
+  const M = S.modules, L = [];
+  const usesArm = M.atarm, usesGun = M.ppgun;
+  const sharpStops = [...new Set(S.steps.filter(s => s.type === 'move' && distOn(M) && num(s.stopCm) > 0).map(s => num(s.stopCm)))];
+  const needTurn = M.bno && S.steps.some(s => s.type === 'turn' || (s.type === 'move' && s.fix));
+  const RT = S.remote.type, shooter = /Shooter/.test(S.rtype);
+  const gname = {energy:'物資能源爭霸戰', target:'標靶爭奪賽', custom:`自訂場地 ${S.field.W}×${S.field.H} cm`}[S.game];
+  L.push(`// generated by TU:bit V2 競賽路徑規劃器 ${VERSION}（OpenBlock 相容）`);
+  L.push(`// 賽事：${gname}｜${ROBOTS[S.rtype].name}`);
+  L.push(`// 起點 (${fmt(S.robot.start.x)}, ${fmt(S.robot.start.y)}) 車頭 ${fmt(S.robot.start.h)}°｜估算 ${sim.total.toFixed(1)} 秒`);
+  L.push('#include <Arduino.h>');
+  L.push('#include <TuBitCore.h>');
+  L.push('#include <Wire.h>');
+  if (M.bno) L.push('#include <EasyBNO055_ESP.h>');
+  if (usesArm) L.push('#include <ATARM.h>');
+  L.push('#include <TuMTC.h>');
+  if (M.irAlign) L.push('#include <TuIRAlign.h>');
+  if (usesGun) L.push('#include <PPGUN.h>');
+  if (M.sharp) L.push('#include <ESP32SharpIR.h>');
+  if (M.ultra) L.push('#include <Ultrasonic.h>');
+  if (M.husky) L.push('#include <HUSKYLENS.h>');
+  if (RT === 'ps3') L.push('#include <Ps3Controller.h>');
+  if (RT === 'v7rc') L.push('#include <V7RC_BT.h>');
+  L.push('');
+  L.push('TuBitCore tubit;');
+  L.push('TuMTC mtc(tubit);   // 只宣告一次，重複宣告會編譯失敗');
+  if (M.bno) L.push('EasyBNO055_ESP bno;');
+  if (M.irAlign){
+    L.push('extern TuBitCore tubit;');
+    L.push('TuMTC& tuirRobot() {');
+    L.push('    return mtc;');
+    L.push('}');
+    L.push('TuIRAlign<TuMTC>& tuirAlign() {');
+    L.push('    static TuIRAlign<TuMTC> align(tubit, tuirRobot());');
+    L.push('    return align;');
+    L.push('}');
+  }
+  if (M.sharp) L.push(`ESP32SharpIR sharpIR_1(ESP32SharpIR::GP2Y0A21YK0F, ${num(M.sharpPin, 26)});`);
+  const ut = num(M.trig, 23), ue = num(M.echo, 15), uname = `ultrasonic_${ut}_${ue}`;
+  if (M.ultra) L.push(`Ultrasonic ${uname}(${ut}, ${ue});   // TRIG, ECHO`);
+  if (M.husky){ L.push('HUSKYLENS huskylens;'); L.push('HUSKYLENSResult HuskyResultBuffer;'); }
+  if (RT === 'v7rc') L.push('V7RC_BT v7rc;');
+  if (RT !== 'none') L.push(`bool remoteOn = ${S.game === 'energy' ? 'false;   // 自動化結束、裁判確認後按 B 鍵才開啟遙控' : 'true;'}`);
+  if (distOn(M) && sharpStops.length){
+    L.push('float frontDistCm() {   // 前方距離 (cm)');
+    if (distSrc(M) === 'ultra'){ L.push(`  unsigned int d = ${uname}.read(CM);`); L.push('  return d == 0 ? 999 : d;   // 0 代表沒收到回波'); }
+    else L.push('  return sharpIR_1.getDistanceFloat();');
+    L.push('}');
+    sharpStops.forEach(cm => {
+      L.push(`bool stopNear_${String(cm).replace('.', '_')}() {   // 前方距離小於 ${cm} cm 就中斷移動`);
+      L.push(`  return frontDistCm() < ${cm};`);
+      L.push('}');
+    });
+  }
+  if (needTurn){
+    L.push('double headingErr(double target) {   // 目標角與 BNO 角度差，換算到 -180~180，避免 0/360 繞遠路');
+    L.push('  double e = target - bno.orientationZ;');
+    L.push('  while (e > 180) e -= 360;');
+    L.push('  while (e < -180) e += 360;');
+    L.push('  return e;');
+    L.push('}');
+    L.push('void turnTo(double deg) {   // BNO 轉正（改寫自轉正.tb）');
+    L.push('  tubit.resetEnc();');
+    L.push('  tubit.stopAllMotors();');
+    L.push('  unsigned long t0 = millis();');
+    L.push(`  while (fabs(headingErr(deg)) > ${fmt(num(S.turn.tol, 0.3))} && millis() - t0 < ${Math.round(num(S.turn.timeout, 3000))}) {`);
+    L.push(`    mtc.bnoMoveClosed(0, 0, headingErr(deg) * ${num(S.turn.gain, -1.65)}, bno.orientationZ);`);
+    L.push('    delay(5);');
+    L.push('  }');
+    L.push('  tubit.resetEnc();');
+    L.push('  tubit.stopAllMotors();');
+    L.push('}');
+  }
+  L.push('');
+  L.push('void setup() {');
+  L.push('  tubit.init();');
+  if (M.bno) L.push('  bno.start();');
+  if (usesGun) L.push(`  PPGUN_INIT(${S.ppgun.pan},${S.ppgun.head},${S.ppgun.launch});`);
+  if (usesArm) L.push(`  ATARM_INIT(${S.arm.pan},${S.arm.lift},${S.arm.claw});   // 旋轉, 抬升, 夾爪`);
+  if (M.irAlign){
+    L.push('  tuirAlign();');
+    L.push(`  tuirAlign().setPins(${irList(S.ir.pins)});`);
+    L.push(`  tuirAlign().setTargets(${irList(S.ir.targets)});`);
+  }
+  if (M.sharp) L.push('  sharpIR_1.setFilterRate(0.1f);');
+  if (M.husky){
+    L.push('  Wire.begin();');
+    L.push('  for (int i = 0; i < 20 && !huskylens.begin(Wire); i++) {   // 最多試 2 秒，避免沒接鏡頭時卡死');
+    L.push('    delay(100);');
+    L.push('  }');
+  }
+  if (RT === 'ps3') L.push(`  Ps3.begin("${S.remote.mac}");   // 手把配對的 MAC`);
+  if (RT === 'v7rc') L.push(`  v7rc.setupBLE("${S.remote.ble}");   // V7RC APP 搜尋的藍牙名稱`);
+  L.push('');
+  L.push('}');
+  L.push('');
+  L.push('void loop() {');
+  L.push('  if (tubit.readButton(Button_A)) {');
+  L.push('');
+  L.push('    // ===== 主程式（依路徑規劃器產生）=====');
+  const ind = '    ';
+  let p = Object.assign({}, S.robot.start);
+  const LB = stepLabels(S);
+  S.steps.forEach((s, i) => {
+    const n = LB[i];
+    const settle = Math.max(0, Math.round(num(S.arm.settle, 400)));
+    const sec = Math.max(0, Math.round(num(s.sec)));
+    switch (s.type){
+      case 'move': {
+        const to = {x:num(s.x), y:num(s.y), h:num(s.h)};
+        const m = mapAxes(S, p, to);
+        const vm = num(s.vm, S.motion.vm) || S.motion.vm, a = num(s.a, S.motion.a) || S.motion.a, ad = Math.abs(num(s.ad, S.motion.ad) || S.motion.ad);
+        const cb = distOn(M) && num(s.stopCm) > 0 ? `, stopNear_${String(num(s.stopCm)).replace('.', '_')}` : '';
+        L.push(`${ind}// ===== ${n} 移動到 (${fmt(to.x)}, ${fmt(to.y)}) 車頭 ${fmt(to.h)}° =====`);
+        if (s.curve && Math.abs(num(s.bulge)) > 0.01){
+          const bg = (S.axes.invBulge ? -1 : 1) * num(s.bulge);
+          L.push(`${ind}mtc.moveCurveSCurve(${fmt(m.X)}, ${fmt(m.Y)}, ${fmt(m.Z)}, ${fmt(bg)}, ${fmt(vm)}, ${fmt(a)}, -${fmt(ad)}, 0, 0${cb});`);
+        } else {
+          L.push(`${ind}mtc.moveSCurve(${fmt(m.X)}, ${fmt(m.Y)}, ${fmt(m.Z)}, ${fmt(vm)}, ${fmt(a)}, -${fmt(ad)}, 0, 0${cb});`);
+        }
+        if (s.fix){
+          if (M.bno) L.push(`${ind}turnTo(${bnoTarget(S, to.h)});   // BNO 轉正到車頭 ${fmt(to.h)}°`);
+          else L.push(`${ind}// 需要勾選 BNO055 才能轉正`);
+        }
+        p = to; break;
+      }
+      case 'turn':
+        L.push(`${ind}// ${n} BNO 轉正：車頭 ${fmt(num(s.h))}°（BNO 目標 ${bnoTarget(S, s.h)}°）`);
+        L.push(M.bno ? `${ind}turnTo(${bnoTarget(S, s.h)});` : `${ind}// 需要在感測元件勾選 BNO055`);
+        p = {x:p.x, y:p.y, h:num(s.h)}; break;
+      case 'claw':
+        if (!M.atarm){ L.push(`${ind}// ${n} 夾爪動作略過：未勾選機械手臂 ATARM`); break; }
+        L.push(`${ind}// ${n} 夾爪${s.close ? '夾緊（抓起）' : '張開（放開）'}`);
+        L.push(`${ind}ATARM_ClawCtrl(${s.close ? 'true' : 'false'}, ${sec});`);
+        if (settle) L.push(`${ind}delay(${settle});`);
+        break;
+      case 'lift':
+        if (!M.atarm){ L.push(`${ind}// ${n} 抬升略過：未勾選機械手臂 ATARM`); break; }
+        L.push(`${ind}// ${n} 手臂${liftName(S, s)}到 ${fmt(num(s.deg))}°`);
+        L.push(`${ind}ATARM_LiftSet(${fmt(num(s.deg))}, ${sec});`);
+        if (settle) L.push(`${ind}delay(${settle});`);
+        break;
+      case 'pan':
+        if (!M.atarm){ L.push(`${ind}// ${n} 夾爪旋轉略過：未勾選機械手臂 ATARM`); break; }
+        L.push(`${ind}// ${n} 夾爪旋轉到 ${fmt(num(s.deg))}°`);
+        L.push(`${ind}ATARM_PanSet(${fmt(num(s.deg))}, ${sec});`);
+        if (settle) L.push(`${ind}delay(${settle});`);
+        break;
+      case 'align':
+        if (!M.irAlign){ L.push(`${ind}// ${n} IR 校正略過：未勾選紅外線 IR 對牆校正`); if (s.reset) p = {x:num(s.rx), y:num(s.ry), h:num(s.rh)}; break; }
+        L.push(`${ind}// ${n} IR 校正：主 ${IR_NAMES[s.main]}、次 ${IR_NAMES[s.sub]}${s.reset ? `，校正後位置 (${fmt(num(s.rx))}, ${fmt(num(s.ry))}) ${fmt(num(s.rh))}°` : ''}`);
+        L.push(`${ind}tuirAlign().alignBlocking(${s.main}, ${s.sub});`);
+        if (s.reset) p = {x:num(s.rx), y:num(s.ry), h:num(s.rh)};
+        break;
+      case 'wait':
+        L.push(`${ind}// ${n} 等待`);
+        L.push(`${ind}delay(${Math.max(0, Math.round(num(s.ms)))});`);
+        break;
+      case 'fire':
+        if (!M.ppgun){ L.push(`${ind}// ${n} 發射略過：未勾選乒乓球發射器`); break; }
+        L.push(`${ind}// ${n} 發射乒乓球`);
+        L.push(`${ind}PPGUN_launch();`);
+        L.push(`${ind}delay(300);`);
+        break;
+      case 'code':
+        L.push(`${ind}// ${n} 自訂程式`);
+        String(s.text || '').split('\n').forEach(t => L.push(ind + t));
+        break;
+    }
+    L.push('');
+  });
+  if (S.game === 'energy'){
+    L.push(`${ind}// 自動化結束：選手舉手向裁判報告，經裁判確認後才可切換手動遙控（未經確認每次扣 2 分）`);
+  }
+  L.push('  }');
+  L.push('');
+  if (RT === 'none'){
+    L.push('  // 遙控程式區（到「感測元件」選 PS3 或 V7RC 就會自動產生）');
+  } else {
+    if (S.game === 'energy'){
+      L.push('  if (tubit.readButton(Button_B)) {   // 裁判確認後按 B：切換為手動遙控');
+      L.push('    remoteOn = true;');
+      L.push('  }');
+    }
+    L.push(...genRemote(S, shooter));
+  }
+  L.push('}');
+  return L.join('\n');
+}
+
+function genRemote(S, shooter){
+  const L = [], i = '    ', i2 = '      ';
+  if (S.remote.type === 'ps3'){
+    L.push('  if (remoteOn && Ps3.isConnected()) {   // 對照官方範例「夾爪機器人_ps3搖桿」');
+    L.push(`${i}mtc.driveVectorOpen(Ps3.data.analog.stick.lx, (-1 * Ps3.data.analog.stick.ly), Ps3.data.analog.stick.rx);`);
+    if (!shooter && S.modules.atarm){
+      L.push(`${i}if (Ps3.data.button.triangle) ATARM_LiftAdd(0.1);    // △ 手臂上升`);
+      L.push(`${i}if (Ps3.data.button.cross) ATARM_LiftAdd(-0.1);      // ✕ 手臂下降`);
+      L.push(`${i}if (Ps3.data.button.l1) ATARM_PanAdd(0.1);           // L1 夾爪左轉`);
+      L.push(`${i}if (Ps3.data.button.r1) ATARM_PanAdd(-0.1);          // R1 夾爪右轉`);
+      L.push(`${i}if (Ps3.data.button.circle) ATARM_ClawCtrl(true, 0);   // ○ 夾緊`);
+      L.push(`${i}if (Ps3.data.button.square) ATARM_ClawCtrl(false, 0);  // □ 張開`);
+      L.push(`${i}if (Ps3.data.button.up) ATARM_LiftSet(${S.arm.liftUp}, 0);      // ↑ 搬運高度`);
+      L.push(`${i}if (Ps3.data.button.down) ATARM_LiftSet(${S.arm.liftDown}, 0);    // ↓ 夾取高度`);
+      L.push(`${i}if (Ps3.data.button.r2) ATARM_PanSet(90, 0);         // R2 夾爪回正`);
+    } else if (S.modules.ppgun){
+      L.push(`${i}if (Ps3.data.button.up) PPGUN_HeadAdd(0.1);          // ↑ 仰角`);
+      L.push(`${i}if (Ps3.data.button.down) PPGUN_HeadAdd(-0.1);       // ↓ 俯角`);
+      L.push(`${i}if (Ps3.data.button.l1) PPGUN_PanAdd(0.1);           // L1 左轉`);
+      L.push(`${i}if (Ps3.data.button.r1) PPGUN_PanAdd(-0.1);          // R1 右轉`);
+      L.push(`${i}if (Ps3.data.button.circle) {                        // ○ 發射`);
+      L.push(`${i2}PPGUN_launch();`);
+      L.push(`${i2}delay(250);   // 防止按住連發`);
+      L.push(`${i}}`);
+    }
+    L.push('  }');
+  } else if (S.remote.type === 'v7rc'){
+    const B = k => ({1:'(v7rc.readSRTdata(3) == 2000 && v7rc.readSRTdata(4) == 1500)', 2:'(v7rc.readSRTdata(3) == 1000 && v7rc.readSRTdata(4) == 1500)',
+      3:'(v7rc.readSRTdata(3) == 1500 && v7rc.readSRTdata(4) == 1000)', 4:'(v7rc.readSRTdata(3) == 1500 && v7rc.readSRTdata(4) == 2000)',
+      5:'(v7rc.readSRTdata(3) == 2000 && v7rc.readSRTdata(4) == 1000)', 6:'(v7rc.readSRTdata(3) == 1000 && v7rc.readSRTdata(4) == 1000)',
+      7:'(v7rc.readSRTdata(3) == 2000 && v7rc.readSRTdata(4) == 2000)', 8:'(v7rc.readSRTdata(3) == 1000 && v7rc.readSRTdata(4) == 2000)'})[k];
+    L.push('  if (remoteOn && v7rc.connect()) {   // 對照官方範例「夾爪機器人_V7RC版」');
+    L.push(`${i}if (v7rc.setMode("SRT")) {`);
+    L.push(`${i2}mtc.driveVectorOpen(( (v7rc.readSRTdata(1) - 1500) / 2 ), ( (v7rc.readSRTdata(2) - 1500) / 2 ), ${B(3)}*-180 + ${B(4)}*180);`);
+    if (!shooter && S.modules.atarm){
+      L.push(`${i2}if (${B(1)}) ATARM_LiftAdd(0.1);       // 上：手臂上升`);
+      L.push(`${i2}if (${B(2)}) ATARM_LiftAdd(-0.1);      // 下：手臂下降`);
+      L.push(`${i2}if (${B(5)}) ATARM_ClawCtrl(true, 0);  // 左上：夾緊`);
+      L.push(`${i2}if (${B(7)}) ATARM_ClawCtrl(false, 0); // 右上：張開`);
+      L.push(`${i2}if (${B(6)}) ATARM_PanAdd(0.1);        // 左下：夾爪左轉`);
+      L.push(`${i2}if (${B(8)}) ATARM_PanAdd(-0.1);       // 右下：夾爪右轉`);
+    } else if (S.modules.ppgun){
+      L.push(`${i2}if (${B(1)}) PPGUN_HeadAdd(0.1);       // 上：仰角`);
+      L.push(`${i2}if (${B(2)}) PPGUN_HeadAdd(-0.1);      // 下：俯角`);
+      L.push(`${i2}if (${B(6)}) PPGUN_PanAdd(0.1);        // 左下：左轉`);
+      L.push(`${i2}if (${B(8)}) PPGUN_PanAdd(-0.1);       // 右下：右轉`);
+      L.push(`${i2}if (${B(5)}) {                          // 左上：發射`);
+      L.push(`${i2}  PPGUN_launch();`);
+      L.push(`${i2}  delay(250);`);
+      L.push(`${i2}}`);
+    }
+    L.push(`${i}}`);
+    L.push('  }');
+  }
+  return L;
+}
+
+function genTestCode(S){
+  const M = S.modules, vm = S.motion.vm, a = S.motion.a, ad = S.motion.ad;
+  return [
+    '// TU:bit V2 軸向測試程式：放在空地，按 A 鍵後依序觀察',
+    '// 1. 第一段應「前進 20 cm」  2. 第二段應「右移 20 cm」  3. 第三段應「逆時針轉 90°」',
+    '// 若方向不同，到「參數 > 座標換算」勾選對應的反向或改軸向後再產生程式',
+    '#include <Arduino.h>', '#include <TuBitCore.h>', '#include <Wire.h>',
+    M.bno ? '#include <EasyBNO055_ESP.h>' : null, '#include <TuMTC.h>', '',
+    'TuBitCore tubit;', 'TuMTC mtc(tubit);', M.bno ? 'EasyBNO055_ESP bno;' : null, '',
+    'void setup() {', '  tubit.init();', M.bno ? '  bno.start();' : null, '}', '',
+    'void loop() {', '  if (tubit.readButton(Button_A)) {',
+    `    mtc.moveSCurve(0, 20, 0, ${vm}, ${a}, -${ad}, 0, 0);   // 測試 1：Y = 20`, '    delay(1500);',
+    `    mtc.moveSCurve(20, 0, 0, ${vm}, ${a}, -${ad}, 0, 0);   // 測試 2：X = 20`, '    delay(1500);',
+    `    mtc.moveSCurve(0, 0, 90, ${vm}, ${a}, -${ad}, 0, 0);   // 測試 3：Z = 90`, '    delay(1500);',
+    `    mtc.moveSCurve(0, 0, -90, ${vm}, ${a}, -${ad}, 0, 0);`,
+    `    mtc.moveSCurve(-20, -20, 0, ${vm}, ${a}, -${ad}, 0, 0);   // 回到原點`,
+    '  }', '}',
+  ].filter(l => l !== null).join('\n');
+}
+
+/* ================= 賽規檢查 ================= */
+function ruleChecks(S, sim){
+  const R = ROBOTS[S.rtype], out = [];
+  const push = (lv, t) => out.push({lv, t});
+  const sizeOk = S.robot.w <= R.maxW && S.robot.l <= R.maxL;
+  push(sizeOk ? 'ok' : 'bad', `車體 ${S.robot.w}×${S.robot.l} cm（${R.name}上限 ${R.maxW}×${R.maxL} cm${S.rtype === 'targetShooter' ? '、高 20 cm' : ''}）`);
+  const hitSegs = sim.segs.filter(s => s.hits.length);
+  if (!sim.segs.length) push('warn', '尚未規劃任何移動');
+  else if (hitSegs.length){
+    const LB = stepLabels(S);
+    const idx = hitSegs.map(sg => LB[S.steps.findIndex(s => s.id === sg.stepId)]);
+    push('bad', `路徑點 ${idx.join('、')} 車體會碰到障礙物${hitSegs.some(s => s.oob) ? '或超出場地' : ''}（畫布上紅色車框）`);
+  } else push('ok', '所有移動段都沒有碰撞（以目前車體尺寸取樣每 2 cm 檢查）');
+  const lim = R.limit;
+  if (S.game === 'custom'){
+    push('ok', `自訂場地 ${S.field.W}×${S.field.H} cm，估算 ${sim.total.toFixed(1)} 秒`);
+  } else if (S.game === 'energy'){
+    push(sim.total <= lim * 0.6 ? 'ok' : (sim.total <= lim ? 'warn' : 'bad'),
+      `自動化估算 ${sim.total.toFixed(1)} 秒；每回合 ${lim} 秒，自動化時間不限但會吃掉機器人 A 手動搬運的時間`);
+    push(sim.triggerDone ? 'ok' : 'warn', sim.triggerDone ? '齒輪物資已放到本方觸發閘門裝置上（模擬判定）' : '尚未把齒輪物資放到觸發閘門裝置上；未開閘門時平局比序會輸給有開閘門的隊伍');
+  } else {
+    push(sim.total <= lim ? 'ok' : 'bad', `估算 ${sim.total.toFixed(1)} 秒；每回合 ${lim} 秒（另有 1 分鐘擺放標靶）`);
+  }
+  push(sim.multiGrab ? 'bad' : 'ok', sim.multiGrab ? '有一次夾取到 2 個以上物資：違反「每次僅得夾取 1 個」，該次不計分並每顆扣 1 分' : '每次夾取最多 1 個物資');
+  if (sim.doubleClose) push('warn', '夾爪在已夾緊狀態下再次夾緊，請確認中間是否漏了「張開」');
+  if (S.rtype === 'targetShooter') push(sim.neutralShooter ? 'bad' : 'ok', sim.neutralShooter ? '射擊機器人路徑進入中立物資區：越界警告且所得分數不計' : '射擊機器人未越過中立物資區');
+  if (S.rtype === 'targetArm') push(sim.crossLine ? 'bad' : 'ok', sim.crossLine ? '手臂機器人路徑跨到對方陣線：警告，情節重大取消該回合' : '手臂機器人未跨到對方陣線');
+  if (S.modules.atarm && S.modules.ppgun) push('warn', 'ATARM 與 PPGUN 同時啟用：兩者預設都用 S0，請確認腳位不衝突，且 ATARM_INIT 要放在 PPGUN_INIT 之後');
+  const servos = (S.modules.atarm ? 3 : 0) + (S.modules.ppgun ? 3 : 0);
+  push(servos <= 5 ? 'ok' : 'bad', `伺服馬達 ${servos} 顆（上限 5 顆、扭力 20 kg 以下）`);
+  push('ok', '電池以標示 7.4V 以下為準，不得使用升壓板；直流馬達 8V 以下' + (/Shooter/.test(S.rtype) ? '最多 6 顆' : '最多 4 顆'));
+  if (S.remote.type === 'none') push('warn', S.game === 'energy' ? '機器人 A 必須同時具備遙控及夾取功能：到「感測元件」選 PS3 或 V7RC 遙控' : '兩台機器人都必須具備遙控功能：到「感測元件」選 PS3 或 V7RC 遙控');
+  else push('ok', `已加入 ${S.remote.type === 'ps3' ? 'PS3 搖桿' : 'V7RC 藍牙'} 遙控${S.game === 'energy' ? '；自動化結束、裁判確認後按 B 鍵才會開始遙控' : ''}`);
+  const skipped = [];
+  const LB2 = stepLabels(S);
+  S.steps.forEach((s, i) => {
+    if ((s.type === 'claw' || s.type === 'lift' || s.type === 'pan') && !S.modules.atarm) skipped.push(LB2[i]);
+    if (s.type === 'align' && !S.modules.irAlign) skipped.push(LB2[i]);
+    if (s.type === 'fire' && !S.modules.ppgun) skipped.push(LB2[i]);
+  });
+  if (skipped.length) push('warn', `步驟 ${skipped.join('、')} 需要的元件沒有勾選，程式中已略過（改成註解）`);
+  const turns = S.steps.some(s => s.type === 'turn' || (s.type === 'move' && s.fix));
+  if (turns && !S.modules.bno) push('bad', '有轉正步驟但沒有勾選 BNO055');
+  if (S.modules.ultra && S.modules.sharp) push('ok', `測距中斷使用${distSrc(S.modules) === 'ultra' ? '超聲波' : '夏普紅外線'}`);
+  if (S.modules.husky && S.modules.bno) push('warn', 'HuskyLens 與 BNO055 共用 I2C，請確認接線與位址不衝突');
+  return out;
+}
+
+/* ================= 以下為瀏覽器介面 ================= */
+if (typeof document !== 'undefined') (function(){
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+let S = null;
+let history = [];
+let sim = null;
+let sel = null;            // {kind:'obj'|'step'|'start', id}
+let mode = 'select';
+let view = {scale:2, ox:0, oy:0};
+let hover = null;
+let drag = null;
+let anim = null;           // {t, last, playing}
+let testMode = false;
+let spaceDown = false;
+
+function load(){
+  try { const raw = localStorage.getItem(STORE_KEY); if (raw){ const o = JSON.parse(raw); if (o && o.v === 1 && o.objects && o.rtype) return upgradeState(o); } } catch(e){}
+  return newState('energy', 'energyA');
+}
+let saveT = 0;
+function save(){ clearTimeout(saveT); saveT = setTimeout(() => { try { localStorage.setItem(STORE_KEY, JSON.stringify(S)); } catch(e){} }, 300); }
+function snapshot(){ history.push(JSON.stringify(S)); if (history.length > 60) history.shift(); }
+function undo(){ if (!history.length) return toast('沒有可復原的動作'); S = JSON.parse(history.pop()); sel = null; refreshAll(); }
+function toast(t){ const el = $('#toast'); el.textContent = t; el.classList.add('show'); clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove('show'), 1800); }
+function css(name){ return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+
+/* ---------- 畫布 ---------- */
+const cv = $('#cv'), ctx = cv.getContext('2d');
+function resize(){
+  const r = $('#wrap').getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+  cv.width = Math.max(1, r.width * dpr); cv.height = Math.max(1, r.height * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  draw();
+}
+function fit(){
+  const r = $('#wrap').getBoundingClientRect(), W = S.field.W, H = S.field.H;
+  view.scale = Math.max(0.5, Math.min((r.width - 60) / W, (r.height - 50) / H));
+  view.ox = (r.width - W * view.scale) / 2 + 10;
+  view.oy = (r.height + H * view.scale) / 2;
+  draw();
+}
+const toS = (x, y) => ({x:view.ox + x * view.scale, y:view.oy - y * view.scale});
+const toW = (sx, sy) => ({x:(sx - view.ox) / view.scale, y:(view.oy - sy) / view.scale});
+function snapPt(p){ const g = num(S.ui.snap, 1) || 1; return {x:Math.round(p.x / g) * g, y:Math.round(p.y / g) * g}; }
+
+function colorOf(o){
+  if (o.color && COLORS[o.color]) return COLORS[o.color].hex;
+  if (o.team === 'red') return css('--red');
+  if (o.team === 'blue') return css('--blue');
+  return css('--mute');
+}
+function rectPath(o){ const a = toS(o.x, o.y + o.h); ctx.rect(a.x, a.y, o.w * view.scale, o.h * view.scale); }
+function polyPath(poly){ ctx.beginPath(); poly.forEach((p, i) => { const s = toS(p.x, p.y); i ? ctx.lineTo(s.x, s.y) : ctx.moveTo(s.x, s.y); }); ctx.closePath(); }
+
+function draw(){
+  if (!S) return;
+  const r = $('#wrap').getBoundingClientRect();
+  ctx.clearRect(0, 0, r.width, r.height);
+  const W = S.field.W, H = S.field.H, sc = view.scale;
+  // 地墊
+  const o0 = toS(0, H);
+  ctx.fillStyle = css('--mat'); ctx.fillRect(o0.x, o0.y, W * sc, H * sc);
+  // 格線
+  const lines = (step, color, w) => {
+    ctx.strokeStyle = color; ctx.lineWidth = w; ctx.beginPath();
+    for (let x = 0; x <= W; x += step){ const a = toS(x, 0), b = toS(x, H); ctx.moveTo(Math.round(a.x) + .5, a.y); ctx.lineTo(Math.round(b.x) + .5, b.y); }
+    for (let y = 0; y <= H; y += step){ const a = toS(0, y), b = toS(W, y); ctx.moveTo(a.x, Math.round(a.y) + .5); ctx.lineTo(b.x, Math.round(b.y) + .5); }
+    ctx.stroke();
+  };
+  if (S.ui.grid1 && sc >= 5) lines(1, css('--g1'), 1);
+  if (sc >= 2) lines(5, css('--g5'), 1);
+  lines(10, css('--g10'), 1);
+  lines(50, css('--g50'), 1);
+  // 刻度
+  ctx.fillStyle = css('--mute'); ctx.font = '11px "Noto Sans TC",sans-serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+  for (let x = 0; x <= W; x += 50){ const p = toS(x, 0); ctx.fillText(x, p.x, p.y + 4); }
+  ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+  for (let y = 0; y <= H; y += 50){ const p = toS(0, y); ctx.fillText(y, p.x - 5, p.y); }
+  // 物件
+  const order = ['zone', 'drop', 'trigger', 'gate', 'wall', 'target', 'item'];
+  const objs = S.objects.slice().sort((a, b) => order.indexOf(a.type) - order.indexOf(b.type));
+  for (const o of objs){
+    const c = colorOf(o);
+    ctx.save();
+    if (o.type === 'zone'){
+      ctx.globalAlpha = o.kind === 'neutral' ? .14 : .12; ctx.fillStyle = o.kind === 'neutral' ? '#7A3FB0' : c;
+      ctx.beginPath(); rectPath(o); ctx.fill();
+      ctx.globalAlpha = .9; ctx.strokeStyle = o.kind === 'neutral' ? '#7A3FB0' : c; ctx.lineWidth = 1.5;
+      ctx.setLineDash(o.kind === 'tzone' ? [5, 4] : []); ctx.stroke();
+      if (sc > 1.4 && o.h > 10){ const tp = toS(o.x + 2, o.y + o.h - 2); ctx.globalAlpha = .85; ctx.fillStyle = ctx.strokeStyle; ctx.font = '11px "Noto Sans TC",sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'top'; ctx.fillText(o.label, tp.x, tp.y); }
+    } else if (o.type === 'drop'){
+      ctx.fillStyle = css('--mat'); ctx.strokeStyle = c; ctx.lineWidth = Math.max(2, sc * 1.2);
+      ctx.beginPath(); rectPath(o); ctx.fill(); ctx.stroke();
+    } else if (o.type === 'trigger'){
+      ctx.fillStyle = '#3B4150'; ctx.beginPath(); rectPath(o); ctx.fill();
+      const cc = toS(o.x + o.w / 2, o.y + o.h / 2); ctx.strokeStyle = '#5FB7FF'; ctx.lineWidth = Math.max(1.5, sc * .8);
+      ctx.beginPath(); ctx.arc(cc.x, cc.y, o.w * .3 * sc, 0, Math.PI * 2); ctx.stroke();
+    } else if (o.type === 'gate'){
+      ctx.fillStyle = c; ctx.globalAlpha = o.solid ? 1 : .35; ctx.beginPath(); rectPath(o); ctx.fill();
+      ctx.setLineDash([4, 3]); ctx.strokeStyle = css('--wall'); ctx.lineWidth = 1; ctx.stroke();
+    } else if (o.type === 'wall'){
+      ctx.fillStyle = css('--wall'); ctx.beginPath(); rectPath(o); ctx.fill();
+    } else if (o.type === 'target'){
+      ctx.fillStyle = c; ctx.beginPath(); rectPath(o); ctx.fill();
+    } else if (o.type === 'item'){
+      const cc = toS(o.x + o.w / 2, o.y + o.h / 2), rr = Math.max(2.5, o.w / 2 * sc);
+      ctx.fillStyle = c; ctx.beginPath(); ctx.arc(cc.x, cc.y, rr, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,.7)'; ctx.lineWidth = 1; ctx.stroke();
+      if (o.color === 'gear' && rr > 4){ ctx.strokeStyle = '#3A2A00'; ctx.beginPath(); ctx.arc(cc.x, cc.y, rr * .45, 0, Math.PI * 2); ctx.stroke(); }
+    }
+    if (sel && sel.kind === 'obj' && sel.id === o.id){
+      ctx.globalAlpha = 1; ctx.setLineDash([]); ctx.strokeStyle = css('--gear'); ctx.lineWidth = 2;
+      const a = toS(o.x, o.y + o.h); ctx.strokeRect(a.x - 3, a.y - 3, o.w * sc + 6, o.h * sc + 6);
+    }
+    ctx.restore();
+  }
+  // 路徑
+  drawPath();
+  placeWpBar();
+  // 新障礙預覽
+  if (drag && drag.kind === 'newwall' && drag.cur){
+    const x = Math.min(drag.a.x, drag.cur.x), y = Math.min(drag.a.y, drag.cur.y), w = Math.abs(drag.cur.x - drag.a.x), h = Math.abs(drag.cur.y - drag.a.y);
+    ctx.save(); ctx.globalAlpha = .6; ctx.fillStyle = css('--wall'); ctx.beginPath(); rectPath({x, y, w, h}); ctx.fill(); ctx.restore();
+    ctx.fillStyle = css('--ink'); ctx.font = '12px "Noto Sans TC",sans-serif'; const t = toS(x + w, y + h); ctx.textAlign = 'left'; ctx.fillText(`${w}×${h} cm`, t.x + 6, t.y);
+  }
+  // 游標十字
+  if (hover && (mode === 'path' || mode === 'wall' || mode === 'item')){
+    const p = snapPt(hover), s = toS(p.x, p.y);
+    ctx.strokeStyle = css('--gear'); ctx.lineWidth = 1; ctx.beginPath();
+    ctx.moveTo(s.x - 8, s.y); ctx.lineTo(s.x + 8, s.y); ctx.moveTo(s.x, s.y - 8); ctx.lineTo(s.x, s.y + 8); ctx.stroke();
+  }
+}
+
+function drawRobot(p, opt){
+  const poly = robotPoly(S, p.x, p.y, p.h);
+  ctx.save();
+  polyPath(poly);
+  if (opt.fill){ ctx.fillStyle = opt.fill; ctx.globalAlpha = opt.alpha || 1; ctx.fill(); ctx.globalAlpha = 1; }
+  ctx.strokeStyle = opt.stroke; ctx.lineWidth = opt.lw || 1.5; ctx.setLineDash(opt.dash || []); ctx.stroke();
+  // 車頭與夾爪
+  const F = fwdVec(p.h), c = toS(p.x, p.y), fr = toS(p.x + F.x * S.robot.l / 2, p.y + F.y * S.robot.l / 2);
+  ctx.setLineDash([]); ctx.beginPath(); ctx.moveTo(c.x, c.y); ctx.lineTo(fr.x, fr.y); ctx.stroke();
+  const cp = clawPoint(S, p), cs = toS(cp.x, cp.y);
+  ctx.beginPath(); ctx.arc(cs.x, cs.y, Math.max(2.5, 2.5 * view.scale), 0, Math.PI * 2);
+  if (opt.clawClosed){ ctx.fillStyle = opt.stroke; ctx.fill(); } else ctx.stroke();
+  ctx.restore();
+}
+
+function drawPath(){
+  const pathC = css('--path'), bad = css('--bad'), gear = css('--gear');
+  // 掃過範圍
+  if (S.ui.sweep){
+    ctx.save(); ctx.globalAlpha = .045; ctx.fillStyle = pathC;
+    for (const seg of sim.segs){
+      const n = Math.max(2, Math.ceil(seg.len / 4));
+      for (let i = 0; i <= n; i++){ const p = segPoint(seg, i / n); polyPath(robotPoly(S, p.x, p.y, p.h)); ctx.fill(); }
+    }
+    ctx.restore();
+  }
+  // 路徑線
+  ctx.save(); ctx.lineWidth = 2;
+  for (const seg of sim.segs){
+    ctx.strokeStyle = seg.hits.length ? bad : pathC;
+    ctx.beginPath(); const a = toS(seg.from.x, seg.from.y); ctx.moveTo(a.x, a.y);
+    if (seg.curve){ const c = toS(seg.ctrl.x, seg.ctrl.y), b = toS(seg.to.x, seg.to.y); ctx.quadraticCurveTo(c.x, c.y, b.x, b.y); }
+    else { const b = toS(seg.to.x, seg.to.y); ctx.lineTo(b.x, b.y); }
+    ctx.stroke();
+  }
+  ctx.restore();
+  // 碰撞位置
+  for (const seg of sim.segs) if (seg.hits.length){
+    const h = seg.hits[0]; drawRobot(h, {stroke:bad, lw:2, fill:bad, alpha:.15});
+  }
+  // 起點
+  drawRobot(S.robot.start, {stroke:gear, lw:2, dash:[5, 3], fill:gear, alpha:sel && sel.kind === 'start' ? .25 : .08});
+  // 路徑點
+  let idx = 0;
+  const SHORT = {claw:null, lift:null, pan:'轉爪', turn:'轉正', align:'IR', wait:'等', fire:'射', code:'碼'};
+  S.steps.forEach((s, i) => {
+    const ps = sim.pose[i]; if (!ps) return;
+    if (s.type === 'move'){
+      idx++;
+      // 收集到點動作
+      const acts = [];
+      for (let j = i + 1; j < S.steps.length && S.steps[j].type !== 'move'; j++){
+        const a = S.steps[j]; acts.push(a.type === 'claw' ? (a.close ? '夾' : '放') : a.type === 'lift' ? (liftName(S, a) === '下降' ? '降' : '抬') : SHORT[a.type]);
+      }
+      const p = ps.after, isSel = sel && sel.kind === 'step' && sel.id === s.id;
+      if (S.ui.ghosts || isSel) drawRobot(p, {stroke:isSel ? gear : pathC, lw:isSel ? 2 : 1, dash:isSel ? [] : [3, 3], clawClosed:ps.clawClosed});
+      const c = toS(p.x, p.y);
+      ctx.beginPath(); ctx.arc(c.x, c.y, isSel ? 11 : 10, 0, Math.PI * 2);
+      ctx.fillStyle = isSel ? gear : pathC; ctx.fill();
+      ctx.fillStyle = isSel ? css('--gearInk') : css('--mat'); ctx.font = 'bold 9px "Noto Sans TC",sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('P' + idx, c.x, c.y + .5);
+      if (acts.length){
+        const txt = acts.join('·');
+        ctx.font = '11px "Noto Sans TC",sans-serif';
+        const tw = ctx.measureText(txt).width + 8;
+        ctx.fillStyle = css('--gear'); ctx.globalAlpha = .92;
+        ctx.fillRect(c.x + 12, c.y - 8, tw, 16); ctx.globalAlpha = 1;
+        ctx.fillStyle = css('--gearInk'); ctx.textAlign = 'left'; ctx.fillText(txt, c.x + 16, c.y + .5);
+      }
+    } else if (s.type === 'align' && s.reset){
+      const p = ps.after; drawRobot(p, {stroke:css('--blue'), lw:1.5, dash:[2, 2]});
+    } else if (sel && sel.kind === 'step' && sel.id === s.id){
+      drawRobot(ps.after, {stroke:gear, lw:2, clawClosed:ps.clawClosed});
+    }
+  });
+  // 動畫中的車
+  if (anim){
+    const st = poseAtTime(anim.t);
+    drawRobot(st.pose, {stroke:css('--ink'), lw:2.5, fill:gear, alpha:.55, clawClosed:st.clawClosed});
+  }
+}
+
+function poseAtTime(t){
+  let pose = Object.assign({}, S.robot.start), claw = false;
+  for (const ev of sim.timeline){
+    if (t < ev.t0) break;
+    const u = ev.dur > 0 ? clamp((t - ev.t0) / ev.dur, 0, 1) : 1;
+    if (ev.kind === 'move'){ const e = u * u * (3 - 2 * u); pose = segPoint(ev.seg, e); if (u >= 1) pose = Object.assign({}, ev.seg.to); }
+    else { pose = Object.assign({}, ev.pose); if (u >= 1) claw = ev.clawClosed; }
+  }
+  return {pose, clawClosed:claw};
+}
+
+/* ---------- 到點動作工具列 ---------- */
+function selMove(){ if (!sel || sel.kind !== 'step') return null; const s = S.steps.find(x => x.id === sel.id); return s && s.type === 'move' ? s : null; }
+let wpDirty = true;
+function renderWpBar(s){
+  const i = S.steps.indexOf(s), LB = stepLabels(S);
+  $('#wpTitle').textContent = `${LB[i]} 到點動作（${fmt(s.x)}, ${fmt(s.y)}）`;
+  if (document.activeElement !== $('#wpH')) $('#wpH').value = fmt(num(s.h));
+  const rows = [];
+  for (let j = i + 1; j < S.steps.length && S.steps[j].type !== 'move'; j++){
+    const a = S.steps[j]; let ed = '';
+    if (a.type === 'claw') ed = `<select data-af="close"><option value="1" ${a.close ? 'selected' : ''}>夾緊</option><option value="0" ${!a.close ? 'selected' : ''}>張開</option></select>`;
+    else if (a.type === 'lift') ed = `<input type="number" data-af="deg" value="${num(a.deg)}" min="0" max="65" title="抬升角度 0–65°">`;
+    else if (a.type === 'pan') ed = `<input type="number" data-af="deg" value="${num(a.deg)}" min="55" max="125" title="夾爪旋轉角度 55–125°">`;
+    else if (a.type === 'turn') ed = `<input type="number" data-af="h" value="${num(a.h)}" step="15" title="車頭角度">`;
+    else if (a.type === 'wait') ed = `<input type="number" data-af="ms" value="${num(a.ms)}" step="100" title="毫秒">`;
+    else if (a.type === 'align') ed = `<select data-af="main">${IR_DIRS.map(d => `<option value="${d}" ${a.main === d ? 'selected' : ''}>主${IR_NAMES[d]}</option>`).join('')}</select>`;
+    const unit = {lift:'°', pan:'°', turn:'°', wait:'ms'}[a.type] || '';
+    rows.push(`<div class="ar" data-aid="${a.id}"><span class="k">${j - i}</span><span>${stepName(S, a)}</span><span>${ed}${unit ? ' ' + unit : ''}</span><button class="x" data-adel title="刪除這個動作" aria-label="刪除">✕</button></div>`);
+  }
+  $('#wpActs').innerHTML = rows.length ? rows.join('') : '到這個點後還沒有動作，按上方按鈕加入。';
+  $('#wpBar').dataset.mv = s.id; wpDirty = false;
+}
+function placeWpBar(){
+  const bar = $('#wpBar'), s = selMove();
+  if (!s || anim || (drag && drag.kind === 'wp' && drag.moved)){ bar.hidden = true; return; }
+  const i = S.steps.indexOf(s), ps = sim.pose[i]; if (!ps){ bar.hidden = true; return; }
+  if (wpDirty || bar.dataset.mv !== s.id || bar.hidden) renderWpBar(s);
+  bar.hidden = false;
+  const r = $('#wrap').getBoundingClientRect(), c = toS(ps.after.x, ps.after.y);
+  const bw = bar.offsetWidth, bh = bar.offsetHeight;
+  let x = c.x + 26, y = c.y - bh / 2;
+  if (x + bw > r.width - 8) x = c.x - bw - 26;
+  x = clamp(x, 8, Math.max(8, r.width - bw - 8)); y = clamp(y, 8, Math.max(8, r.height - bh - 8));
+  bar.style.left = x + 'px'; bar.style.top = y + 'px';
+}
+let wpSnap = false;
+$('#wpBar').addEventListener('focusin', () => { wpSnap = false; });
+$('#wpBar').addEventListener('input', e => {
+  const mv = selMove(); if (!mv) return;
+  if (!wpSnap){ snapshot(); wpSnap = true; }
+  if (e.target.id === 'wpH'){ mv.h = normDeg(num(e.target.value)); if (mv.h === -180) mv.h = 180; }
+  else {
+    const row = e.target.closest('[data-aid]'), f = e.target.dataset.af; if (!row || !f) return;
+    const a = S.steps.find(x => x.id === row.dataset.aid); if (!a) return;
+    if (f === 'close') a.close = e.target.value === '1';
+    else if (f === 'main') a.main = e.target.value;
+    else a[f] = num(e.target.value);
+  }
+  changed(false); renderSteps();
+});
+$('#wpBar').addEventListener('focusout', () => { wpSnap = false; });
+$('#wpClose').onclick = () => { sel = null; renderSteps(); draw(); };
+$('#wpBar').addEventListener('pointerdown', e => e.stopPropagation());
+$('#wpBar').addEventListener('click', e => {
+  const mv0 = selMove(); if (!mv0) return;
+  if (e.target.closest('[data-adel]')){
+    const id = e.target.closest('[data-aid]').dataset.aid;
+    snapshot(); S.steps = S.steps.filter(x => x.id !== id); sel = {kind:'step', id:mv0.id}; changed(true); toast('已刪除這個動作'); return;
+  }
+  const hb = e.target.closest('[data-hd],[data-hs]');
+  if (hb){
+    snapshot();
+    let h = hb.dataset.hs != null ? num(hb.dataset.hs) : normDeg(num(mv0.h) + num(hb.dataset.hd));
+    if (h === -180) h = 180; mv0.h = h; $('#wpH').value = h; changed(true); return;
+  }
+  const b = e.target.closest('[data-wp]'); const mv = mv0; if (!b) return;
+  const k = b.dataset.wp; snapshot();
+  const end = groupEnd(mv.id) + 1, start = S.steps.indexOf(mv);
+  const A = (o) => Object.assign({id:uid()}, o);
+  if (k === 'del'){
+    S.steps.splice(start, end - start); sel = null; changed(true); toast('已刪除路徑點與它的到點動作'); return;
+  }
+  if (k === 'grab'){
+    // 到點前先張開＋放低，到點後夾緊＋抬起
+    S.steps.splice(start, 0, A({type:'claw', close:false, sec:0}), A({type:'lift', deg:S.arm.liftDown, sec:0}));
+    const e2 = groupEnd(mv.id) + 1;
+    S.steps.splice(e2, 0, A({type:'claw', close:true, sec:0}), A({type:'lift', deg:S.arm.liftUp, sec:0}));
+    toast('已設定：移動前張開放低，到點後夾緊抬起');
+  } else if (k === 'place'){
+    S.steps.splice(end, 0, A({type:'lift', deg:S.arm.liftPlace, sec:0}), A({type:'claw', close:false, sec:0}), A({type:'lift', deg:S.arm.liftUp, sec:0}));
+    toast('已設定：到點後放低、張開、抬起');
+  } else {
+    const map = {clawClose:{type:'claw', close:true, sec:0}, clawOpen:{type:'claw', close:false, sec:0}, lift:{type:'lift', deg:S.arm.liftUp, sec:0}, lower:{type:'lift', deg:S.arm.liftDown, sec:0},
+      pan:{type:'pan', deg:90, sec:0}, turn:{type:'turn', h:mv.h}, align:{type:'align', main:'IR_L', sub:'IR_UP', reset:false, rx:Math.round(mv.x), ry:Math.round(mv.y), rh:mv.h},
+      wait:{type:'wait', ms:500}, fire:{type:'fire'}};
+    S.steps.splice(end, 0, A(map[k]));
+  }
+  sel = {kind:'step', id:mv.id};
+  changed(true);
+});
+
+/* ---------- 互動 ---------- */
+function hitObject(w){
+  const order = ['item', 'target', 'trigger', 'gate', 'drop', 'wall', 'zone'];
+  const cand = S.objects.filter(o => inRect(w, o, o.type === 'item' ? Math.max(1.5, 6 / view.scale) : 0));
+  cand.sort((a, b) => order.indexOf(a.type) - order.indexOf(b.type));
+  return cand[0] || null;
+}
+function hitWaypoint(sx, sy){
+  for (let i = S.steps.length - 1; i >= 0; i--){
+    const s = S.steps[i]; if (s.type !== 'move' || !sim.pose[i]) continue;
+    const p = toS(sim.pose[i].after.x, sim.pose[i].after.y);
+    if (Math.hypot(p.x - sx, p.y - sy) <= 13) return s;
+  }
+  return null;
+}
+function endPose(){ return sim.end; }
+function facing(from, target){
+  let h = deg(Math.atan2(-(target.x - from.x), target.y - from.y));
+  if (S.ui.snap90) h = Math.round(h / 90) * 90;
+  return normDeg(h) === -180 ? 180 : normDeg(h);
+}
+function newMove(x, y, h){ return {id:uid(), type:'move', x:Math.round(x * 10) / 10, y:Math.round(y * 10) / 10, h, curve:false, bulge:0, vm:'', a:'', ad:'', stopCm:0}; }
+function groupEnd(moveId){   // 這個路徑點最後一個到點動作的位置
+  let i = S.steps.findIndex(s => s.id === moveId); if (i < 0) return S.steps.length - 1;
+  while (i + 1 < S.steps.length && S.steps[i + 1].type !== 'move') i++;
+  return i;
+}
+function insertSteps(arr, at, keepSel){
+  if (at == null){
+    at = S.steps.length;
+    if (sel && sel.kind === 'step'){ const i = S.steps.findIndex(s => s.id === sel.id); if (i >= 0) at = i + 1; }
+  }
+  S.steps.splice(at, 0, ...arr);
+  if (!keepSel) sel = {kind:'step', id:arr[arr.length - 1].id};
+}
+function addGrab(item){
+  const L = endPose(), c = center(item), h = facing(L, c), F = fwdVec(h);
+  const off = S.robot.clawOff;
+  snapshot();
+  insertSteps([
+    {id:uid(), type:'claw', close:false, sec:0},
+    {id:uid(), type:'lift', deg:S.arm.liftDown, sec:0},
+    newMove(c.x - F.x * off, c.y - F.y * off, h),
+    {id:uid(), type:'claw', close:true, sec:0},
+    {id:uid(), type:'lift', deg:S.arm.liftUp, sec:0},
+  ], S.steps.length, true);
+  const mv = S.steps[S.steps.length - 3]; sel = {kind:'step', id:mv.id};
+  changed(true); toast(`已加入夾取「${item.label || '物資'}」的 5 個步驟`);
+}
+function addPlace(obj){
+  const L = endPose(), c = center(obj), h = facing(L, c), F = fwdVec(h);
+  const off = S.robot.clawOff, back = num(S.ui.backoff, 10);
+  snapshot();
+  const arr = [
+    newMove(c.x - F.x * off, c.y - F.y * off, h),
+    {id:uid(), type:'lift', deg:S.arm.liftPlace, sec:0},
+    {id:uid(), type:'claw', close:false, sec:0},
+    {id:uid(), type:'lift', deg:S.arm.liftUp, sec:0},
+  ];
+  if (back > 0) arr.push(newMove(c.x - F.x * (off + back), c.y - F.y * (off + back), h));
+  insertSteps(arr, S.steps.length, true); sel = {kind:'step', id:arr[0].id};
+  changed(true); toast(`已加入放置到「${obj.label}」的動作`);
+}
+
+cv.addEventListener('pointerdown', e => {
+  cv.setPointerCapture(e.pointerId);
+  const r = cv.getBoundingClientRect(), sx = e.clientX - r.left, sy = e.clientY - r.top, w = toW(sx, sy), sp = snapPt(w);
+  if (e.button === 1 || mode === 'pan' || spaceDown){ drag = {kind:'pan', sx, sy, ox:view.ox, oy:view.oy}; return; }
+  if (mode === 'select'){
+    const wp = hitWaypoint(sx, sy);
+    if (wp){ snapshot(); sel = {kind:'step', id:wp.id}; drag = {kind:'wp', step:wp, moved:false}; renderSteps(); draw(); return; }
+    if (polysHit(robotPoly(S, S.robot.start.x, S.robot.start.y, S.robot.start.h), [{x:w.x-.1,y:w.y-.1},{x:w.x+.1,y:w.y-.1},{x:w.x+.1,y:w.y+.1},{x:w.x-.1,y:w.y+.1}])){
+      snapshot(); sel = {kind:'start'}; drag = {kind:'start', dx:w.x - S.robot.start.x, dy:w.y - S.robot.start.y}; draw(); return;
+    }
+    const o = hitObject(w);
+    if (o){ snapshot(); sel = {kind:'obj', id:o.id}; drag = {kind:'obj', obj:o, dx:w.x - o.x, dy:w.y - o.y}; renderObjects(); draw(); return; }
+    sel = null; renderObjects(); renderSteps(); draw(); return;
+  }
+  if (mode === 'path'){
+    const wp2 = hitWaypoint(sx, sy);
+    if (wp2){ snapshot(); sel = {kind:'step', id:wp2.id}; drag = {kind:'wp', step:wp2, moved:false}; renderSteps(); draw(); return; }
+    const o = hitObject(w);
+    if (o && o.type === 'item') return addGrab(o);
+    if (o && (o.type === 'drop' || o.type === 'trigger')) return addPlace(o);
+    const L = endPose();
+    snapshot(); insertSteps([newMove(sp.x, sp.y, L.h)], S.steps.length); changed(true); return;
+  }
+  if (mode === 'wall'){ drag = {kind:'newwall', a:sp, cur:sp}; return; }
+  if (mode === 'item'){
+    snapshot();
+    const c = S.ui.color;
+    S.objects.push(mk({type:'item', shape:'circle', x:sp.x - 2.5, y:sp.y - 2.5, w:5, h:5, color:c, label:(COLORS[c] || {}).name || '物資'}));
+    changed(true); return;
+  }
+});
+cv.addEventListener('pointermove', e => {
+  const r = cv.getBoundingClientRect(), sx = e.clientX - r.left, sy = e.clientY - r.top, w = toW(sx, sy);
+  hover = w;
+  const sp = snapPt(w);
+  $('#stCur').textContent = `(${sp.x}, ${sp.y}) cm`;
+  if (!drag){ if (mode !== 'select') draw(); return; }
+  if (drag.kind === 'pan'){ view.ox = drag.ox + sx - drag.sx; view.oy = drag.oy + sy - drag.sy; draw(); return; }
+  if (drag.kind === 'wp'){ drag.step.x = sp.x; drag.step.y = sp.y; drag.moved = true; recompute(); return; }
+  if (drag.kind === 'start'){ const p = snapPt({x:w.x - drag.dx, y:w.y - drag.dy}); S.robot.start.x = p.x; S.robot.start.y = p.y; drag.moved = true; recompute(); return; }
+  if (drag.kind === 'obj'){ const p = snapPt({x:w.x - drag.dx, y:w.y - drag.dy}); drag.obj.x = p.x; drag.obj.y = p.y; drag.moved = true; recompute(); return; }
+  if (drag.kind === 'newwall'){ drag.cur = sp; draw(); }
+});
+cv.addEventListener('pointerup', () => {
+  if (!drag) return;
+  if (drag.kind === 'newwall'){
+    const a = drag.a, b = drag.cur, x = Math.min(a.x, b.x), y = Math.min(a.y, b.y), w = Math.abs(b.x - a.x), h = Math.abs(b.y - a.y);
+    if (w >= 1 && h >= 1){ snapshot(); const o = mk({type:'wall', x, y, w, h, solid:true, label:'自訂障礙物'}); S.objects.push(o); sel = {kind:'obj', id:o.id}; }
+    drag = null; changed(true); return;
+  }
+  const moved = drag.moved, kind = drag.kind;
+  drag = null;
+  if (kind !== 'pan'){ if (!moved) history.pop(); changed(true); }
+});
+cv.addEventListener('pointerleave', () => { hover = null; $('#stCur').textContent = '–'; draw(); });
+cv.addEventListener('wheel', e => {
+  e.preventDefault();
+  const r = cv.getBoundingClientRect(), sx = e.clientX - r.left, sy = e.clientY - r.top;
+  zoomAt(sx, sy, e.deltaY < 0 ? 1.15 : 1 / 1.15);
+}, {passive:false});
+function zoomAt(sx, sy, f){
+  const w = toW(sx, sy);
+  view.scale = clamp(view.scale * f, 0.4, 40);
+  view.ox = sx - w.x * view.scale; view.oy = sy + w.y * view.scale; draw();
+}
+$('#zoomIn').onclick = () => { const r = $('#wrap').getBoundingClientRect(); zoomAt(r.width / 2, r.height / 2, 1.3); };
+$('#zoomOut').onclick = () => { const r = $('#wrap').getBoundingClientRect(); zoomAt(r.width / 2, r.height / 2, 1 / 1.3); };
+$('#zoomFit').onclick = fit;
+
+function setMode(m){
+  mode = m; $$('[data-mode]').forEach(b => b.classList.toggle('on', b.dataset.mode === m));
+  cv.style.cursor = m === 'pan' ? 'grab' : (m === 'select' ? 'default' : 'crosshair');
+  const hints = {
+    select:'選取模式：拖曳路徑點、起點或場地物件；按 Delete 刪除選取的物件或步驟。',
+    path:'畫路徑模式：點空白處新增路徑點（加在最後）；點既有路徑點可選取、拖曳並設定到點動作；點物資自動產生夾取；點放置區或觸發裝置自動產生放置。',
+    wall:'畫障礙模式：在場地上拖曳出矩形障礙物（以 1 cm 為單位）。',
+    item:'放物資模式：先在左側選顏色，再點場地放置 5×5 cm 物資。',
+    pan:'平移模式：拖曳移動畫面；滑鼠滾輪可縮放。'};
+  $('#stHint').innerHTML = hints[m] + ' <kbd>Q</kbd><kbd>E</kbd> 旋轉選取點車頭。';
+  draw();
+}
+$$('[data-mode]').forEach(b => b.onclick = () => setMode(b.dataset.mode));
+
+document.addEventListener('keydown', e => {
+  const typing = /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName);
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !typing){ e.preventDefault(); undo(); return; }
+  if (typing) return;
+  if (e.key === ' '){ spaceDown = true; e.preventDefault(); }
+  const k = e.key.toLowerCase();
+  if (k === 'v') setMode('select'); else if (k === 'p') setMode('path'); else if (k === 'w') setMode('wall'); else if (k === 'i') setMode('item'); else if (k === 'h') setMode('pan');
+  else if ((k === 'q' || k === 'e') && sel){
+    const d = k === 'q' ? 15 : -15;
+    if (sel.kind === 'step'){ const s = S.steps.find(x => x.id === sel.id); if (s && s.type === 'move'){ snapshot(); s.h = normDeg(num(s.h) + d); if (s.h === -180) s.h = 180; changed(true); } }
+    else if (sel.kind === 'start'){ snapshot(); S.robot.start.h = normDeg(S.robot.start.h + d); changed(true); }
+  } else if ((e.key === 'Delete' || e.key === 'Backspace') && sel){
+    snapshot();
+    if (sel.kind === 'obj') S.objects = S.objects.filter(o => o.id !== sel.id);
+    else if (sel.kind === 'step') S.steps = S.steps.filter(s => s.id !== sel.id);
+    sel = null; changed(true);
+  }
+});
+document.addEventListener('keyup', e => { if (e.key === ' ') spaceDown = false; });
+
+/* ---------- 模擬播放 ---------- */
+$('#playBtn').onclick = () => {
+  if (anim){ anim = null; $('#playBtn').textContent = '模擬執行'; draw(); return; }
+  if (!sim.timeline.length) return toast('先新增步驟再模擬');
+  anim = {t:0, last:performance.now()}; $('#playBtn').textContent = '停止';
+  const tick = now => {
+    if (!anim) return;
+    anim.t += (now - anim.last) / 1000 * num($('#speedSel').value, 1); anim.last = now;
+    $('#stTime').textContent = `${Math.min(anim.t, sim.total).toFixed(1)} / ${sim.total.toFixed(1)} 秒`;
+    draw();
+    if (anim.t >= sim.total + 0.5){ anim = null; $('#playBtn').textContent = '模擬執行'; updateStatus(); draw(); return; }
+    requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+};
+
+/* ---------- 步驟清單 ---------- */
+const TYPE_NAMES = {turn:'BNO 轉正', move:'移動', claw:'夾爪', lift:'抬升', pan:'旋轉夾爪', align:'IR 校正', wait:'等待', fire:'發射乒乓球', code:'自訂程式'};
+function stepFields(s){
+  const f = (label, key, attrs = '') => `<label class="f"><span>${label}</span><input type="number" data-f="${key}" value="${s[key] ?? ''}" ${attrs}></label>`;
+  const ck = (label, key) => `<label class="chk"><input type="checkbox" data-f="${key}" ${s[key] ? 'checked' : ''}>${label}</label>`;
+  const selIR = key => `<select data-f="${key}">${IR_DIRS.map(d => `<option value="${d}" ${s[key] === d ? 'selected' : ''}>${IR_NAMES[d]}（${d}）</option>`).join('')}</select>`;
+  switch (s.type){
+    case 'move': return `<div class="sb">${f('X cm', 'x', 'step="1"')}${f('Y cm', 'y', 'step="1"')}${f('車頭 °', 'h', 'step="15"')}
+      <label class="f"><span>&nbsp;</span>${ck('弧線', 'curve')}</label>
+      ${s.curve ? f('弧偏移 cm', 'bulge', 'step="1"') : ''}
+      ${f('速度', 'vm', `placeholder="${S.motion.vm}"`)}${f('加速', 'a', `placeholder="${S.motion.a}"`)}${f('減速', 'ad', `placeholder="${S.motion.ad}"`)}
+      ${distOn(S.modules) ? f('測距 &lt; cm 停', 'stopCm', 'step="1" min="0"') : ''}
+      <div class="wide">${ck('到點後 BNO 轉正（修正車頭偏差）', 'fix')}</div></div>`;
+    case 'turn': return `<div class="sb">${f('車頭 °', 'h', 'step="15"')}<label class="f" style="grid-column:span 3"><span>BNO 目標</span><input type="text" value="${bnoTarget(S, s.h)}°（開機方向為 0°）" disabled></label>
+      ${S.modules.bno ? '' : '<p class="hint wide">請先在「感測元件」勾選 BNO055。</p>'}</div>`;
+    case 'claw': return `<div class="sb"><label class="f" style="grid-column:span 2"><span>動作</span><select data-f="close"><option value="0" ${!s.close ? 'selected' : ''}>張開（false）</option><option value="1" ${s.close ? 'selected' : ''}>夾緊（true）</option></select></label>${f('秒數(整數)', 'sec', 'step="1" min="0"')}</div>`;
+    case 'lift': return `<div class="sb">${f('角度 0–65（小＝下降）', 'deg', 'step="1"')}${f('秒數(整數)', 'sec', 'step="1" min="0"')}</div>`;
+    case 'pan': return `<div class="sb">${f('角度 55–125', 'deg', 'step="1"')}${f('秒數(整數)', 'sec', 'step="1" min="0"')}</div>`;
+    case 'align': return `<div class="sb"><label class="f" style="grid-column:span 2"><span>主校正</span>${selIR('main')}</label><label class="f" style="grid-column:span 2"><span>次校正</span>${selIR('sub')}</label>
+      <div class="wide">${ck('校正後把位置重設為', 'reset')}</div>
+      ${s.reset ? f('X', 'rx') + f('Y', 'ry') + f('車頭 °', 'rh', 'step="15"') : ''}</div>`;
+    case 'wait': return `<div class="sb">${f('毫秒', 'ms', 'step="100" min="0"')}</div>`;
+    case 'fire': return S.modules.ppgun ? '' : `<p class="hint">請先在「感測元件」勾選乒乓球發射器。</p>`;
+    case 'code': return `<div class="sb"><div class="wide"><textarea data-f="text" spellcheck="false" placeholder="例如：tubit.setLED(...)">${(s.text || '').replace(/</g, '&lt;')}</textarea></div></div>`;
+  }
+  return '';
+}
+function renderSteps(){
+  const box = $('#steps');
+  if (!S.steps.length){ box.innerHTML = '<p class="hint">還沒有步驟。切到「畫路徑」後點場地，或用上方按鈕新增。</p>'; return; }
+  const hitIds = new Set(sim.segs.filter(s => s.hits.length).map(s => s.stepId));
+  const LB = stepLabels(S);
+  const selMv = selMove();
+  box.innerHTML = S.steps.map((s, i) => {
+    let sub = '';
+    if (s.type === 'claw') sub = s.close ? '夾緊' : '張開';
+    else if (s.type === 'align') sub = `${IR_NAMES[s.main]}／${IR_NAMES[s.sub]}`;
+    else if (s.type === 'move') sub = [s.curve ? '弧線' : '', s.fix ? '轉正' : ''].filter(Boolean).join('＋');
+    else if (s.type === 'turn') sub = fmt(num(s.h)) + '°';
+    const t = sim.durations[s.id];
+    const child = s.type !== 'move';
+    const name = s.type === 'move' ? `路徑點 ${LB[i]}` : stepName(S, s);
+    const tip = s.type === 'move' && selMv === s ? '<div class="grouphint">在畫布上的工具列加入到點動作</div>' : '';
+    return `<div class="step t-${s.type} ${child ? 'child' : ''} ${sel && sel.kind === 'step' && sel.id === s.id ? 'sel' : ''} ${hitIds.has(s.id) ? 'hit' : ''}" data-id="${s.id}">
+      <div class="sh"><span class="n">${child ? '↳' : ''}</span><span class="ty">${name}${sub ? '・' + sub : ''}</span>
+      <span class="tm">${t != null ? t.toFixed(1) + 's' : ''}</span>
+      <button class="btn small" data-act="up" aria-label="上移">↑</button><button class="btn small" data-act="down" aria-label="下移">↓</button><button class="btn small danger" data-act="del" aria-label="刪除">✕</button></div>
+      ${stepFields(s)}</div>${tip}`;
+  }).join('');
+}
+$('#steps').addEventListener('click', e => {
+  const card = e.target.closest('.step'); if (!card) return;
+  const id = card.dataset.id, i = S.steps.findIndex(s => s.id === id), act = e.target.dataset.act;
+  if (act){
+    snapshot();
+    if (act === 'del') S.steps.splice(i, 1);
+    if (act === 'up' && i > 0) [S.steps[i - 1], S.steps[i]] = [S.steps[i], S.steps[i - 1]];
+    if (act === 'down' && i < S.steps.length - 1) [S.steps[i + 1], S.steps[i]] = [S.steps[i], S.steps[i + 1]];
+    changed(true); return;
+  }
+  if (!sel || sel.id !== id){ sel = {kind:'step', id}; renderSteps(); draw(); }
+});
+let inputSnap = false;
+$('#steps').addEventListener('focusin', () => { inputSnap = false; });
+$('#steps').addEventListener('input', e => {
+  const card = e.target.closest('.step'), key = e.target.dataset.f; if (!card || !key) return;
+  const s = S.steps.find(x => x.id === card.dataset.id); if (!s) return;
+  if (!inputSnap){ snapshot(); inputSnap = true; }
+  const el = e.target;
+  if (el.type === 'checkbox') s[key] = el.checked;
+  else if (key === 'close') s[key] = el.value === '1';
+  else if (el.tagName === 'SELECT' || el.tagName === 'TEXTAREA') s[key] = el.value;
+  else s[key] = (key === 'vm' || key === 'a' || key === 'ad') && el.value === '' ? '' : num(el.value);
+  const structural = el.type === 'checkbox' || el.tagName === 'SELECT';
+  changed(structural);
+});
+$('#steps').addEventListener('focusout', () => { inputSnap = false; });
+
+$$('[data-add]').forEach(b => b.onclick = () => {
+  const L = endPose(), t = b.dataset.add; let s;
+  if (t === 'move') s = newMove(L.x, L.y + 10, L.h);
+  if (t === 'clawOpen') s = {id:uid(), type:'claw', close:false, sec:0};
+  if (t === 'clawClose') s = {id:uid(), type:'claw', close:true, sec:0};
+  if (t === 'lift') s = {id:uid(), type:'lift', deg:S.arm.liftUp, sec:0};
+  if (t === 'lower') s = {id:uid(), type:'lift', deg:S.arm.liftDown, sec:0};
+  if (t === 'pan') s = {id:uid(), type:'pan', deg:90, sec:0};
+  if (t === 'align') s = {id:uid(), type:'align', main:'IR_L', sub:'IR_UP', reset:false, rx:Math.round(L.x), ry:Math.round(L.y), rh:L.h};
+  if (t === 'turn') s = {id:uid(), type:'turn', h:L.h};
+  if (t === 'wait') s = {id:uid(), type:'wait', ms:500};
+  if (t === 'fire') s = {id:uid(), type:'fire'};
+  if (t === 'code') s = {id:uid(), type:'code', text:''};
+  snapshot(); insertSteps([s]); changed(true);
+});
+$('#clearSteps').onclick = () => { if (!S.steps.length) return; if (!confirm('清空所有步驟？（可用「復原」找回）')) return; snapshot(); S.steps = []; sel = null; changed(true); };
+$('#mirrorBtn').onclick = () => {
+  snapshot();
+  const W = S.field.W, H = S.field.H;
+  const tf = S.game !== 'target'
+    ? (x, y, h) => ({x:W - x, y:H - y, h:normDeg(h + 180)})
+    : (x, y, h) => ({x, y:H - y, h:normDeg(180 - h)});
+  const fix = h => h === -180 ? 180 : h;
+  const st = tf(S.robot.start.x, S.robot.start.y, S.robot.start.h); S.robot.start = {x:st.x, y:st.y, h:fix(st.h)};
+  S.steps.forEach(s => {
+    if (s.type === 'move'){ const p = tf(num(s.x), num(s.y), num(s.h)); s.x = p.x; s.y = p.y; s.h = fix(p.h); if (S.game === 'target') s.bulge = -num(s.bulge); }
+    if (s.type === 'turn'){ const p = tf(0, 0, num(s.h)); s.h = fix(p.h); }
+    if (s.type === 'align' && s.reset){ const p = tf(num(s.rx), num(s.ry), num(s.rh)); s.rx = p.x; s.ry = p.y; s.rh = fix(p.h); }
+    if (s.type === 'align' && S.game === 'target'){ const sw = {IR_L:'IR_R', IR_R:'IR_L'}; s.main = sw[s.main] || s.main; s.sub = sw[s.sub] || s.sub; }
+  });
+  changed(true);
+  toast(S.game !== 'target' ? '已轉成對手方路徑。此場地是 180° 對稱，機身座標輸出的程式兩邊通用' : '已鏡像到對手方，左右校正方向也一併對調');
+};
+
+/* ---------- 左側：場地物件 ---------- */
+const TYPE_LABEL = {zone:'區域', wall:'障礙物', gate:'閘門', trigger:'觸發裝置', drop:'放置區', item:'物資', target:'標靶'};
+function renderObjects(){
+  $('#objList').innerHTML = S.objects.map(o => `<div data-id="${o.id}" class="${sel && sel.kind === 'obj' && sel.id === o.id ? 'sel' : ''}">
+    <span class="sw" style="background:${o.type === 'wall' ? 'var(--wall)' : colorOf(o)}"></span>${TYPE_LABEL[o.type]}｜${o.label || ''} <span style="margin-left:auto;color:var(--mute)">${fmt(o.x)},${fmt(o.y)}</span></div>`).join('');
+  const o = sel && sel.kind === 'obj' ? S.objects.find(x => x.id === sel.id) : null;
+  const ed = $('#objEditor');
+  if (!o){ ed.innerHTML = ''; return; }
+  ed.innerHTML = `<h3>選取的物件</h3>
+    <label class="f"><span>名稱</span><input type="text" data-o="label" value="${(o.label || '').replace(/"/g, '&quot;')}"></label>
+    <div class="row" style="margin-top:6px">
+      <label class="f"><span>X（左下角）cm</span><input type="number" step="0.5" data-o="x" value="${o.x}"></label>
+      <label class="f"><span>Y（左下角）cm</span><input type="number" step="0.5" data-o="y" value="${o.y}"></label>
+      <label class="f"><span>寬 cm</span><input type="number" step="0.5" min="0.5" data-o="w" value="${o.w}"></label>
+      <label class="f"><span>高 cm</span><input type="number" step="0.5" min="0.5" data-o="h" value="${o.h}"></label>
+      <label class="f"><span>類型</span><select data-o="type">${Object.keys(TYPE_LABEL).map(t => `<option value="${t}" ${o.type === t ? 'selected' : ''}>${TYPE_LABEL[t]}</option>`).join('')}</select></label>
+      <label class="f"><span>顏色</span><select data-o="color"><option value="">隊伍色</option>${Object.keys(COLORS).map(c => `<option value="${c}" ${o.color === c ? 'selected' : ''}>${COLORS[c].name}</option>`).join('')}</select></label>
+    </div>
+    <label class="chk"><input type="checkbox" data-o="solid" ${o.solid ? 'checked' : ''}> 車體不可穿越（列入碰撞檢查）</label>
+    <div class="row" style="margin-top:6px"><button class="btn small danger" id="delObj">刪除物件</button></div>`;
+  $('#delObj').onclick = () => { snapshot(); S.objects = S.objects.filter(x => x.id !== o.id); sel = null; changed(true); };
+}
+$('#objList').addEventListener('click', e => { const d = e.target.closest('[data-id]'); if (!d) return; sel = {kind:'obj', id:d.dataset.id}; renderObjects(); draw(); });
+$('#objEditor').addEventListener('input', e => {
+  const k = e.target.dataset.o; if (!k) return;
+  const o = S.objects.find(x => x.id === sel.id); if (!o) return;
+  if (!inputSnap){ snapshot(); inputSnap = true; }
+  if (e.target.type === 'checkbox') o[k] = e.target.checked;
+  else if (e.target.type === 'number') o[k] = Math.max(k === 'w' || k === 'h' ? .5 : -1000, num(e.target.value));
+  else o[k] = e.target.value;
+  recompute(); renderObjectsListOnly();
+});
+$('#objEditor').addEventListener('focusout', () => { inputSnap = false; renderObjects(); renderChecks(); });
+function renderObjectsListOnly(){ const o = sel && sel.kind === 'obj' ? S.objects.find(x => x.id === sel.id) : null; if (!o) return; const row = $(`#objList [data-id="${o.id}"] span:last-child`); if (row) row.textContent = `${fmt(o.x)},${fmt(o.y)}`; }
+function renderChips(){
+  $('#colorChips').innerHTML = ITEM_COLORS[S.game].map(c => `<button class="chip ${S.ui.color === c ? 'on' : ''}" data-c="${c}"><span class="dot" style="background:${COLORS[c].hex}"></span>${COLORS[c].name}</button>`).join('');
+}
+$('#colorChips').addEventListener('click', e => { const b = e.target.closest('[data-c]'); if (!b) return; S.ui.color = b.dataset.c; renderChips(); setMode('item'); save(); });
+$('#sizePresets').addEventListener('click', e => {
+  const b = e.target.closest('[data-size]'); if (!b) return;
+  const [w, h] = b.dataset.size.split(',').map(Number);
+  snapshot(); S.field.W = w; S.field.H = h; changed(true); fit();
+});
+$('#resetField').onclick = () => { if (!confirm(S.game === 'custom' ? '清空自訂場地的所有物件？（步驟會保留）' : '把場地物件重設為大會圖面？（步驟會保留）')) return; snapshot(); const f = S.game === 'energy' ? presetEnergy() : S.game === 'target' ? presetTarget() : presetCustom(S.field.W, S.field.H); S.objects = f.objects; sel = null; changed(true); };
+$('#clearItems').onclick = () => { snapshot(); S.objects = S.objects.filter(o => o.type !== 'item'); changed(true); };
+
+/* ---------- 感測元件建議 ---------- */
+const REC = {
+  bno:   {k:'bno', n:'BNO055 姿態感測器', w:'閉迴路維持車頭角度；配合「BNO 轉正」步驟在每段移動後修正偏差（寫法取自你的轉正.tb，已修正 0°/360° 換算與停止條件）。'},
+  atarm: {k:'atarm', n:'機械手臂套件 ATARM', w:'夾爪／抬升／旋轉 3 顆伺服，符合最多 5 顆限制。'},
+  ir:    {k:'irAlign', n:'紅外線 IR 對牆校正 v1.0.0', w:'靠牆或迷宮隔板（高 10 cm）校正，消除擺放與累積誤差；校正步驟可重設座標。寫法依網站產生的範本：setPins、setTargets、alignBlocking。'},
+  ultra: {k:'ultra', n:'超聲波 HC-SR04（Liang 版）', w:'Arduino／ESP32 可用：#include <Ultrasonic.h>，read(CM) 回傳整數公分。適合量牆面與觸發台；5 cm 小物資反射面小，近距離（約 3 cm 內）量不準。', pins:true},
+  sharp: {k:'sharp', n:'夏普紅外線測距 GP2Y0A21', w:'10–80 cm，對小物體比超聲波穩；目前你的擴充清單顯示「未載入」，要先在兔比積木加入。', sharp:true},
+  husky: {k:'husky', n:'HuskyLens AI（哈士奇）', w:'I2C 模式初始化。官方積木在鏡頭沒接時會無限等待，這裡改成最多重試 2 秒，避免比賽時卡在開機。'},
+  ppgun: {k:'ppgun', n:'乒乓球發射器套件 PPGUN', w:'PPGUN_INIT 預設 S0、S1、S2；與 ATARM 同車時 ATARM_INIT 要放在後面。', gun:true},
+  tcs:   {k:'tcs', n:'TCS3472 顏色感測', code:false, w:'只有想做自動分色才需要；開閘門後通常轉手動由選手判斷。'},
+  remote:{k:'remote', n:'遙控：PS3 搖桿／V7RC 藍牙', remote:true, w:'寫法對照兔比積木官方範例「夾爪機器人_ps3搖桿」「夾爪機器人_V7RC版」。兩者都用藍牙，只能擇一。'},
+};
+const RECS = {
+  energyA:[['bno','must','必備'],['atarm','must','必備'],['remote','must','必備'],['ir','rec1','強烈建議'],['ultra','rec1','建議'],['sharp','opt','選用'],['husky','opt','選用'],['tcs','opt','選用']],
+  targetArm:[['atarm','must','必備'],['remote','must','必備'],['bno','rec1','建議'],['ultra','opt','選用'],['ir','opt','選用'],['sharp','opt','選用']],
+  targetShooter:[['ppgun','must','必備'],['remote','must','必備'],['bno','rec1','建議'],['husky','opt','選用'],['ultra','opt','選用']],
+  customArm:[['atarm','rec1','手臂'],['bno','rec1','建議'],['remote','opt','遙控'],['ir','opt','選用'],['ultra','opt','選用'],['sharp','opt','選用'],['husky','opt','選用'],['ppgun','opt','選用']],
+  customShooter:[['ppgun','rec1','發射'],['bno','rec1','建議'],['remote','opt','遙控'],['ultra','opt','選用'],['husky','opt','選用'],['atarm','opt','選用']],
+};
+function renderRecs(){
+  const list = RECS[S.rtype].map(([k, lv, tt]) => Object.assign({lv, t:tt}, REC[k]));
+  $('#recList').innerHTML = `<p class="hint" style="margin-top:0">依 ${ROBOTS[S.rtype].name} 的任務建議，寫法已對照兔比積木擴充原始碼。勾選後會加入產生的程式碼。</p>` +
+    list.map(r => `<div class="rec"><div class="t"><b>${r.n}</b><span class="lv ${r.lv}">${r.t}</span></div><p>${r.w.replace(/</g, '&lt;')}</p>
+      ${r.code === false ? '<p><i>需在兔比積木加入擴充後自行撰寫，不自動產生程式。</i></p>' : ''}
+      ${r.remote ? `<label class="f" style="margin-top:6px"><span>遙控方式</span><select data-bind="remote.type"><option value="none">不加入</option><option value="ps3">PS3 搖桿</option><option value="v7rc">V7RC 藍牙 (BLE)</option></select></label>
+        ${S.remote.type === 'ps3' ? '<label class="f" style="margin-top:6px"><span>手把 MAC（官方範例值）</span><input type="text" data-bind="remote.mac"></label>' : ''}
+        ${S.remote.type === 'v7rc' ? '<label class="f" style="margin-top:6px"><span>藍牙名稱（每台要不同）</span><input type="text" data-bind="remote.ble"></label>' : ''}` : ''}
+      ${!r.remote && r.code !== false ? `<label class="chk" style="margin-top:6px"><input type="checkbox" data-bind="modules.${r.k}"> 加入程式</label>` : ''}
+      ${r.pins ? `<div class="row" style="margin-top:6px"><label class="f"><span>TRIG 腳位</span><input type="number" data-bind="modules.trig"></label><label class="f"><span>ECHO 腳位</span><input type="number" data-bind="modules.echo"></label></div>` : ''}
+      ${r.sharp ? `<label class="f" style="margin-top:6px"><span>類比腳位</span><input type="number" data-bind="modules.sharpPin"></label>` : ''}
+      ${r.gun ? `<div class="row3" style="margin-top:6px"><label class="f"><span>旋轉</span><select data-bind="ppgun.pan" class="servoSel"></select></label><label class="f"><span>抬頭</span><select data-bind="ppgun.head" class="servoSel"></select></label><label class="f"><span>發射</span><select data-bind="ppgun.launch" class="servoSel"></select></label></div>` : ''}
+      </div>`).join('') +
+    (S.modules.ultra && S.modules.sharp ? `<div class="rec"><label class="f"><span>測距中斷使用</span><select data-bind="modules.stopSrc"><option value="ultra">超聲波</option><option value="sharp">夏普紅外線</option></select></label></div>` : '') +
+    `<p class="hint">腳位請依實際接線填寫；TRIG、ECHO 預設 25、26 只是範例。</p>` +
+    (S.game === 'energy' ? `<div class="rec"><div class="t"><b>機器人 B（手動）</b><span class="lv must">必備遙控</span></div><p>從比賽開始就手動搶中立物資區，不需路徑規劃；綠色風力物資 3 分最高，優先搶。</p></div>` : '');
+  fillServoSelects(); bindAll($('#recList'));
+}
+
+/* ---------- 積木對照 ---------- */
+function renderRef(){
+  const rows = [
+    ['MTC 移動（完整）', 'mtc.moveSCurve(x, y, 旋轉, 最高速, 加速, -減速, 起速, 終速);'],
+    ['MTC 移動（簡易）', 'mtc.moveSCurve(x, y, 旋轉, 最高速, a, -(a), 0, 0);'],
+    ['MTC 弧線移動', 'mtc.moveCurveSCurve(x, y, 旋轉, 弧偏移, 最高速, 加速, -減速, 0, 0);'],
+    ['MTC 移動＋中斷', 'mtc.moveSCurve(..., 0, 0, 中斷函式);  // 函式回傳 bool'],
+    ['MTC 開迴路', 'mtc.driveVectorOpen(x, y, r);'],
+    ['MTC 角度移動', 'mtc.angleToXY(角度, 速度);'],
+    ['MTC 車體參數', 'mtc.setMtcParameters(輪徑, 輪寬, 車長, 車寬);'],
+    ['MTC 參數微調', 'mtc.adjustMtcConstantsAdd(dx, dy, dturn);'],
+    ['MTC 搭配 BNO', 'mtc.bnoMoveClosed(x, y, z, 目前角度);'],
+    ['編碼器／PID', 'tubit.setEncoderCPR(減速比*4*ppr);  tubit.setPIDTunings(P, I, D);'],
+    ['ATARM 初始化', 'ATARM_INIT(旋轉, 抬升, 夾爪);  // 例：S0,S7,S6'],
+    ['ATARM 夾爪', 'ATARM_ClawCtrl(true=夾緊 / false=張開, 秒數整數);'],
+    ['ATARM 抬升', 'ATARM_LiftSet(角度, 秒數整數);  ATARM_LiftAdd(增量);'],
+    ['ATARM 旋轉', 'ATARM_PanSet(角度, 秒數整數);  ATARM_PanAdd(增量);'],
+    ['ATARM 範圍', 'ATARM_SetClawRange(開, 關); ATARM_SetLiftRange(下, 上); ATARM_SetPanRange(下, 上);'],
+    ['IR 校正', 'tuirAlign().alignBlocking(主, 次);  // IR_L IR_R IR_UP IR_BACK IR_NONE'],
+    ['PPGUN', 'PPGUN_INIT(旋轉, 抬頭, 發射); PPGUN_launch(); PPGUN_PanSet(角度, 秒); PPGUN_HeadSet(角度, 秒);'],
+    ['BNO055', 'bno.start();  讀取角度：bno.yaw 等（依積木）'],
+    ['夏普紅外線', 'ESP32SharpIR sharpIR_1(ESP32SharpIR::GP2Y0A21YK0F, 腳位);  sharpIR_1.getDistanceFloat();'],
+    ['TCS3472', 'tcs.getRGB(&rgb[0], &rgb[1], &rgb[2]);'],
+    ['紅外線感測器', 'pinMode(IRPROX_腳位, INPUT);  digitalRead/analogRead(IRPROX_腳位);'],
+    ['按鈕', 'tubit.readButton(Button_A)  /  tubit.readButton(Button_B)'],
+    ['BNO 轉正（轉正.tb）', 'mtc.bnoMoveClosed(0, 0, (目標 - bno.orientationZ) * -1.65, bno.orientationZ);  tubit.stopAllMotors();'],
+    ['超聲波（Liang）', '#include <Ultrasonic.h>  Ultrasonic ultrasonic_T_E(T, E);  ultrasonic_T_E.read(CM);'],
+    ['PS3 搖桿', '#include <Ps3Controller.h>  Ps3.begin("MAC");  Ps3.isConnected();  Ps3.data.analog.stick.lx/ly/rx/ry;  Ps3.data.button.cross/circle/square/triangle/up/down/left/right/l1/r1/l2/r2'],
+    ['V7RC', '#include <V7RC_BT.h>  V7RC_BT v7rc;  v7rc.setupBLE("名稱");  v7rc.connect();  v7rc.setMode("SRT");  v7rc.readSRTdata(1~4)'],
+    ['V7RC 驅動', 'mtc.driveVectorOpen(((v7rc.readSRTdata(1)-1500)/2), ((v7rc.readSRTdata(2)-1500)/2), 左鍵*-180 + 右鍵*180);'],
+    ['HuskyLens', '#include <HUSKYLENS.h>  HUSKYLENS huskylens;  huskylens.begin(Wire);'],
+    ['IR 對牆校正 v1.0.0', 'tuirAlign().setPins(6 腳位);  setTargets(6 目標);  alignBlocking(主, 次);'],
+  ];
+  $('#refTable').innerHTML = `<p class="hint" style="margin-top:0">整理自兔比積木 TU:bit V2 擴充原始碼與官方範例 .tb（MTC V2.4、ATARM、PPGUN、BNO055、超聲波、PS3、V7RC、HuskyLens、夏普紅外線、TCS3472）。IR 對牆校正 v1.0.0 只在網站上，依你提供的範本。</p>
+    <table class="ref">${rows.map(r => `<tr><td>${r[0]}</td><td><code>${r[1].replace(/</g, '&lt;')}</code></td></tr>`).join('')}</table>
+    <p class="hint">其他擴充：OLED、HuskyLens、V7RC、PS3／PS4、ESP-NOW、WiFi、MQTT、DHT、MPU6050、APDS9960、PCA9685、PID、多工排程等。</p>`;
+}
+
+/* ---------- 雙向綁定 ---------- */
+function getPath(o, p){ return p.split('.').reduce((a, k) => a == null ? a : a[k], o); }
+function setPath(o, p, v){ const ks = p.split('.'); const last = ks.pop(); const t = ks.reduce((a, k) => a[k], o); t[last] = v; }
+function fillServoSelects(){ $$('.servoSel').forEach(s => { if (!s.options.length) s.innerHTML = SERVOS.map(v => `<option>${v}</option>`).join(''); }); }
+function bindAll(root){
+  root.querySelectorAll('[data-bind]').forEach(el => {
+    const v = getPath(S, el.dataset.bind);
+    if (el.type === 'checkbox') el.checked = !!v; else el.value = v ?? '';
+  });
+}
+document.addEventListener('change', e => {
+  const el = e.target, p = el.dataset && el.dataset.bind; if (!p) return;
+  snapshot();
+  let v;
+  if (el.type === 'checkbox') v = el.checked;
+  else if (el.type === 'number') v = num(el.value);
+  else v = el.value;
+  if (p === 'field.W' || p === 'field.H') v = clamp(Math.round(v) || 100, 30, 2000);
+  setPath(S, p, v);
+  if (p.startsWith('modules.') || p.startsWith('remote.')) { renderSteps(); if (p === 'remote.type' || p === 'modules.ultra' || p === 'modules.sharp') renderRecs(); }
+  changed(true);
+  if (p.startsWith('field.')) fit();
+});
+
+/* ---------- 賽事切換 ---------- */
+function fillRobotSel(){
+  $('#robotSel').innerHTML = Object.entries(ROBOTS).filter(([, r]) => r.game === S.game).map(([k, r]) => `<option value="${k}" ${S.rtype === k ? 'selected' : ''}>${r.name}</option>`).join('');
+  $('#gameSel').value = S.game;
+}
+$('#gameSel').onchange = e => {
+  if (S.steps.length && !confirm('切換賽事會換場地並清空步驟，確定？（可用「復原」找回）')){ e.target.value = S.game; return; }
+  snapshot(); S = newState(e.target.value); sel = null; refreshAll(); fit();
+  if (S.game === 'custom'){ $('aside.left [data-tab=paneField]').click(); toast('已建立 200×200 cm 空白場地，可在左側調整大小'); }
+};
+$('#robotSel').onchange = e => {
+  snapshot(); S.rtype = e.target.value; S.modules = defaultModules(S.rtype);
+  const R = ROBOTS[S.rtype];
+  if (S.robot.w > R.maxW) S.robot.w = R.maxW;
+  if (S.robot.l > R.maxL) S.robot.l = R.maxL;
+  refreshAll();
+};
+
+/* ---------- 統整更新 ---------- */
+function recompute(){ sim = simulate(S); draw(); updateStatus(); scheduleCode(); save(); }
+function changed(structural){
+  sim = simulate(S);
+  if (structural) wpDirty = true;
+  if (structural) { renderSteps(); renderObjects(); bindAll(document); }
+  else { $$('.step').forEach(c => { const t = sim.durations[c.dataset.id]; const el = c.querySelector('.tm'); if (el && t != null) el.textContent = t.toFixed(1) + 's'; }); }
+  draw(); updateStatus(); renderChecks(); scheduleCode(); save();
+}
+function updateStatus(){
+  const e = sim.end; $('#stEnd').textContent = `(${fmt(e.x)}, ${fmt(e.y)}) ${fmt(e.h)}°`;
+  if (!anim) $('#stTime').textContent = `${sim.total.toFixed(1)} 秒`;
+}
+function renderChecks(){ $('#checks').innerHTML = ruleChecks(S, sim).map(c => `<li class="${c.lv}">${c.t}</li>`).join(''); }
+let codeT = 0;
+function scheduleCode(){ clearTimeout(codeT); codeT = setTimeout(() => { $('#code').textContent = testMode ? genTestCode(S) : genCode(S, sim); }, 120); }
+function refreshAll(){
+  $('#customSize').hidden = S.game !== 'custom';
+  $('#resetField').textContent = S.game === 'custom' ? '清空場地物件' : '重設為大會場地';
+  sim = simulate(S); fillRobotSel(); renderChips(); renderObjects(); renderSteps(); renderRecs(); fillServoSelects(); bindAll(document); renderChecks(); updateStatus(); scheduleCode(); draw(); save();
+}
+
+$('#copyCode').onclick = async () => {
+  const t = $('#code').textContent;
+  try { await navigator.clipboard.writeText(t); toast('已複製，貼到兔比 Arduino IDE 即可燒錄'); }
+  catch(e){ const r = document.createRange(); r.selectNodeContents($('#code')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); toast('已選取程式碼，請按 Ctrl+C 複製'); }
+};
+$('#testCodeBtn').onclick = () => { testMode = !testMode; $('#testCodeBtn').classList.toggle('on', testMode); $('#testCodeBtn').textContent = testMode ? '回到路徑程式' : '軸向測試程式'; scheduleCode(); };
+
+/* ---------- 分頁 ---------- */
+$$('.tabs button').forEach(b => b.onclick = () => {
+  const box = b.closest('aside');
+  box.querySelectorAll('.tabs button').forEach(x => x.classList.toggle('on', x === b));
+  box.querySelectorAll('.pane').forEach(p => p.classList.toggle('on', p.id === b.dataset.tab));
+});
+
+/* ---------- 匯入匯出 ---------- */
+$('#ioBtn').onclick = () => { $('#ioText').value = JSON.stringify(S, null, 1); $('#ioDlg').showModal(); };
+$('#ioClose').onclick = () => $('#ioDlg').close();
+$('#ioCopy').onclick = async () => { try { await navigator.clipboard.writeText($('#ioText').value); toast('已複製 JSON'); } catch(e){ $('#ioText').select(); toast('已選取，請按 Ctrl+C'); } };
+$('#ioFile').onchange = e => { const f = e.target.files[0]; if (!f) return; const r = new FileReader(); r.onload = () => { $('#ioText').value = r.result; }; r.readAsText(f); };
+$('#ioImport').onclick = () => {
+  try { const o = JSON.parse($('#ioText').value); if (!o || o.v !== 1 || !o.objects || !o.steps || !o.rtype) throw 0; snapshot(); S = upgradeState(o); sel = null; $('#ioDlg').close(); refreshAll(); fit(); toast('方案已匯入'); }
+  catch(e){ toast('JSON 格式不正確，請貼上本工具匯出的方案'); }
+};
+$('#ver').onclick = () => $('#logDlg').showModal();
+$('#undoBtn').onclick = undo;
+$('#themeBtn').onclick = () => {
+  const root = document.documentElement, dark = root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+  root.dataset.theme = dark ? 'light' : 'dark'; draw();
+};
+
+/* ---------- 啟動 ---------- */
+S = load();
+window.addEventListener('resize', resize);
+new ResizeObserver(resize).observe($('#wrap'));
+refreshAll();
+requestAnimationFrame(() => { resize(); fit(); });
+})();
+</script>
+</body>
+</html>
