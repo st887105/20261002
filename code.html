@@ -78,6 +78,7 @@
       <p class="muted">這是開迴路方法，電量變化就會有誤差。比賽建議改用「原地轉角度」或 BNO055 轉正。</p>
 
       <h2 id="arm">PS3 手臂車（夾爪機器人_ps3搖桿.tb）</h2>
+      <p class="muted">上傳後長按手把中間的 PS 鈕連線（步驟圖解見<a href="modules.html#ps3">擴充模組 › PS3</a>）。</p>
       <div class="blocks"><span class="b-ev">當 Arduino 啟動</span>
   <span class="b-tb">TUBIT 初始化</span>
   <span class="b-ext">PS3 遙控初始化</span> MAC 20:00:00:00:63:93      <span class="muted">← 改成自己手把的 MAC</span>
@@ -118,6 +119,7 @@
       L2 <span class="b-ctl">→</span> <span class="b-tb">MTC 原地轉角度</span> −90° 速度 255</div>
 
       <h2 id="v7">V7RC 遙控車（01.MTC_手臂機器人_V7RC_(藍牙)BLE.tb）</h2>
+      <p class="muted">手機 App 的控制介面要選 <b>GAME ADV</b>（設定圖解見<a href="modules.html#v7rc">擴充模組 › V7RC</a>）。</p>
       <div class="blocks"><span class="b-ev">當 Arduino 啟動</span>
   <span class="b-tb">TUBIT 初始化</span>
   <span class="b-ext">V7RC 初始化</span> 藍牙
@@ -159,7 +161,7 @@
     <span class="b-ctl">設定</span> err = deg − <span class="b-ext">orientationZ</span>（同樣做 ±360 修正）
   <span class="b-ext">插入原始碼</span> tubit.resetEnc();
   <span class="b-tb">停止所有馬達</span></div>
-      <p class="muted">BNO055 以開機時的車頭為 0°。比賽時車子放好再開機，目標角度才會和場地方向一致。<a href="planner/">路徑規劃器</a>產生的程式已內建 0°／360° 換算與停止條件。</p>
+      <p class="muted">BNO055 以開機時的車頭為 0°。比賽時車子放好再開機，目標角度才會和場地方向一致。<a href="race-planner/">路徑規劃器</a>產生的程式已內建 0°／360° 換算與停止條件。</p>
 
       <h2 id="practice">練習任務</h2>
       <div class="grid g3">

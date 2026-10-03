@@ -45,6 +45,20 @@
         <li>上傳完成後，<b>長按手把中間的 PS 鈕</b>進行連線。</li>
         <li>用「如果 PS3 已連接」包住控制程式，並用序列埠列印 LX、LY、RX、RY 與按鈕狀態，確認有讀到數值。</li>
       </ol>
+      <h3>連線步驟圖解</h3>
+      <div class="grid g2">
+        <figure class="figure official"><img src="assets/img/ps3-step1.jpg" alt="PS3 遙控初始化積木填入手把 MAC" loading="lazy">
+          <figcaption>① 把 PS3 手把的 MAC 填進「PS3 遙控初始化 MAC」積木（紅框處）　<span class="src">圖片來源：官方講義「TU_bit 模組課程 03-1 PS3 搖桿」</span></figcaption></figure>
+        <figure class="figure official"><img src="assets/img/ps3-step2.jpg" alt="連接控制板並上傳程式" loading="lazy">
+          <figcaption>② 用 USB 連接控制板（CH340 序列埠），上傳程式碼　<span class="src">圖片來源：官方講義「TU_bit 模組課程 03-1 PS3 搖桿」</span></figcaption></figure>
+        <figure class="figure official"><img src="assets/img/ps3-step3.jpg" alt="長按手把中間 PS 鈕連線" loading="lazy">
+          <figcaption>③ 上傳完成後，<b>長按手把中間的 PS 鈕</b>連線，燈號停止閃爍就是連上了　<span class="src">圖片來源：官方講義「TU_bit 模組課程 03-1 PS3 搖桿」</span></figcaption></figure>
+        <figure class="figure official"><img src="assets/img/ps3-step4.jpg" alt="左右搖桿與四個按鈕" loading="lazy">
+          <figcaption>④ 控制方式：左、右搖桿與右側 △ ○ □ ✕ 四個按鈕　<span class="src">圖片來源：官方講義「TU_bit 模組課程 03-1 PS3 搖桿」</span></figcaption></figure>
+        <figure class="figure official"><img src="assets/img/ps3-step5.jpg" alt="序列埠監控讀取 PS3 數值" loading="lazy">
+          <figcaption>⑤ 打開序列埠監控，推搖桿、按按鈕，確認數值有變化　<span class="src">圖片來源：官方講義「TU_bit 模組課程 03-1 PS3 搖桿」</span></figcaption></figure>
+      </div>
+      <div class="note"><b>連不上時依序檢查</b>1. 積木裡的 MAC 和手把記住的 MAC 是否一致；2. 程式是否已上傳成功；3. 手把是否有電（插 USB 充電）；4. 附近是否有另一台車用了同一組 MAC。</div>
       <div class="note warn"><b>每支手把的 MAC 不一樣</b>官方範例中夾爪車用 <code>20:00:00:00:63:93</code>、射擊車用 <code>20:00:00:00:64:30</code>。兩台車不要填同一組 MAC，否則一支手把可能連到另一台車。手把 MAC 不明時，可用 SixaxisPairTool 讀取或改寫手把記住的主機位址（<a href="https://github.com/jvpernis/esp32-ps3" target="_blank" rel="noopener">esp32-ps3 函式庫說明</a>）。</div>
 
       <h3>讀取值</h3>
@@ -99,6 +113,14 @@
           </ol>
         </div>
       </div>
+      <h3>App 設定圖解</h3>
+      <div class="grid g2">
+        <figure class="figure official"><img src="assets/img/v7rc-game-adv-select.jpg" alt="V7RC 控制中心選擇 GAME ADV" loading="lazy">
+          <figcaption>① 進入 App 的<b>控制中心</b>（左上角齒輪），控制介面選 <b>GAME ADV</b>（變成黃色代表已選）</figcaption></figure>
+        <figure class="figure official"><img src="assets/img/v7rc-game-adv.jpg" alt="V7RC GAME ADV 操作畫面" loading="lazy">
+          <figcaption>② GAME ADV 畫面：左搖桿送出通道 <b>1（左右）</b>、<b>2（前後）</b>；右側 8 個方向鍵改變通道 <b>3（↑↓）</b>、<b>4（←→）</b>。放開時都是 1500，上方顯示連線狀態與連線方式（BLE）</figcaption></figure>
+      </div>
+      <div class="note warn"><b>一定要選 GAME ADV</b>官方範例與<a href="generator.html#adv">程式產生器</a>都用「V7RC 模式 = SRT」判斷資料，App 控制介面要選 <b>GAME ADV</b>，搖桿與方向鍵才會送出對應的通道 1～4。選成車輛、坦克或 GAME PAD 時，車子不會照預期移動。</div>
       <div class="note"><b>每台車的藍牙名稱要不同</b>教室裡同時有多台車時，用「車種＋編號」命名（例如 <code>MTC_ARM_U01</code>、<code>MTC_PPGUN_U02</code>），學生才不會連錯車。</div>
       <h3>官方範例的 Game ADV 對應</h3>
       <div class="table-wrap">
@@ -106,11 +128,11 @@
           <thead><tr><th>V7RC 資料</th><th>手臂車</th><th>發射車</th></tr></thead>
           <tbody>
             <tr><td>ADV 搖桿 1、2（X、Y）</td><td colspan="2">前進／橫移</td></tr>
-            <tr><td>ADV 按鈕 3、4</td><td colspan="2">左轉／右轉</td></tr>
-            <tr><td>按鈕 1／2</td><td>手臂上／下（±0.45°累加）</td><td>垂直雲台上／下</td></tr>
-            <tr><td>按鈕 8／6</td><td>手臂左右旋轉</td><td>砲台左右旋轉</td></tr>
-            <tr><td>按鈕 5</td><td>夾爪夾緊</td><td>—</td></tr>
-            <tr><td>按鈕 7</td><td>夾爪張開</td><td>發射乒乓球</td></tr>
+            <tr><td>ADV 按鈕 3、4（右側 ←、→）</td><td colspan="2">左轉／右轉</td></tr>
+            <tr><td>按鈕 1／2（↑／↓）</td><td>手臂上／下（±0.45°累加）</td><td>垂直雲台上／下</td></tr>
+            <tr><td>按鈕 8／6（↘／↙）</td><td>手臂左右旋轉</td><td>砲台左右旋轉</td></tr>
+            <tr><td>按鈕 5（↖）</td><td>夾爪夾緊</td><td>—</td></tr>
+            <tr><td>按鈕 7（↗）</td><td>夾爪張開</td><td>發射乒乓球</td></tr>
           </tbody>
         </table>
       </div>
@@ -151,10 +173,11 @@
 
       <h2 id="bno">BNO055 角度感測（擴充積木 12）</h2>
       <ul>
-        <li>接 I2C 接口；程式開頭放 <b>BNO055 初始化</b>。</li>
+        <li>接 I2C 接口（<a href="wiring.html#i2c">接線圖與實車照片</a>）；程式開頭放 <b>BNO055 初始化</b>。</li>
         <li>讀取 <code>orientationZ</code> 得到車頭角度（0～360°），開機時的車頭方向為 0°。</li>
         <li>MTC 的「BNO 移動」積木可同時給 X、Y、Z（旋轉量），用來做<b>轉正</b>：誤差＝目標角 − 目前角，乘上比例係數當旋轉速度，直到誤差夠小。</li>
       </ul>
+      <div class="note bad"><b>I2C 電源不要接反：VIN 接 V（VCC）、GND 接 G（GND）</b>接反會燒掉 BNO055。3Vo 腳是輸出，不要拿來接電源。</div>
       <div class="note bad"><b>資料夾內「轉正.tb」需要修正</b>停止條件寫成「|目標 − 目前| <b>＝</b> 0.3」。角度是小數，幾乎不會剛好等於 0.3，車子可能一直轉不停。請改成「<b>小於</b> 0.3」（或 1°），並處理 0°／360° 交界。修正後的寫法見 <a href="code.html#bno">程式範例</a>。</div>
 
       <h2 id="ultra">超音波（擴充積木 01）</h2>

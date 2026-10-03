@@ -1,8 +1,11 @@
 'use strict';
 /* TU:bit V2 機器人課程網站｜共用頁首、頁尾、版本紀錄
    改版時只改 APP_VERSION 與 CHANGELOG 兩個常數。 */
-const APP_VERSION = 'v1.1.0';
+const APP_VERSION = 'v1.3.1';
 const CHANGELOG = [
+  { version: 'v1.3.1', date: '2026-10-03', desc: '擴充模組加入圖解：PS3 連線五步驟（官方講義圖片：輸入 MAC、上傳、長按 PS 鈕連線、搖桿按鈕、序列埠確認）與 V7RC 設定（控制中心選 GAME ADV、GAME ADV 通道 1～4 說明）；BNO055 I2C 接線圖依實車線色確認排針順序為 SCL、SDA、V、G；程式產生器 V7RC 按鈕加上方向箭頭與 GAME ADV 提醒。' },
+  { version: 'v1.3.0', date: '2026-10-03', desc: '首頁加入「兔比積木 TU:bitBlock 線上積木」入口；程式產生器進階篇新增 BNO055（顯示角度、轉正）、PS3 手把（搖桿遙控、按鍵觸發、震動）、V7RC（藍牙／Wi-Fi 遙控、按鈕觸發）、MTC Robot（X Y 旋轉、角度移動、弧線、車體參數）、IR 靠牆校正（新版積木：MTC 模式、腳位 前33 後32 左前35 左後34 右前39 右後36），皆依兔比積木擴充原始碼並以線上 Arduino IDE 編譯通過；組裝與接線新增 BNO055 I2C 接線（VIN 接 V、GND 接 G，接反會燒毀）與 IR 靠牆校正接線。' },
+  { version: 'v1.2.0', date: '2026-10-03', desc: '控制板與接線改以鴻兔科技 TU Wiki 官方圖片為主（電源、按鈕、GPIO、OLED、馬達、編碼器、伺服、超音波、紅外線），並新增編碼器馬達、伺服馬達、套件腳位接線示意圖；程式產生器分為基礎篇、進階篇（水平雲台、手臂 ATARM、發射器 PPGUN、超音波）、競賽自動化（撞牆校正、BNO 轉正、超音波接近、夾取／放置組合、連續發射）；原路徑規劃器更名為「TU:bit V2 2026全國競賽路徑規劃器」移到競賽專區（race-planner/），舊 planner/ 網址導向程式產生器。' },
   { version: 'v1.1.0', date: '2026-10-03', desc: '新增「程式產生器」：勾選按鈕 A／B、開機、重複執行等觸發條件與馬達、MTC 移動、伺服、OLED、等待動作，自動產生 TubitBlock（OpenBlock）格式的 Arduino 程式碼；新增「資料下載」頁，整理官方講義與範例 .tb 並附雲端備份連結；首頁移除重要日期公告。程式碼寫法依兔比積木擴充原始碼（TuBitCore、TuMTC、Adafruit_SH110X）。' },
   { version: 'v1.0.0', date: '2026-10-03', desc: '首版：開始使用、組裝與接線、擴充模組（PS3、V7RC、手臂、發射器、BNO055、超音波）、程式範例、2026 全國 AI 智創機器人競賽專區（含計分試算），並收錄競賽路徑規劃器 v1.3.2。內容已對照鴻兔科技官網、官方講義與 2026 全國賽實施計畫。' }
 ];
@@ -16,7 +19,7 @@ const NAV = [
   { href: 'generator.html', key: 'generator', label: '程式產生器' },
   { href: 'resources.html', key: 'resources', label: '資料下載' },
   { href: 'competition.html', key: 'competition', label: '競賽專區' },
-  { href: 'planner/', key: 'planner', label: '路徑規劃器' }
+  { href: 'race-planner/', key: 'planner', label: '全國賽路徑規劃' }
 ];
 
 function esc(v) {

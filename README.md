@@ -2,7 +2,7 @@
 
 TU:bit V2（MTC V2 麥克納姆輪）機器人的教學網站：從安裝 TubitBlock、組裝接線、PS3／V7RC 遙控、手臂與乒乓球發射器，到 2026 全國 AI 智創機器人競賽專區與競賽路徑規劃器。
 
-目前版本：**v1.1.0**（更新紀錄見 [CHANGELOG.md](CHANGELOG.md)，網頁標題旁的版本號也可點開查看）
+目前版本：**v1.2.0**（更新紀錄見 [CHANGELOG.md](CHANGELOG.md)，網頁標題旁的版本號也可點開查看）
 
 ## 檔案結構
 
@@ -12,23 +12,25 @@ start.html          STEP 1 開始使用（控制板、安裝、連線上傳）
 wiring.html         STEP 2 組裝與接線（馬達、伺服、超音波、校正）
 modules.html        STEP 3 擴充模組（PS3、V7RC、手臂、發射器、BNO055…）
 code.html           STEP 4 程式範例（官方 .tb 逐段解說、BNO 轉正）
-generator.html      程式產生器（勾選觸發條件與動作，產生 Arduino 程式碼）
+generator.html      程式產生器（基礎篇、進階篇、競賽自動化）
 resources.html      資料下載（官方講義、範例 .tb、雲端備份連結）
 competition.html    競賽專區（2026 全國賽規則重點、計分試算）
-planner/            競賽路徑規劃器 v1.3.2（含自己的 README、CHANGELOG）
+race-planner/       TU:bit V2 2026全國競賽路徑規劃器 v1.3.3（含自己的 README、CHANGELOG）
+planner/            舊網址，自動導向程式產生器（競賽自動化）
 assets/site.css     共用樣式（自建輕量 CSS，無框架）
 assets/site.js      共用頁首頁尾、版本號、更新紀錄
+assets/img/         站內圖片（BNO055 實車接線、PS3 連線步驟、V7RC 設定截圖）
 .nojekyll           讓 GitHub Pages 不經 Jekyll 處理
 ```
 
 ## 部署到 GitHub Pages
 
 1. 在 GitHub 建立新的 repository（例如 `tubit-v2-course`），設為 Public。
-2. 把本資料夾內**所有檔案與子資料夾**上傳到 repository 根目錄（保留 `assets/`、`planner/` 資料夾結構）。
+2. 把本資料夾內**所有檔案與子資料夾**上傳到 repository 根目錄（保留 `assets/`（含 `assets/img/`）、`planner/`、`race-planner/` 資料夾結構）。
    `.nojekyll` 是隱藏檔，網頁上傳看不到時，可用「Add file → Create new file」建立一個空白的 `.nojekyll`。
 3. 進入 **Settings → Pages**，Source 選 **Deploy from a branch**，Branch 選 `main`、資料夾選 `/ (root)`，按 Save。
 4. 約 1 分鐘後網址會出現在同一頁：`https://你的帳號.github.io/tubit-v2-course/`
-   路徑規劃器在：`https://你的帳號.github.io/tubit-v2-course/planner/`
+   全國賽路徑規劃器在：`https://你的帳號.github.io/tubit-v2-course/race-planner/`
 
 不需要建置步驟；字型由 Google Fonts 載入，離線時自動改用系統字型。
 
@@ -42,6 +44,10 @@ assets/site.js      共用頁首頁尾、版本號、更新紀錄
 
 - 改 `assets/site.js` 最上方的 `APP_VERSION` 與 `CHANGELOG`，所有頁面的版本徽章、頁尾、更新紀錄會一起更新；同時在 `CHANGELOG.md` 補一筆。
 - 新增 CSS class 時要在 `assets/site.css` 補規則，否則樣式不會出現。
+
+## 圖片
+
+控制板與接線的官方照片直接引用鴻兔科技 TU Wiki（i0.wp.com 圖片網址），沒有複製到 repository；官方更換圖片時請更新網址。
 
 ## 資料來源
 

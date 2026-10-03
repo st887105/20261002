@@ -172,6 +172,8 @@ dialog h3{margin-top:0}
 .trig{border:1px solid var(--line);border-radius:12px;background:var(--card);margin-bottom:12px;overflow:hidden}
 .trig-head{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--panel);font-weight:700}
 .trig-head input{width:18px;height:18px}
+.trig-head{flex-wrap:wrap}
+.trig-head select{font:inherit;font-weight:500;padding:3px 6px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink)}
 .trig-body{padding:10px 14px}
 .trig.off .trig-body{display:none}
 .act{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:8px;align-items:start;border:1px dashed var(--line);border-radius:10px;padding:8px;margin-bottom:8px;background:var(--card)}
@@ -189,4 +191,8 @@ dialog h3{margin-top:0}
 .add-row .icon-btn{font-size:.85rem;padding:5px 9px}
 .btn.small{padding:4px 10px;font-size:.88rem}
 .toast-mini{font-size:.85rem;color:var(--ok);margin-left:8px}
+.figure.official{background:#fff}
+.figure.official img{display:block;margin:0 auto;border-radius:6px}
+.figure.official figcaption{color:#5A6678}
+.figure.official figcaption a{color:#1C5DB8}
 .hidden{display:none}

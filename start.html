@@ -38,34 +38,51 @@
       <h2 id="board" class="mt0">1. 認識 TU:bit V2 控制板</h2>
       <p>控制板就像機器人的電腦：讀取<b>輸入</b>（按鈕、超音波、手把），經過程式<b>處理</b>，再驅動<b>輸出</b>（馬達、伺服馬達、OLED）。TU:bit V2 以 ESP32 為核心，內建藍牙與 Wi-Fi，可直接用手機或 PS3 手把遙控。</p>
 
-      <figure class="figure">
-        <svg viewBox="0 0 640 360" width="640" role="img" aria-label="TU:bit V2 控制板功能分區示意圖">
-          <rect x="70" y="40" width="500" height="280" rx="18" fill="#1D2940" stroke="#5A6678" stroke-width="2"/>
-          <g fill="#F5F7FA" stroke="#9AA6B8">
-            <rect x="80" y="52" width="70" height="34" rx="4"/><rect x="490" y="52" width="70" height="34" rx="4"/>
-            <rect x="80" y="274" width="70" height="34" rx="4"/><rect x="490" y="274" width="70" height="34" rx="4"/>
-          </g>
-          <g font-size="12" fill="#1D2940" text-anchor="middle" font-weight="700">
-            <text x="115" y="74">馬達口</text><text x="525" y="74">馬達口</text><text x="115" y="296">馬達口</text><text x="525" y="296">馬達口</text>
-          </g>
-          <g fill="#C8243A"><rect x="165" y="56" width="140" height="26" rx="3"/><rect x="335" y="56" width="140" height="26" rx="3"/></g>
-          <g font-size="12" fill="#fff" text-anchor="middle"><text x="235" y="74">伺服 S0–S3</text><text x="405" y="74">伺服 S4–S7</text></g>
-          <rect x="250" y="135" width="140" height="80" rx="6" fill="#0E131B" stroke="#5B9BFF"/>
-          <text x="320" y="180" font-size="15" fill="#5B9BFF" text-anchor="middle">OLED 顯示</text>
-          <g fill="#E5A400"><circle cx="210" cy="175" r="14"/><circle cx="430" cy="175" r="14"/></g>
-          <g font-size="12" fill="#3A2A00" text-anchor="middle" font-weight="700"><text x="210" y="180">A</text><text x="430" y="180">B</text></g>
-          <rect x="165" y="278" width="310" height="26" rx="3" fill="#C8243A"/>
-          <text x="320" y="296" font-size="12" fill="#fff" text-anchor="middle">GPIO／I2C／UART 擴充腳位</text>
-          <rect x="40" y="150" width="40" height="56" rx="4" fill="#5A6678"/>
-          <g font-size="13" fill="currentColor">
-            <text x="8" y="140">電源輸入</text><text x="8" y="226">與開關</text>
-          </g>
-          <g font-size="13" fill="currentColor" text-anchor="middle">
-            <text x="320" y="28">伺服馬達腳位（跳帽切換 5V／VIN）</text>
-            <text x="320" y="345">感測器、I2C（BNO055、HuskyLens）、超音波等</text>
-          </g>
-        </svg>
-        <figcaption>功能分區示意（非實際比例與位置）。實際接口位置以控制板絲印與<a href="https://trgreat.com/mtc-robot-m-kit/" target="_blank" rel="noopener">官方組裝說明</a>為準。</figcaption>
+      <h3>電源部件（A Type-C、B 馬達電源開關、C DC 電池輸入）</h3>
+      <figure class="figure official">
+        <img src="https://i0.wp.com/trgreat.com/wp-content/uploads/2026/05/%E8%9E%A2%E5%B9%95%E6%93%B7%E5%8F%96%E7%95%AB%E9%9D%A2-2026-05-21-142350.png?ssl=1" alt="TU:bit V2 控制板電源部件：A Type-C、B 馬達電源開關、C DC 輸入孔" loading="lazy">
+        <figcaption>A：Type-C（供電與燒錄，左上）　B：馬達電源開關（Type-C 下方）　C：DC 電池輸入孔（左下）　<span class="src">圖片來源：<a href="https://trgreat.com/tu-wiki/tubit-v2-%e6%a9%9f%e5%99%a8%e4%ba%ba%e6%8e%a7%e5%88%b6%e6%9d%bf-%e9%9b%bb%e6%ba%90%e7%af%87/" target="_blank" rel="noopener">鴻兔科技 TU Wiki</a></span></figcaption>
+      </figure>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>輸入方式</th><th>電壓</th><th>可驅動</th></tr></thead>
+          <tbody>
+            <tr><td>Type-C</td><td>5V</td><td>控制板、GPIO 的 3.3V／5V；<b>不能驅動直流馬達與伺服馬達</b></td></tr>
+            <tr><td>DC 圓孔</td><td><b>≤ 12V</b>（超過可能燒毀控制板或馬達）</td><td>全部；VIN 電壓＝DC 輸入電壓</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <figure class="figure official">
+        <img src="https://i0.wp.com/trgreat.com/wp-content/uploads/2026/05/%E9%9B%BB%E6%BA%90%E6%8E%A5%E7%B7%9A%E5%9C%96.png?ssl=1" alt="電源分配圖：Type-C 5V 供 GPIO；DC VIN 供伺服與直流馬達" loading="lazy">
+        <figcaption>電源分配：Type-C（5V）→ GPIO 3.3V／5V；DC（VIN）→ 伺服馬達 5V-2A／VIN、直流馬達 VIN　<span class="src">圖片來源：<a href="https://trgreat.com/tu-wiki/tubit-v2-%e6%a9%9f%e5%99%a8%e4%ba%ba%e6%8e%a7%e5%88%b6%e6%9d%bf-%e9%9b%bb%e6%ba%90%e7%af%87/" target="_blank" rel="noopener">鴻兔科技 TU Wiki</a></span></figcaption>
+      </figure>
+      <div class="grid g2">
+        <figure class="figure official">
+        <img src="https://i0.wp.com/trgreat.com/wp-content/uploads/2026/05/%E8%9E%A2%E5%B9%95%E6%93%B7%E5%8F%96%E7%95%AB%E9%9D%A2-2026-05-21-143220.png?ssl=1" alt="燒錄時：接 Type-C、馬達開關 OFF、拔掉 DC" loading="lazy">
+        <figcaption><b>燒錄時</b>：接 Type-C → 開關切 OFF → 拔掉 DC　<span class="src">圖片來源：<a href="https://trgreat.com/tu-wiki/tubit-v2-%e6%a9%9f%e5%99%a8%e4%ba%ba%e6%8e%a7%e5%88%b6%e6%9d%bf-%e9%9b%bb%e6%ba%90%e7%af%87/" target="_blank" rel="noopener">鴻兔科技 TU Wiki</a></span></figcaption>
+        </figure>
+        <figure class="figure official">
+        <img src="https://i0.wp.com/trgreat.com/wp-content/uploads/2026/05/%E8%9E%A2%E5%B9%95%E6%93%B7%E5%8F%96%E7%95%AB%E9%9D%A2-2026-05-21-143542.png?ssl=1" alt="操作時：接 DC 電池、開關 ON、拔掉 Type-C" loading="lazy">
+        <figcaption><b>操作時</b>：接 DC 電池 → 開關切 ON → 拔掉 Type-C　<span class="src">圖片來源：<a href="https://trgreat.com/tu-wiki/tubit-v2-%e6%a9%9f%e5%99%a8%e4%ba%ba%e6%8e%a7%e5%88%b6%e6%9d%bf-%e9%9b%bb%e6%ba%90%e7%af%87/" target="_blank" rel="noopener">鴻兔科技 TU Wiki</a></span></figcaption>
+        </figure>
+      </div>
+
+      <h3>按鈕 A／B 與 Reset</h3>
+      <figure class="figure official">
+        <img src="https://i0.wp.com/trgreat.com/wp-content/uploads/2026/05/image-21.png?ssl=1" alt="控制板上兩個自訂義按鈕與重啟按鈕" loading="lazy">
+        <figcaption>兩個自訂義按鈕 BUTA(0)、BUTB(2) 與 RESET 重啟按鈕；讀取值 0＝未按、1＝按下　<span class="src">圖片來源：<a href="https://trgreat.com/tu-wiki/tubit-v2-%e6%a9%9f%e5%99%a8%e4%ba%ba%e6%8e%a7%e5%88%b6%e6%9d%bf-%e6%8c%89%e9%88%95%e7%af%87/" target="_blank" rel="noopener">鴻兔科技 TU Wiki</a></span></figcaption>
+      </figure>
+
+      <h3>GPIO、I2C、UART 腳位</h3>
+      <figure class="figure official">
+        <img src="https://i0.wp.com/trgreat.com/wp-content/uploads/2026/05/TUBitBlock-%E8%A8%AD%E8%A8%88%E7%99%BD%E6%9D%BF.png?ssl=1" alt="GPIO 腳位與 I2C、UART 腳位位置" loading="lazy">
+        <figcaption>上方 12 個 GPIO 腳位（下方數字為腳位號碼）；右側上兩排為 I2C、最後一排為 UART　<span class="src">圖片來源：<a href="https://trgreat.com/tu-wiki/tubit-v2%e6%a9%9f%e5%99%a8%e4%ba%ba%e6%8e%a7%e5%88%b6%e6%9d%bf-gpio%e7%af%87/" target="_blank" rel="noopener">鴻兔科技 TU Wiki</a></span></figcaption>
+      </figure>
+
+      <h3>OLED 座標</h3>
+      <figure class="figure official">
+        <img src="https://i0.wp.com/trgreat.com/wp-content/uploads/2026/05/image-11.png?ssl=1" alt="OLED 座標：左上 (0,0)、右下 (128,64)" loading="lazy">
+        <figcaption>OLED 1.3 吋，X 向右 0–128、Y 向下 0–64　<span class="src">圖片來源：<a href="https://trgreat.com/tu-wiki/tubit-v2%e6%a9%9f%e5%99%a8%e4%ba%ba%e6%8e%a7%e5%88%b6%e6%9d%bf-oled%e7%af%87/" target="_blank" rel="noopener">鴻兔科技 TU Wiki</a></span></figcaption>
       </figure>
 
       <div class="table-wrap">
@@ -137,7 +154,7 @@
           </tbody>
         </table>
       </div>
-      <p class="src">內容依據：鴻兔科技 TU:bit V2 入門課程講義 01–04、MTC V2 機器人資料 2026。</p>
+      <p class="src">內容依據：鴻兔科技 TU:bit V2 入門課程講義 01–04、<a href="https://trgreat.com/tu-wiki/" target="_blank" rel="noopener">TU Wiki 控制板電源篇、按鈕篇、OLED 篇、GPIO 篇</a>、MTC V2 機器人資料 2026。</p>
       <div class="btns"><a class="btn primary" href="wiring.html">下一步：組裝與接線 →</a></div>
     </article>
   </div>
