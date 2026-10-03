@@ -47,7 +47,6 @@
             <tr><td>MTC 角度移動</td><td>角度、速度 −255～255</td><td>往任一角度平移</td></tr>
             <tr><td>MTC X Y 旋轉 移動</td><td>X、Y、R 各 −255～255</td><td>遙控最常用：X 橫移、Y 前後、R 旋轉</td></tr>
             <tr><td>MTC V7RC 移動</td><td>X、Y、左轉鍵、右轉鍵</td><td>直接接 V7RC Game ADV 的搖桿值</td></tr>
-            <tr><td>MTC 原地轉角度</td><td>角度（例 −90）、速度</td><td>用編碼器轉指定角度</td></tr>
             <tr><td>停止所有馬達</td><td>—</td><td>失去連線時一定要停車</td></tr>
           </tbody>
         </table>
@@ -75,7 +74,7 @@
         <li>算出每度需要幾秒：1 ÷ 195 ≈ 0.005128 秒／度。</li>
         <li>轉 90° 需要：90 × 0.005128 ≈ <b>0.46 秒</b>。</li>
       </ol>
-      <p class="muted">這是開迴路方法，電量變化就會有誤差。比賽建議改用「原地轉角度」或 BNO055 轉正。</p>
+      <p class="muted">這是開迴路方法，電量變化就會有誤差。比賽建議改用精準移動的「旋轉」參數或 BNO055 轉正。</p>
 
       <h2 id="arm">PS3 手臂車（夾爪機器人_ps3搖桿.tb）</h2>
       <p class="muted">上傳後長按手把中間的 PS 鈕連線（步驟圖解見<a href="modules.html#ps3">擴充模組 › PS3</a>）。</p>
@@ -100,7 +99,7 @@
       <span class="b-ctl">如果</span> →  <span class="b-ctl">→</span> <span class="b-ext">手臂旋轉到</span> 55° 0.5 秒
       <span class="b-ctl">如果</span> ←  <span class="b-ctl">→</span> <span class="b-ext">手臂旋轉到</span> 125° 0.5 秒
       <span class="b-ctl">如果</span> R2 <span class="b-ctl">→</span> <span class="b-ext">手臂旋轉到</span> 90° 0.5 秒
-      <span class="b-ctl">如果</span> L2 <span class="b-ctl">→</span> <span class="b-tb">MTC 原地轉角度</span> −90° 速度 255</div>
+      <span class="b-ctl">如果</span> L2 <span class="b-ctl">→</span> <span class="b-tb">MTC 角度移動</span> −90° 速度 255　<span class="muted">← 往 −90° 方向平移，放開就停</span></div>
       <div class="note warn"><b>建議加上的保護</b>官方範例在手把斷線時沒有停車，車子會維持最後一次的速度。比賽用請改成「如果 PS3 已連接…<b>否則</b> 停止所有馬達」，與 V7RC 範例的寫法一致。</div>
 
       <h2 id="gun">PS3 發射車（射擊機器人_ps3搖桿.tb）</h2>
@@ -116,7 +115,7 @@
       ↑ <span class="b-ctl">→</span> 砲管上下到 45°       ↓ <span class="b-ctl">→</span> 砲管上下到 10°
       → <span class="b-ctl">→</span> 砲台旋轉到 45°       ← <span class="b-ctl">→</span> 砲台旋轉到 135°
       R2 <span class="b-ctl">→</span> <span class="b-ext">發射乒乓球</span>
-      L2 <span class="b-ctl">→</span> <span class="b-tb">MTC 原地轉角度</span> −90° 速度 255</div>
+      L2 <span class="b-ctl">→</span> <span class="b-tb">MTC 角度移動</span> −90° 速度 255　<span class="muted">← 往 −90° 方向平移，放開就停</span></div>
 
       <h2 id="v7">V7RC 遙控車（01.MTC_手臂機器人_V7RC_(藍牙)BLE.tb）</h2>
       <p class="muted">手機 App 的控制介面要選 <b>GAME ADV</b>（設定圖解見<a href="modules.html#v7rc">擴充模組 › V7RC</a>）。</p>
@@ -167,7 +166,7 @@
       <div class="grid g3">
         <div class="card"><h3 class="mt0">走正方形</h3><p>邊長 50 cm：前進 → 右移 → 後退 → 左移，車頭方向不變。</p></div>
         <div class="card"><h3 class="mt0">走菱形</h3><p>邊長 50 cm：只用斜向移動（右前、右後、左後、左前）。</p></div>
-        <div class="card"><h3 class="mt0">精準轉 90°</h3><p>分別用測程法、原地轉角度、BNO 轉正，比較誤差。</p></div>
+        <div class="card"><h3 class="mt0">精準轉 90°</h3><p>分別用測程法、精準移動旋轉 90°、BNO 轉正，比較誤差。</p></div>
       </div>
 
       <h2 id="download">範例下載</h2>

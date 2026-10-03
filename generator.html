@@ -80,6 +80,7 @@
         <tr><td>夾取組合</td><td>張開 → 手臂降到夾取高度 → 前進 → 夾緊 → 抬升</td><td>夾齒輪物資、能源物資</td></tr>
         <tr><td>放置組合</td><td>手臂降到放置高度 → 張開 → 抬升 → 後退</td><td>放到佔領台、放置區</td></tr>
         <tr><td>IR 靠牆校正</td><td>用 6 顆紅外線量車身與牆面距離，主校正（左／右牆）把車身擺正並保持距離，次校正再貼齊前／後／左／右牆；有逾時與確認時間</td><td>比賽起點對位、放置區前精準定位（比撞牆校正更不傷車）</td></tr>
+        <tr><td>一鍵自動／手動切換</td><td>按自動鍵（預設 PS3 START）跑「一鍵自動模式流程」，每個動作做完檢查手動鍵（預設 SELECT），可中途中止；做完停在 AUTO OK，等裁判確認後按手動鍵切回遙控。OLED 顯示 AUTO／MANUAL，PS3 切換時震動</td><td>物資能源爭霸戰：機器人 A 全自動完成後經裁判確認才能切手動</td></tr>
         <tr><td>連續發射</td><td>發射指定顆數，每顆之間等待</td><td>標靶爭奪賽（每次最多裝填 5 顆）</td></tr>
       </tbody>
     </table>
@@ -102,6 +103,7 @@
         <tr><td>BNO055</td><td><code>#include &lt;EasyBNO055_ESP.h&gt;</code>、<code>EasyBNO055_ESP bno;</code>、<code>bno.start();</code>、<code>mtc.bnoMoveClosed(0,0,誤差×係數,bno.orientationZ);</code></td></tr>
         <tr><td>OLED 文字</td><td><code>Adafruit_SH1106G display(128, 64, &amp;Wire);</code>、<code>display.print(...)</code></td></tr>
         <tr><td>MTC Robot</td><td><code>mtc.driveVectorOpen(X,Y,R);</code>、<code>mtc.angleToXY(角度,速度);</code>、<code>mtc.moveCurveSCurve(X,Y,旋轉,弧度,最高速,加速,-(加速),0,0);</code>、<code>mtc.setMtcParameters(6,3,20,20);</code></td></tr>
+        <tr><td>遙控移動與按鍵對應</td><td>自動產生 <code>remoteControl()</code>：前進／後退＝左搖桿上下、左右平移＝左搖桿左右、旋轉＝右搖桿（或方向鍵＋L1／R1）；速度、旋轉速度、死區寫成 <code>DRIVE_SPEED</code>、<code>TURN_SPEED</code>、<code>DEADZONE</code> 常數；按鍵對應可一鍵套用官方手臂車／發射車配置（<code>ATARM_LiftAdd</code>、<code>ATARM_PanAdd</code>、<code>PPGUN_HeadAdd</code>、<code>PPGUN_PanAdd</code>…，依 4 個官方 .tb 範例）</td></tr>
         <tr><td>PS3 手把</td><td><code>#include &lt;Ps3Controller.h&gt;</code>、<code>Ps3.begin("MAC");</code>、<code>Ps3.isConnected()</code>、<code>Ps3.data.analog.stick.lx</code>、<code>Ps3.data.button.cross</code>、<code>Ps3.setRumble(強度,毫秒);</code></td></tr>
         <tr><td>V7RC</td><td><code>#include &lt;V7RC_BT.h&gt;</code>、<code>V7RC_BT v7rc;</code>、<code>v7rc.setupBLE("名稱");</code>、<code>v7rc.connect()</code>、<code>v7rc.setMode("SRT")</code>、<code>v7rc.readSRTdata(1~4)</code>（Wi-Fi 版為 <code>V7RC_WIFI</code>、<code>v7rc.setupWIFI(ssid, password, channel);</code>）</td></tr>
         <tr><td>IR 靠牆校正</td><td><code>#include &lt;TuIRAlign.h&gt;</code>、<code>TuIRAlign&lt;TuMTC&gt;</code>、<code>tuirAlign().setPins(33,32,35,34,39,36);</code>、<code>tuirAlign().setTargets(...);</code>、<code>tuirAlign().alignBlocking(主,次,逾時,確認);</code>、<code>getFilteredUP()</code>…</td></tr>
@@ -128,6 +130,7 @@
     { key: 'P2', label: 'PS3 按鍵 2 被按下時', kit: 'ps3' },
     { key: 'V1', label: 'V7RC 按鈕 1 被按下時', kit: 'v7rc' },
     { key: 'V2', label: 'V7RC 按鈕 2 被按下時', kit: 'v7rc' },
+    { key: 'AUTO', label: '一鍵自動模式流程（按自動鍵執行一次）', mode: true },
     { key: 'setup', label: '開機時執行一次', cond: null },
     { key: 'loop', label: '一直重複執行', cond: null }
   ];
@@ -156,6 +159,39 @@
   const IR_MAIN = [['IR_L', '左'], ['IR_R', '右'], ['IR_NONE', '無']];
   const IR_SEC = [['IR_UP', '前'], ['IR_BACK', '後'], ['IR_L', '左'], ['IR_R', '右'], ['IR_NONE', '無']];
   const IR_SINGLE = [['IR_UP', '前'], ['IR_BACK', '後'], ['IR_L', '左'], ['IR_R', '右']];
+  // 遙控按鍵對應的動作（按住時每圈執行一次，寫法同官方範例）
+  const MAP_ACTS = {
+    liftAdd: { label: '手臂升降累加', kit: 'arm', v: 0.1, code: m => 'ATARM_LiftAdd(' + plain(m.v) + ');' },
+    panAdd: { label: '手臂旋轉累加', kit: 'arm', v: 0.1, code: m => 'ATARM_PanAdd(' + plain(m.v) + ');' },
+    clawClose: { label: '夾爪夾緊', kit: 'arm', t: 0.5, code: m => 'ATARM_ClawCtrl(true,' + plain(m.t) + ');' },
+    clawOpen: { label: '夾爪張開', kit: 'arm', t: 0.5, code: m => 'ATARM_ClawCtrl(false,' + plain(m.t) + ');' },
+    liftSet: { label: '手臂升降到', kit: 'arm', v: 65, t: 0.5, code: m => 'ATARM_LiftSet(' + plain(m.v) + ',' + plain(m.t) + ');' },
+    panSet: { label: '手臂旋轉到', kit: 'arm', v: 90, t: 0.5, code: m => 'ATARM_PanSet(' + plain(m.v) + ',' + plain(m.t) + ');' },
+    headAdd: { label: '砲管仰角累加', kit: 'gun', v: 0.05, code: m => 'PPGUN_HeadAdd(' + plain(m.v) + ');' },
+    gPanAdd: { label: '砲台旋轉累加', kit: 'gun', v: 0.1, code: m => 'PPGUN_PanAdd(' + plain(m.v) + ');' },
+    headSet: { label: '砲管仰角到', kit: 'gun', v: 30, t: 0.5, code: m => 'PPGUN_HeadSet(' + plain(m.v) + ',' + plain(m.t) + ');' },
+    gPanSet: { label: '砲台旋轉到', kit: 'gun', v: 90, t: 0.5, code: m => 'PPGUN_PanSet(' + plain(m.v) + ',' + plain(m.t) + ');' },
+    fire: { label: '發射乒乓球', kit: 'gun', code: () => 'PPGUN_launch();' },
+    angle: { label: 'MTC 角度移動', v: -90, sp: 255, code: m => 'mtc.angleToXY(' + fmtNum(m.v) + ',' + fmt(clampInt(m.sp, -255, 255, 255)) + ');' },
+    servo: { label: '伺服轉到', v: 90, pin: 'S4', code: m => 'tubit.setServoAngle(' + (m.pin || 'S4') + ', ' + clampInt(m.v, 0, 180, 90) + ');' },
+    rumble: { label: '手把震動', ps3only: true, code: () => 'Ps3.setRumble(100, 300);' },
+    stop: { label: '停止馬達', code: () => 'tubit.stopAllMotors();' }
+  };
+  const mapRow = (btn, act, extra) => Object.assign({ btn: String(btn), act }, (({ v, t, sp, pin }) => ({ v, t, sp, pin }))(MAP_ACTS[act]), extra || {});
+  // 官方範例的按鍵配置（夾爪機器人_ps3搖桿.tb、射擊機器人_ps3搖桿.tb、01.MTC_手臂／發射器機器人_V7RC_(藍牙)BLE.tb）
+  const OFFICIAL_MAP = {
+    ps3arm: () => [mapRow('cross', 'liftAdd', { v: -0.1 }), mapRow('triangle', 'liftAdd', { v: 0.1 }), mapRow('l1', 'panAdd', { v: 0.1 }), mapRow('r1', 'panAdd', { v: -0.1 }),
+      mapRow('circle', 'clawClose'), mapRow('square', 'clawOpen'), mapRow('up', 'liftSet', { v: 65 }), mapRow('down', 'liftSet', { v: 10 }),
+      mapRow('right', 'panSet', { v: 55 }), mapRow('left', 'panSet', { v: 125 }), mapRow('r2', 'panSet', { v: 90 }), mapRow('l2', 'angle')],
+    ps3gun: () => [mapRow('cross', 'headAdd', { v: -0.05 }), mapRow('triangle', 'headAdd', { v: 0.05 }), mapRow('l1', 'gPanAdd', { v: 0.1 }), mapRow('r1', 'gPanAdd', { v: -0.1 }),
+      mapRow('circle', 'gPanSet', { v: 90 }), mapRow('square', 'headSet', { v: 30 }), mapRow('up', 'headSet', { v: 45 }), mapRow('down', 'headSet', { v: 10 }),
+      mapRow('right', 'gPanSet', { v: 45 }), mapRow('left', 'gPanSet', { v: 135 }), mapRow('r2', 'fire'), mapRow('l2', 'angle')],
+    v7arm: () => [mapRow('1', 'liftAdd', { v: 0.45 }), mapRow('2', 'liftAdd', { v: -0.45 }), mapRow('8', 'panAdd', { v: -0.45 }), mapRow('6', 'panAdd', { v: 0.45 }),
+      mapRow('7', 'clawOpen'), mapRow('5', 'clawClose')],
+    v7gun: () => [mapRow('1', 'headAdd', { v: 0.45 }), mapRow('2', 'headAdd', { v: -0.45 }), mapRow('8', 'gPanAdd', { v: -0.45 }), mapRow('6', 'gPanAdd', { v: 0.45 }), mapRow('7', 'fire')]
+  };
+  const PS3_DRIVES = [['stick', '左搖桿移動＋右搖桿旋轉（官方）'], ['dpad', '方向鍵移動＋L1／R1 旋轉'], ['none', '不產生移動（自己寫）']];
+  const V7_DRIVES = [['stick', '左搖桿移動＋右側 ← → 旋轉（官方）'], ['none', '不產生移動（自己寫）']];
   const ACTIONS = {
     motor: { label: '馬達移動', level: 'basic' },
     single: { label: '單顆馬達', level: 'basic' },
@@ -178,9 +214,9 @@
     mtcAngle: { label: 'MTC 角度移動', level: 'adv' },
     mtcCurve: { label: 'MTC 弧線移動', level: 'adv' },
     mtcParam: { label: 'MTC 車體參數', level: 'adv' },
-    ps3Drive: { label: 'PS3 搖桿遙控移動', level: 'adv', kit: 'ps3' },
+    ps3Drive: { label: 'PS3 搖桿遙控移動', level: 'adv', kit: 'ps3', hidden: true },
     ps3Rumble: { label: 'PS3 手把震動', level: 'adv', kit: 'ps3' },
-    v7Drive: { label: 'V7RC 遙控移動', level: 'adv', kit: 'v7rc' },
+    v7Drive: { label: 'V7RC 遙控移動', level: 'adv', kit: 'v7rc', hidden: true },
     irAlign: { label: 'IR 靠牆校正', level: 'adv', kit: 'ir' },
     irSingle: { label: 'IR 次校正（單一方向）', level: 'adv', kit: 'ir' },
     irShow: { label: 'OLED 顯示 IR 數值', level: 'adv', kit: 'ir' },
@@ -240,15 +276,16 @@
   const emptyTrig = () => ({ A: { on: false, acts: [] }, B: { on: false, acts: [] },
     P1: { on: false, acts: [], btn: 'cross' }, P2: { on: false, acts: [], btn: 'circle' },
     V1: { on: false, acts: [], btn: '1' }, V2: { on: false, acts: [], btn: '2' },
-    setup: { on: false, acts: [] }, loop: { on: false, acts: [] } });
+    AUTO: { on: false, acts: [] }, setup: { on: false, acts: [] }, loop: { on: false, acts: [] } });
   const KIT_KEYS = ['gimbal', 'arm', 'gun', 'ultra', 'bno', 'ps3', 'v7rc', 'ir'];
   const defaultKits = () => ({
     on: { gimbal: false, arm: false, gun: false, ultra: false, bno: false, ps3: false, v7rc: false, ir: false },
     arm: { pan: 'S0', lift: 'S7', claw: 'S6', open: 80, close: 150, down: 0, up: 65, panMin: 55, panMax: 125 },
     gun: { pan: 'S0', head: 'S1', shoot: 'S2' },
     ultra: { trig: 23, echo: 15 },
-    ps3: { mac: '20:00:00:00:63:93' },
-    v7rc: { mode: 'BT', name: 'MTC_ARM_U01', ssid: 'V7RC_AP', pass: '12345678', ch: '1' },
+    ps3: { mac: '20:00:00:00:63:93', drive: 'stick', speed: 128, turn: 128, dead: 8, map: [] },
+    v7rc: { mode: 'BT', name: 'MTC_ARM_U01', ssid: 'V7RC_AP', pass: '12345678', ch: '1', drive: 'stick', speed: 250, turn: 180, dead: 20, map: [] },
+    mode: { on: false, autoKey: 'ps3:start', manKey: 'ps3:select', back: false, oled: true, rumble: true },
     ir: { f: '33', b: '32', lf: '35', lb: '34', rf: '39', rb: '36', tf: 25, tb: 25, tlf: 25, tlb: 25, trf: 25, trb: 25 }
   });
   const PRESETS = {
@@ -269,10 +306,10 @@
       ['超音波：OLED 顯示距離', () => ({ kits: { ultra: true }, trig: Object.assign(emptyTrig(), { loop: { on: true, acts: [mk('ultraShow'), mk('wait', { sec: 0.1 })] } }) })],
       ['BNO055：顯示角度、A 轉正 0°', () => ({ kits: { bno: true }, trig: Object.assign(emptyTrig(), {
         A: { on: true, acts: [mk('bnoTurn', { deg: 0 })] }, loop: { on: true, acts: [mk('bnoShow'), mk('wait', { sec: 0.1 })] } }) })],
-      ['PS3 手臂車遙控', () => ({ kits: { ps3: true, arm: true }, trig: Object.assign(emptyTrig(), {
-        P1: { on: true, btn: 'circle', acts: [mk('armClaw', { close: 'true' })] }, P2: { on: true, btn: 'square', acts: [mk('armClaw', { close: 'false' })] },
-        loop: { on: true, acts: [mk('ps3Drive')] } }) })],
-      ['V7RC 遙控車（藍牙）', () => ({ kits: { v7rc: true }, trig: Object.assign(emptyTrig(), { loop: { on: true, acts: [mk('v7Drive')] } }) })],
+      ['PS3 手臂車（官方按鍵）', () => ({ kits: { ps3: true, arm: true }, cfg: { ps3: { map: OFFICIAL_MAP.ps3arm(), mac: '20:00:00:00:63:93' } }, trig: emptyTrig() })],
+      ['PS3 發射車（官方按鍵）', () => ({ kits: { ps3: true, gun: true }, cfg: { ps3: { map: OFFICIAL_MAP.ps3gun(), mac: '20:00:00:00:64:30' } }, trig: emptyTrig() })],
+      ['V7RC 手臂車（官方按鈕）', () => ({ kits: { v7rc: true, arm: true }, cfg: { v7rc: { map: OFFICIAL_MAP.v7arm(), name: 'MTC_ARM_U01' } }, trig: emptyTrig() })],
+      ['V7RC 發射車（官方按鈕）', () => ({ kits: { v7rc: true, gun: true }, cfg: { v7rc: { map: OFFICIAL_MAP.v7gun(), name: 'MTC_PPGUN_U01' } }, trig: emptyTrig() })],
       ['MTC：開迴路前進＋弧線', () => ({ trig: Object.assign(emptyTrig(), {
         A: { on: true, acts: [mk('mtcVec')] }, B: { on: true, acts: [mk('mtcCurve')] } }) })],
       ['IR 靠牆校正：A 左牆＋前牆', () => ({ kits: { ir: true }, trig: Object.assign(emptyTrig(), {
@@ -287,7 +324,11 @@
         A: { on: true, acts: [mk('mtc', { y: 50 }), mk('bnoTurn', { deg: 90 }), mk('place')] } }) })],
       ['A：連續發射 5 顆', () => ({ kits: { gun: true }, trig: Object.assign(emptyTrig(), { A: { on: true, acts: [mk('fireN')] } }) })],
       ['A：IR 靠牆校正 → 前進 40 cm → 再校正', () => ({ kits: { ir: true }, trig: Object.assign(emptyTrig(), {
-        A: { on: true, acts: [mk('irAlign'), mk('mtc', { y: 40 }), mk('irAlign')] } }) })]
+        A: { on: true, acts: [mk('irAlign'), mk('mtc', { y: 40 }), mk('irAlign')] } }) })],
+      ['PS3 手臂車：START 一鍵自動、SELECT 切手動', () => ({ kits: { ps3: true, arm: true, bno: true }, cfg: { ps3: { map: OFFICIAL_MAP.ps3arm() }, mode: { on: true, autoKey: 'ps3:start', manKey: 'ps3:select' } },
+        trig: Object.assign(emptyTrig(), { AUTO: { on: true, acts: [mk('wall'), mk('bnoTurn', { deg: 0 }), mk('mtc', { y: 50 }), mk('grab'), mk('mtc', { y: -20 }), mk('bnoTurn', { deg: 90 }), mk('mtc', { y: 40 }), mk('place')] } }) })],
+      ['V7RC 發射車：按鈕 5 一鍵自動、板子 B 切手動', () => ({ kits: { v7rc: true, gun: true }, cfg: { v7rc: { map: OFFICIAL_MAP.v7gun(), name: 'MTC_PPGUN_U01' }, mode: { on: true, autoKey: 'v7:5', manKey: 'btnB' } },
+        trig: Object.assign(emptyTrig(), { AUTO: { on: true, acts: [mk('mtc', { y: 60 }), mk('gunPan', { deg: 90 }), mk('gunHead', { deg: 30 }), mk('fireN')] } }) })]
     ]
   };
 
@@ -300,6 +341,20 @@
     if (on && k === 'gun' && state.kits.on.arm) { state.kits.on.arm = false; kitNote = '已取消手臂：ATARM 與 PPGUN 函式庫不能放在同一支程式。'; }
     if (on && k === 'ps3' && state.kits.on.v7rc) { state.kits.on.v7rc = false; kitNote = '已取消 V7RC：一支程式只用一種遙控方式。'; }
     if (on && k === 'v7rc' && state.kits.on.ps3) { state.kits.on.ps3 = false; kitNote = '已取消 PS3：一支程式只用一種遙控方式。'; }
+  }
+  // 自動／手動鍵若指到沒啟用的遙控，換成可用的按鍵
+  function keyValid(k) {
+    k = String(k || '');
+    if (k === 'btnA' || k === 'btnB') return true;
+    if (k.startsWith('ps3:')) return !!state.kits.on.ps3 && PS3_BTNS.some(b => b[0] === k.slice(4));
+    if (k.startsWith('v7:')) return !!state.kits.on.v7rc && !!V7_BTNS[k.slice(3)];
+    return false;
+  }
+  function normalizeMode() {
+    const M = state.kits.mode, on = state.kits.on;
+    const def = on.ps3 ? ['ps3:start', 'ps3:select'] : on.v7rc ? ['v7:5', 'btnB'] : ['btnA', 'btnB'];
+    if (!keyValid(M.autoKey)) M.autoKey = def[0];
+    if (!keyValid(M.manKey)) M.manKey = def[1];
   }
   function load() { try { const t = localStorage.getItem(STORE); return t ? JSON.parse(t) : null; } catch (e) { return null; } }
   function save() { try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {} }
@@ -522,6 +577,7 @@
   }
 
   function generate() {
+    normalizeMode();
     const need = {};
     const K = state.kits;
     const setupBody = state.trig.setup.on ? genActions(state.trig.setup.acts, '  ', need) : [];
@@ -542,6 +598,91 @@
     KIT_KEYS.forEach(k => { if (K.on[k] && state.level !== 'basic') need[k] = true; });
     if (need.bno) need.mtc = need.mtc || need.turn;
     if (need.ir) need.mtc = true;
+
+    /* ----- 遙控（PS3／V7RC）與一鍵自動／手動模式 ----- */
+    const rcDefs = [], rcFns = [], loopHead = [];
+    const M = K.mode;
+    const modeOn = advOn && M.on;
+    const remote = advOn ? (K.on.ps3 ? 'ps3' : (K.on.v7rc ? 'v7rc' : '')) : '';
+    const keyCond = key => {
+      key = String(key || '');
+      if (key === 'btnA') return 'tubit.readButton(Button_A)';
+      if (key === 'btnB') return 'tubit.readButton(Button_B)';
+      if (key.startsWith('ps3:')) { need.ps3 = true; return 'Ps3.isConnected() && Ps3.data.button.' + (PS3_BTNS.some(b => b[0] === key.slice(4)) ? key.slice(4) : 'start'); }
+      if (key.startsWith('v7:')) { need.v7rc = true; return 'v7rc.connect() && ' + v7Btn(key.slice(3)); }
+      return 'false';
+    };
+    const mapLines = (rows, btnExpr, ind) => (rows || []).filter(m => MAP_ACTS[m.act]).map(m => {
+      const A = MAP_ACTS[m.act];
+      if (A.kit) need[A.kit] = true;
+      if (m.act === 'angle') need.mtc = true;
+      const lab = remote === 'ps3' ? (PS3_BTNS.find(b => b[0] === m.btn) || ['', m.btn])[1] : 'V7RC ' + m.btn + ' ' + ((V7_BTNS[m.btn] || [''])[0]);
+      return ind + 'if (' + btnExpr(m.btn) + ') ' + A.code(m) + '   // ' + lab + ' → ' + A.label;
+    });
+    if (remote) {
+      const R = K[remote];
+      const drive = R.drive === 'none' || (remote === 'ps3' && R.drive === 'dpad') ? R.drive : 'stick';
+      const sp = clampInt(R.speed, 0, 255, remote === 'ps3' ? 128 : 250);
+      const tn = clampInt(R.turn, 0, 255, remote === 'ps3' ? 128 : 180);
+      const dz = clampInt(R.dead, 0, 200, remote === 'ps3' ? 8 : 20);
+      need[remote] = true;
+      if (drive !== 'none') need.mtc = true;
+      rcDefs.push('', '// ===== 遙控可調參數（可直接改數字） =====');
+      rcDefs.push('const int DRIVE_SPEED = ' + sp + ';   // 移動最高速度' + (remote === 'ps3' ? '（128＝官方範例原值）' : '（250＝官方範例原值）'));
+      rcDefs.push('const int TURN_SPEED = ' + tn + ';    // 旋轉速度' + (remote === 'ps3' ? '（128＝官方範例原值）' : '（180＝官方範例原值）'));
+      rcDefs.push('const int DEADZONE = ' + dz + ';       // 死區：搖桿小於這個值當作 0，放手時車子不會慢慢飄');
+      if (remote === 'ps3') {
+        rcFns.push('', 'int stickVal(int v) {   // 套用死區', '  return abs(v) < DEADZONE ? 0 : v;', '}');
+        rcFns.push('', 'void remoteControl() {   // 手動遙控（PS3）', '  if (!Ps3.isConnected()) {', '    tubit.stopAllMotors();   // 手把斷線就停車', '    return;', '  }');
+        if (drive === 'stick') rcFns.push('  // 前進／後退＝左搖桿上下，左右平移＝左搖桿左右，原地旋轉＝右搖桿左右',
+          '  int x = stickVal(Ps3.data.analog.stick.lx) * DRIVE_SPEED / 128;', '  int y = -stickVal(Ps3.data.analog.stick.ly) * DRIVE_SPEED / 128;   // 往上推 ly 是負值',
+          '  int r = stickVal(Ps3.data.analog.stick.rx) * TURN_SPEED / 128;', '  mtc.driveVectorOpen(x, y, r);');
+        if (drive === 'dpad') rcFns.push('  // 前進／後退＝方向鍵 ↑↓，左右平移＝方向鍵 ←→，原地旋轉＝L1（左）／R1（右）',
+          '  int x = ((int)Ps3.data.button.right - (int)Ps3.data.button.left) * DRIVE_SPEED;', '  int y = ((int)Ps3.data.button.up - (int)Ps3.data.button.down) * DRIVE_SPEED;',
+          '  int r = ((int)Ps3.data.button.r1 - (int)Ps3.data.button.l1) * TURN_SPEED;', '  mtc.driveVectorOpen(x, y, r);');
+        mapLines(R.map, b => 'Ps3.data.button.' + (PS3_BTNS.some(x => x[0] === b) ? b : 'cross'), '  ').forEach(l => rcFns.push(l));
+        rcFns.push('}');
+      } else {
+        rcFns.push('', 'int v7Axis(int ch) {   // GAME ADV 搖桿：1500 為中間，回傳 -500～500（含死區）', '  int d = v7rc.readSRTdata(ch) - 1500;', '  return abs(d) < DEADZONE ? 0 : d;', '}');
+        rcFns.push('', 'void remoteControl() {   // 手動遙控（V7RC，App 選 GAME ADV）', '  if (!v7rc.connect()) {', '    tubit.stopAllMotors();   // 斷線就停車', '    return;', '  }',
+          '  if (!v7rc.setMode("SRT")) return;   // 不是 GAME ADV 送來的資料就不動作');
+        if (drive === 'stick') rcFns.push('  // 前進／後退＝左搖桿上下（通道 2），左右平移＝左搖桿左右（通道 1），原地旋轉＝右側 ← → 鍵',
+          '  int x = v7Axis(1) * DRIVE_SPEED / 500;', '  int y = v7Axis(2) * DRIVE_SPEED / 500;',
+          '  int r = ' + v7Btn(3) + ' * -TURN_SPEED + ' + v7Btn(4) + ' * TURN_SPEED;', '  mtc.driveVectorOpen(x, y, r);');
+        mapLines(R.map, b => v7Btn(b), '  ').forEach(l => rcFns.push(l));
+        rcFns.push('  delay(5);', '}');
+      }
+    }
+    if (modeOn) {
+      const back = !!M.back;
+      if (M.oled) need.oled = true;
+      const autoC = keyCond(M.autoKey), manC = keyCond(M.manKey);
+      const rum = M.rumble && (need.ps3 || remote === 'ps3') ? '    Ps3.setRumble(100, 300);' : null;
+      rcDefs.push('', '// ===== 一鍵自動／手動模式 =====');
+      rcDefs.push('const bool AUTO_BACK_TO_MANUAL = ' + back + ';   // true：自動做完立刻回手動；false：停在自動，等按手動鍵（比賽需經裁判確認再切換）');
+      rcDefs.push('bool autoMode = false;   // 目前是否為自動模式', 'bool autoDone = false;   // 自動流程是否已跑完');
+      rcFns.push('', 'bool autoKey() {   // 切到自動模式的按鍵', '  return ' + autoC + ';', '}', '', 'bool manualKey() {   // 切回手動模式的按鍵', '  return ' + manC + ';', '}');
+      rcFns.push('', 'bool abortAuto() {   // 自動途中按手動鍵就中止（每個動作做完檢查一次）', '  if (manualKey()) {', '    autoMode = false;', '    tubit.stopAllMotors();', '    return true;', '  }', '  return false;', '}');
+      if (M.oled) rcFns.push('', 'void showMode() {   // OLED 顯示目前模式', '  display.clearDisplay();', '  display.setFont();', '  display.setTextSize(2);', '  display.setTextColor(SH110X_WHITE);',
+        '  display.setCursor(0, 20);', '  display.print(autoMode ? (autoDone ? "AUTO OK" : "AUTO") : "MANUAL");', '  display.display();', '}');
+      rcFns.push('', 'void runAuto() {   // 一鍵自動流程');
+      const acts = state.trig.AUTO.on ? state.trig.AUTO.acts : [];
+      acts.forEach(a => { genActions([a], '  ', need).forEach(l => rcFns.push(l)); rcFns.push('  if (abortAuto()) return;'); });
+      if (!acts.length) rcFns.push('  // 還沒有自動動作：在「一鍵自動模式流程」加入動作');
+      rcFns.push('}');
+      loopHead.push('  if (!autoMode && autoKey()) {   // 一鍵切換到自動', '    autoMode = true;', '    autoDone = false;');
+      if (rum) loopHead.push(rum);
+      if (M.oled) loopHead.push('    showMode();');
+      loopHead.push('  }', '  if (autoMode && manualKey()) {   // 一鍵切回手動', '    autoMode = false;', '    tubit.stopAllMotors();');
+      if (rum) loopHead.push(rum);
+      if (M.oled) loopHead.push('    showMode();');
+      loopHead.push('  }', '  if (autoMode) {', '    if (!autoDone) {', '      runAuto();', '      autoDone = true;', '      tubit.stopAllMotors();', '      if (AUTO_BACK_TO_MANUAL) autoMode = false;');
+      if (M.oled) loopHead.push('      showMode();');
+      loopHead.push('    }', '    return;   // 自動模式中不接受遙控', '  }');
+      if (M.oled) setupBody.push('  showMode();');
+    }
+    if (remote) loopHead.push('  remoteControl();   // 手動遙控：移動＋按鍵對應');
+    loopBody.unshift(...loopHead);
     const conflict = need.arm && need.gun;
     const rcConflict = need.ps3 && need.v7rc;
     const v7mode = K.v7rc.mode === 'WIFI' ? 'WIFI' : 'BT';
@@ -611,7 +752,7 @@
     const head = ['// generated by OpenBlock'];
     if (conflict) head.push('// ⚠ 同時用了手臂與發射器動作：ATARM.h 與 PPGUN.h 不能放在同一支程式，請刪除其中一種動作');
     if (rcConflict) head.push('// ⚠ 同時用了 PS3 與 V7RC：一支程式只用一種遙控方式，請刪除其中一種');
-    const out = head.concat(inc, [''], def, helpers, ['', 'void setup() {'], setups, [''], setupBody, ['}', '', 'void loop() {'], loopBody, ['}', '']);
+    const out = head.concat(inc, [''], def, rcDefs, helpers, rcFns, ['', 'void setup() {'], setups, [''], setupBody, ['}', '', 'void loop() {'], loopBody, ['}', '']);
     return { code: out.join('\n'), need };
   }
 
@@ -676,6 +817,7 @@
   }
 
   function renderKits() {
+    normalizeMode();
     const K = state.kits;
     document.getElementById('kitRows').innerHTML = Object.entries(KITS).map(([k, v]) =>
       '<tr><td class="c"><input type="checkbox" data-kit="' + k + '"' + (K.on[k] ? ' checked' : '') + '></td><td>' + esc(v.label) + '</td>' + v.row.map(c => '<td>' + esc(c) + '</td>').join('') + '</tr>').join('');
@@ -693,6 +835,51 @@
       h += '<b style="width:100%">V7RC 手機遙控</b>' + o('v7rc', 'mode', '連線方式', [['BT', '藍牙 BLE'], ['WIFI', 'Wi-Fi']], K.v7rc.mode);
       h += K.v7rc.mode === 'WIFI' ? t('v7rc', 'ssid', 'Wi-Fi 名稱', K.v7rc.ssid) + t('v7rc', 'pass', '密碼', K.v7rc.pass) + f('v7rc', 'ch', '頻道 1–13', K.v7rc.ch) : t('v7rc', 'name', '藍牙名稱', K.v7rc.name);
     }
+    // ----- 遙控對應 -----
+    const remote = K.on.ps3 ? 'ps3' : (K.on.v7rc ? 'v7rc' : '');
+    if (remote) {
+      const R = K[remote];
+      const btnOpts = remote === 'ps3' ? PS3_BTNS : Object.entries(V7_BTNS).map(([k, b]) => [k, k + ' ' + b[0]]);
+      const drives = remote === 'ps3' ? PS3_DRIVES : V7_DRIVES;
+      h += '<b style="width:100%">' + (remote === 'ps3' ? 'PS3' : 'V7RC') + ' 遙控移動（手動模式）</b>' + o(remote, 'drive', '移動方式', drives, R.drive) +
+        f(remote, 'speed', '移動速度 0–255', R.speed) + f(remote, 'turn', '旋轉速度 0–255', R.turn) + f(remote, 'dead', remote === 'ps3' ? '搖桿死區（0–127）' : '搖桿死區（µs）', R.dead);
+      const dmap = remote === 'ps3'
+        ? (R.drive === 'dpad' ? [['前進／後退', '方向鍵 ↑ ／ ↓'], ['向左／向右平移', '方向鍵 ← ／ →'], ['原地左轉／右轉', 'L1 ／ R1']]
+          : R.drive === 'none' ? [] : [['前進／後退', '左搖桿 往上推／往下推'], ['向左／向右平移', '左搖桿 往左推／往右推'], ['原地左轉／右轉', '右搖桿 往左推／往右推']])
+        : (R.drive === 'none' ? [] : [['前進／後退', '左搖桿 往上／往下（通道 2）'], ['向左／向右平移', '左搖桿 往左／往右（通道 1）'], ['原地左轉／右轉', '右側 ← ／ → 鍵（按鈕 3、4）']]);
+      if (dmap.length) h += '<div class="table-wrap" style="width:100%;margin:4px 0 2px"><table><thead><tr><th>車子動作</th><th>操作</th></tr></thead><tbody>' +
+        dmap.map(r => '<tr><td>' + r[0] + '</td><td>' + r[1] + '</td></tr>').join('') + '</tbody></table></div>';
+      h += '<b style="width:100%">按鍵對應（按住時持續執行）</b>';
+      h += '<div style="width:100%;display:flex;flex-wrap:wrap;gap:6px">' +
+        '<button type="button" class="btn small" data-mapoff="' + remote + 'arm">套用官方手臂車配置</button>' +
+        '<button type="button" class="btn small" data-mapoff="' + remote + 'gun">套用官方發射車配置</button>' +
+        '<button type="button" class="btn small" data-mapadd="1">＋ 新增按鍵</button>' +
+        '<button type="button" class="btn small" data-mapclear="1">清空</button></div>';
+      (R.map || []).forEach((m, i) => {
+        const A = MAP_ACTS[m.act] || {};
+        const mi = (k, label, val, step) => '<label>' + label + '<input type="number" step="' + (step || 'any') + '" data-map="' + i + '" data-mk="' + k + '" value="' + esc(val) + '"></label>';
+        let row = '<label>按鍵<select data-map="' + i + '" data-mk="btn">' + btnOpts.map(b => '<option value="' + esc(b[0]) + '"' + (String(b[0]) === String(m.btn) ? ' selected' : '') + '>' + esc(b[1]) + '</option>').join('') + '</select></label>';
+        row += '<label>動作<select data-map="' + i + '" data-mk="act">' + Object.entries(MAP_ACTS).filter(([, a]) => !a.ps3only || remote === 'ps3')
+          .map(([k, a]) => '<option value="' + k + '"' + (k === m.act ? ' selected' : '') + '>' + esc(a.label) + '</option>').join('') + '</select></label>';
+        if (A.v !== undefined) row += mi('v', m.act === 'angle' ? '角度 °' : (/Add$/.test(m.act) ? '每圈累加 °' : '角度 °'), m.v);
+        if (A.sp !== undefined) row += mi('sp', '速度', m.sp);
+        if (A.t !== undefined) row += mi('t', '秒', m.t, '0.1');
+        if (A.pin !== undefined) row += '<label>腳位<select data-map="' + i + '" data-mk="pin">' + ['S0', 'S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7'].map(x => '<option' + (x === m.pin ? ' selected' : '') + '>' + x + '</option>').join('') + '</select></label>';
+        h += '<div class="act" style="width:100%;margin:0"><span class="act-no">' + (i + 1) + '</span><div class="act-fields" style="margin:0">' + row + '</div>' +
+          '<div class="act-tools"><button class="icon-btn" type="button" data-mapdel="' + i + '" title="刪除">✕</button></div></div>';
+      });
+      if (!(R.map || []).length) h += '<span class="muted" style="width:100%">還沒有按鍵對應：可套用官方配置，或按「＋ 新增按鍵」。</span>';
+    }
+    // ----- 一鍵自動／手動 -----
+    const keyOpts = [['btnA', '控制板按鈕 A'], ['btnB', '控制板按鈕 B']]
+      .concat(K.on.ps3 ? PS3_BTNS.map(b => ['ps3:' + b[0], 'PS3 ' + b[1]]) : [])
+      .concat(K.on.v7rc ? Object.entries(V7_BTNS).map(([k, b]) => ['v7:' + k, 'V7RC 按鈕 ' + k + ' ' + b[0]]) : []);
+    const ck = (k, label) => '<label class="chk"><input type="checkbox" data-kitcfg="mode.' + k + '"' + (K.mode[k] ? ' checked' : '') + '>' + label + '</label>';
+    h += '<b style="width:100%">一鍵自動／手動模式</b>' + ck('on', '啟用（按自動鍵跑「一鍵自動模式流程」，按手動鍵切回遙控）');
+    if (K.mode.on) {
+      h += o('mode', 'autoKey', '自動鍵', keyOpts, K.mode.autoKey) + o('mode', 'manKey', '手動鍵（也可中止自動）', keyOpts, K.mode.manKey) +
+        ck('back', '自動做完立刻回手動（不勾＝停在 AUTO OK，等裁判確認後按手動鍵）') + ck('oled', 'OLED 顯示 AUTO／MANUAL') + (K.on.ps3 ? ck('rumble', '切換時手把震動') : '');
+    }
     if (K.on.ir) {
       h += '<b style="width:100%">IR 靠牆校正：腳位</b>' + IR_POS.map(p => o('ir', p[0], p[1], IR_PINS.map(x => [x, x]), K.ir[p[0]])).join('');
       h += '<b style="width:100%">IR 目標值（貼牆時的讀值）</b>' + IR_POS.map(p => f('ir', 't' + p[0], p[1], K.ir['t' + p[0]])).join('');
@@ -703,7 +890,23 @@
     if (K.on.arm || K.on.gun) warn.push('手臂與發射器只能擇一：兩個官方函式庫有同名變數，放在同一支程式會編譯失敗（比賽也是一台手臂車、一台發射車）。');
     if (K.on.gimbal && (K.on.arm || K.on.gun)) warn.push('水平雲台就是手臂／發射器的旋轉軸（S0），已由套件初始化，不另外回正。');
     if (K.on.bno) warn.push('BNO055 接 I2C：VIN 接 V（VCC）、GND 接 G（GND），接反會燒掉感測器。');
-    if (K.on.ps3 || K.on.v7rc) warn.push('PS3 與 V7RC 擇一使用；遙控移動請放在「一直重複執行」，按鍵動作用「PS3 按鍵／V7RC 按鈕」觸發。');
+    if (K.on.ps3 || K.on.v7rc) warn.push('PS3 與 V7RC 擇一使用；遙控移動與按鍵對應會自動產生在 remoteControl()，不用另外加動作。需要「按一下做一連串動作」時，再用下方的「PS3 按鍵／V7RC 按鈕被按下時」。');
+    if (remote) {
+      const R = K[remote], used = (R.map || []).map(m => String(m.btn));
+      const dup = used.filter((b, i) => used.indexOf(b) !== i);
+      const bl = b => remote === 'ps3' ? (PS3_BTNS.find(x => x[0] === b) || ['', b])[1] : b + ' ' + ((V7_BTNS[b] || [''])[0]);
+      if (dup.length) warn.push('⚠ 按鍵 ' + [...new Set(dup)].map(bl).join('、') + ' 對應了兩個以上的動作。');
+      if (remote === 'ps3' && R.drive === 'dpad' && used.some(b => ['up', 'down', 'left', 'right', 'l1', 'r1'].includes(b))) warn.push('⚠ 方向鍵與 L1／R1 已用來移動，按鍵對應裡有重複使用。');
+      if (remote === 'v7rc' && R.drive !== 'none' && used.some(b => b === '3' || b === '4')) warn.push('⚠ V7RC 按鈕 3、4（← →）已用來旋轉。');
+      if (K.mode.on) {
+        const mk2 = [K.mode.autoKey, K.mode.manKey].map(x => String(x).replace(/^(ps3|v7):/, ''));
+        if (used.some(b => mk2.includes(b))) warn.push('⚠ 自動鍵／手動鍵和按鍵對應重複，請換一個按鍵。');
+      }
+    }
+    if (K.mode.on) {
+      if (K.mode.autoKey === K.mode.manKey) warn.push('⚠ 自動鍵和手動鍵不能相同。');
+      warn.push('一鍵自動：每個動作做完會檢查手動鍵，若要中止正在進行的長距離移動，要等那一步走完。');
+    }
     if (K.on.ps3) warn.push('PS3：上傳後長按手把中間的 PS 鈕連線。');
     if (K.on.v7rc) warn.push('V7RC：App 控制中心的控制介面要選 GAME ADV；右側 ← → 鍵已用來旋轉，按鈕觸發請避開 3、4。');
     if (K.on.ir) warn.push('先用「OLED 顯示 IR 數值」把車貼牆讀出各感測器數值，再填入目標值。');
@@ -714,7 +917,7 @@
     renderLevel();
     renderKits();
     const lv = ORDER.indexOf(state.level);
-    document.getElementById('trigs').innerHTML = TRIGGERS.filter(t => !t.kit || (state.level !== 'basic' && state.kits.on[t.kit])).map(t => {
+    document.getElementById('trigs').innerHTML = TRIGGERS.filter(t => (t.mode ? state.level !== 'basic' && state.kits.mode.on : (!t.kit || (state.level !== 'basic' && state.kits.on[t.kit])))).map(t => {
       const st = state.trig[t.key];
       let btnSel = '';
       if (t.kit === 'ps3') btnSel = ' <select data-trigbtn="' + t.key + '">' + PS3_BTNS.map(b => '<option value="' + b[0] + '"' + (b[0] === st.btn ? ' selected' : '') + '>' + esc(b[1]) + '</option>').join('') + '</select>';
@@ -728,7 +931,7 @@
           '<button class="icon-btn" type="button" data-op="down" data-id="' + id + '" title="下移">▼</button>' +
           '<button class="icon-btn" type="button" data-op="del" data-id="' + id + '" title="刪除">✕</button></div></div>';
       }).join('');
-      const adds = Object.entries(ACTIONS).filter(([, v]) => ORDER.indexOf(v.level) <= lv)
+      const adds = Object.entries(ACTIONS).filter(([, v]) => !v.hidden && ORDER.indexOf(v.level) <= lv)
         .map(([k, v]) => '<button class="icon-btn" type="button" data-add="' + k + '" data-trigkey="' + t.key + '">＋ ' + esc(v.label) + '</button>').join('');
       const lab = t.kit ? esc(t.label.replace(/ [12] 被按下時$/, '')) + btnSel + ' 被按下時' : esc(t.label);
       return '<div class="trig' + (st.on ? '' : ' off') + '"><div class="trig-head"><label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" data-trig="' + t.key + '"' + (st.on ? ' checked' : '') + '>' + (t.kit ? '' : lab) + '</label>' + (t.kit ? lab : '') +
@@ -762,17 +965,41 @@
     const p = PRESETS[state.level][+b.dataset.preset][1]();
     state.trig = Object.assign(emptyTrig(), p.trig);
     state.kits.on = Object.assign(defaultKits().on, p.kits || {});
+    const dk = defaultKits();   // 範本會重設遙控與模式設定（按鍵對應、速度、自動／手動鍵）
+    ['ps3', 'v7rc', 'mode'].forEach(g => { state.kits[g] = Object.assign(dk[g], (p.cfg || {})[g] || {}); });
     render();
   });
   const kitBox = document.getElementById('kitBox');
   kitBox.addEventListener('change', e => {
     const el = e.target;
     if (el.dataset.kit) { setKit(el.dataset.kit, el.checked); render(); return; }
-    if (el.dataset.kitcfg) { const [g, k] = el.dataset.kitcfg.split('.'); state.kits[g][k] = el.value; if (el.tagName === 'SELECT') render(); else { renderKits(); update(); } }
+    if (el.dataset.kitcfg) {
+      const [g, k] = el.dataset.kitcfg.split('.');
+      state.kits[g][k] = el.type === 'checkbox' ? el.checked : el.value;
+      if (g === 'mode' && k === 'on' && el.checked) state.trig.AUTO.on = true;
+      if (el.tagName === 'SELECT' || el.type === 'checkbox') render(); else { renderKits(); update(); }
+      return;
+    }
+    if (el.dataset.map !== undefined) {
+      const R = state.kits[state.kits.on.ps3 ? 'ps3' : 'v7rc'], m = R.map[+el.dataset.map], k = el.dataset.mk;
+      if (k === 'act') { const nm = mapRow(m.btn, el.value); R.map[+el.dataset.map] = nm; const kit = MAP_ACTS[el.value].kit; if (kit) setKit(kit, true); render(); return; }
+      m[k] = el.value;
+      if (el.tagName === 'SELECT') renderKits();
+      update();
+    }
+  });
+  kitBox.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    const rk = state.kits.on.ps3 ? 'ps3' : 'v7rc', R = state.kits[rk];
+    if (b.dataset.mapoff) { R.map = OFFICIAL_MAP[b.dataset.mapoff](); setKit(/arm$/.test(b.dataset.mapoff) ? 'arm' : 'gun', true); render(); }
+    else if (b.dataset.mapadd) { R.map = (R.map || []).concat([mapRow(rk === 'ps3' ? 'cross' : '1', 'stop')]); render(); }
+    else if (b.dataset.mapclear) { R.map = []; render(); }
+    else if (b.dataset.mapdel !== undefined) { R.map.splice(+b.dataset.mapdel, 1); render(); }
   });
   kitBox.addEventListener('input', e => {
     const el = e.target;
-    if (el.dataset.kitcfg && el.tagName === 'INPUT') { const [g, k] = el.dataset.kitcfg.split('.'); state.kits[g][k] = el.value; update(); }
+    if (el.dataset.kitcfg && el.tagName === 'INPUT' && el.type !== 'checkbox') { const [g, k] = el.dataset.kitcfg.split('.'); state.kits[g][k] = el.value; update(); }
+    if (el.dataset.map !== undefined && el.tagName === 'INPUT') { const R = state.kits[state.kits.on.ps3 ? 'ps3' : 'v7rc']; R.map[+el.dataset.map][el.dataset.mk] = el.value; update(); }
   });
 
   const box = document.getElementById('trigs');
