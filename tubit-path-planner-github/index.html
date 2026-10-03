@@ -171,7 +171,7 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
 <body>
 <div class="app">
 <header>
-  <div class="brand"><h1>TU:bit V2 2026全國競賽路徑規劃器</h1><span class="ver" id="ver" title="更新紀錄">v1.4.0</span><a class="ver" href="../competition.html" title="回競賽專區">← 競賽專區</a><a class="ver" href="../generator.html#race" title="程式產生器：競賽自動化">程式產生器</a></div>
+  <div class="brand"><h1>TU:bit V2 2026全國競賽路徑規劃器</h1><span class="ver" id="ver" title="更新紀錄">v1.4.0</span><a class="ver" href="https://st887105.github.io/20261002/competition.html" title="回競賽專區">← 競賽專區</a><a class="ver" href="https://st887105.github.io/20261002/generator.html#race" title="程式產生器：競賽自動化">程式產生器</a></div>
   <div class="hgroup">
     <select id="gameSel" aria-label="競賽項目">
       <option value="energy">物資能源爭霸戰 300×300</option>
@@ -2422,7 +2422,7 @@ function renderKits(){
   const servo = path => sel(path, SERVOS.map(v => [v, v]));
   const nin = (label, path, attr = '') => `<label class="f"><span>${label}</span><input type="number" data-bind="${path}" ${attr}></label>`;
   const tin = (label, path) => `<label class="f"><span>${label}</span><input type="text" data-bind="${path}"></label>`;
-  let h = `<p class="hint" style="margin-top:0">套件、腳位、初始化與程式寫法和課程網站 <a href="../generator.html#race" target="_blank" rel="noopener">程式產生器</a> 相同（依兔比積木擴充原始碼）。手臂與發射器、PS3 與 V7RC 只能各選一種。</p>`;
+  let h = `<p class="hint" style="margin-top:0">套件、腳位、初始化與程式寫法和課程網站 <a href="https://st887105.github.io/20261002/generator.html#race" target="_blank" rel="noopener">程式產生器</a> 相同（依兔比積木擴充原始碼）。手臂與發射器、PS3 與 V7RC 只能各選一種。</p>`;
   if (kitNoteMsg) h += `<p class="note">${kitNoteMsg}</p>`;
   h += `<table class="kit"><thead><tr><th>使用</th><th>套件</th><th>初始化／腳位</th></tr></thead><tbody>` +
     GEN.KIT_KEYS.map(k => `<tr><td><input type="checkbox" data-kit="${k}" ${on[k] ? 'checked' : ''} aria-label="${GEN.KITS[k].label}"></td>
@@ -2450,7 +2450,7 @@ function renderKits(){
       <div class="row" style="margin-top:6px">${nin('移動速度', `kits.${rk}.speed`)}${nin('旋轉速度', `kits.${rk}.turn`)}${nin('死區', `kits.${rk}.dead`)}${nin('瞄準速度', `kits.${rk}.aim`, 'step="0.05"')}</div>
       <label class="f" style="margin-top:6px"><span>按鍵對應</span><select data-map="${rk}"><option value="">不使用</option><option value="arm" ${R.mapPreset === 'arm' ? 'selected' : ''}>官方手臂車配置</option><option value="gun" ${R.mapPreset === 'gun' ? 'selected' : ''}>官方發射車配置</option>${R.mapPreset === 'custom' ? '<option value="custom" selected>自訂（匯入）</option>' : ''}</select></label>
       <div class="maplist">${mapListHtml(rk)}</div>
-      <p class="hint">需要逐鍵修改或組合鍵，請用 <a href="../generator.html#adv" target="_blank" rel="noopener">程式產生器</a> 設定後把程式碼的 remoteControl() 合併。</p></div>`;
+      <p class="hint">需要逐鍵修改或組合鍵，請用 <a href="https://st887105.github.io/20261002/generator.html#adv" target="_blank" rel="noopener">程式產生器</a> 設定後把程式碼的 remoteControl() 合併。</p></div>`;
   });
   const M = K.mode;
   h += `<div class="kbox"><h4>一鍵自動／手動模式</h4><label class="chk"><input type="checkbox" data-bind="kits.mode.on"> 開啟（路徑變成「一鍵自動模式流程」）</label>`;
@@ -2515,7 +2515,7 @@ function renderRef(){
     ['一鍵自動／手動', 'autoKey() → runAuto()（每步檢查 abortAuto()）→ AUTO OK；manualKey() → remoteControl()'],
     ['OLED', 'Adafruit_SH1106G display(128, 64, &Wire);  display.begin(0x3C, true);'],
   ];
-  $('#refTable').innerHTML = `<p class="hint" style="margin-top:0">寫法與課程網站 <a href="../generator.html#race" target="_blank" rel="noopener">程式產生器</a> 共用同一套產生核心（依兔比積木擴充原始碼與官方 .tb 範例）。</p>
+  $('#refTable').innerHTML = `<p class="hint" style="margin-top:0">寫法與課程網站 <a href="https://st887105.github.io/20261002/generator.html#race" target="_blank" rel="noopener">程式產生器</a> 共用同一套產生核心（依兔比積木擴充原始碼與官方 .tb 範例）。</p>
     <table class="ref">${rows.map(r => `<tr><td>${r[0]}</td><td><code>${r[1].replace(/</g, '&lt;')}</code></td></tr>`).join('')}</table>`;
 }
 

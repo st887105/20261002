@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="TU:bit V2 開始使用：認識控制板、安裝 TubitBlock 與 CH340 驅動、加入 TU:bit V2 設備、連線上傳程式。">
+<meta name="theme-color" content="#1D2940">
+<title>開始使用｜TU:bit V2 機器人課程</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%A4%96%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/site.css">
+<script src="assets/site.js" defer></script>
+</head>
+<body data-page="start">
+<header id="site-header"></header>
+<main class="wrap">
+  <div class="page-head">
+    <div class="crumb"><a href="index.html">首頁</a> › 開始使用</div>
+    <h1>STEP 1　開始使用</h1>
+    <p>認識 TU:bit V2 控制板、安裝 TubitBlock，並把第一支程式上傳到機器人。</p>
+  </div>
+
+  <div class="layout">
+    <aside class="toc">
+      <b>本頁目錄</b>
+      <a href="#board">1. 認識控制板</a>
+      <a href="#install">2. 安裝 TubitBlock</a>
+      <a href="#device">3. 加入 TU:bit V2 設備</a>
+      <a href="#upload">4. 連線與上傳</a>
+      <a href="#ext">5. 加入擴充積木</a>
+      <a href="#first">6. 第一支程式：按鈕與 OLED</a>
+      <a href="#trouble">常見問題</a>
+    </aside>
+
+    <article>
+      <h2 id="board" class="mt0">1. 認識 TU:bit V2 控制板</h2>
+      <p>控制板就像機器人的電腦：讀取<b>輸入</b>（按鈕、超音波、手把），經過程式<b>處理</b>，再驅動<b>輸出</b>（馬達、伺服馬達、OLED）。TU:bit V2 以 ESP32 為核心，內建藍牙與 Wi-Fi，可直接用手機或 PS3 手把遙控。</p>
+
+      <h3>電源部件（A Type-C、B 馬達電源開關、C DC 電池輸入）</h3>
+      <figure class="figure official">
+        <img src="https://i0.wp.com/trgreat.com/wp-content/uploads/2026/05/%E8%9E%A2%E5%B9%95%E6%93%B7%E5%8F%96%E7%95%AB%E9%9D%A2-2026-05-21-142350.png?ssl=1" alt="TU:bit V2 控制板電源部件：A Type-C、B 馬達電源開關、C DC 輸入孔" loading="lazy">
+        <figcaption>A：Type-C（供電與燒錄，左上）　B：馬達電源開關（Type-C 下方）　C：DC 電池輸入孔（左下）　<span class="src">圖片來源：<a href="https://trgreat.com/tu-wiki/tubit-v2-%e6%a9%9f%e5%99%a8%e4%ba%ba%e6%8e%a7%e5%88%b6%e6%9d%bf-%e9%9b%bb%e6%ba%90%e7%af%87/" target="_blank" rel="noopener">鴻兔科技 TU Wiki</a></span></figcaption>
+      </figure>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>輸入方式</th><th>電壓</th><th>可驅動</th></tr></thead>
+          <tbody>
+            <tr><td>Type-C</td><td>5V</td><td>控制板、GPIO 的 3.3V／5V；<b>不能驅動直流馬達與伺服馬達</b></td></tr>
+            <tr><td>DC 圓孔</td><td><b>≤ 12V</b>（超過可能燒毀控制板或馬達）</td><td>全部；VIN 電壓＝DC 輸入電壓</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <figure class="figure official">
+        <img src="https://i0.wp.com/trgreat.com/wp-content/uploads/2026/05/%E9%9B%BB%E6%BA%90%E6%8E%A5%E7%B7%9A%E5%9C%96.png?ssl=1" alt="電源分配圖：Type-C 5V 供 GPIO；DC VIN 供伺服與直流馬達" loading="lazy">
+        <figcaption>電源分配：Type-C（5V）→ GPIO 3.3V／5V；DC（VIN）→ 伺服馬達 5V-2A／VIN、直流馬達 VIN　<span class="src">圖片來源：<a href="https://trgreat.com/tu-wiki/tubit-v2-%e6%a9%9f%e5%99%a8%e4%ba%ba%e6%8e%a7%e5%88%b6%e6%9d%bf-%e9%9b%bb%e6%ba%90%e7%af%87/" target="_blank" rel="noopener">鴻兔科技 TU Wiki</a></span></figcaption>
+      </figure>
+      <div class="grid g2">
+        <figure class="figure official">
+        <img src="https://i0.wp.com/trgreat.com/wp-content/uploads/2026/05/%E8%9E%A2%E5%B9%95%E6%93%B7%E5%8F%96%E7%95%AB%E9%9D%A2-2026-05-21-143220.png?ssl=1" alt="燒錄時：接 Type-C、馬達開關 OFF、拔掉 DC" loading="lazy">
+        <figcaption><b>燒錄時</b>：接 Type-C → 開關切 OFF → 拔掉 DC　<span class="src">圖片來源：<a href="https://trgreat.com/tu-wiki/tubit-v2-%e6%a9%9f%e5%99%a8%e4%ba%ba%e6%8e%a7%e5%88%b6%e6%9d%bf-%e9%9b%bb%e6%ba%90%e7%af%87/" target="_blank" rel="noopener">鴻兔科技 TU Wiki</a></span></figcaption>
+        </figure>
+        <figure class="figure official">
+        <img src="https://i0.wp.com/trgreat.com/wp-content/uploads/2026/05/%E8%9E%A2%E5%B9%95%E6%93%B7%E5%8F%96%E7%95%AB%E9%9D%A2-2026-05-21-143542.png?ssl=1" alt="操作時：接 DC 電池、開關 ON、拔掉 Type-C" loading="lazy">
+        <figcaption><b>操作時</b>：接 DC 電池 → 開關切 ON → 拔掉 Type-C　<span class="src">圖片來源：<a href="https://trgreat.com/tu-wiki/tubit-v2-%e6%a9%9f%e5%99%a8%e4%ba%ba%e6%8e%a7%e5%88%b6%e6%9d%bf-%e9%9b%bb%e6%ba%90%e7%af%87/" target="_blank" rel="noopener">鴻兔科技 TU Wiki</a></span></figcaption>
+        </figure>
+      </div>
+
+      <h3>按鈕 A／B 與 Reset</h3>
+      <figure class="figure official">
+        <img src="https://i0.wp.com/trgreat.com/wp-content/uploads/2026/05/image-21.png?ssl=1" alt="控制板上兩個自訂義按鈕與重啟按鈕" loading="lazy">
+        <figcaption>兩個自訂義按鈕 BUTA(0)、BUTB(2) 與 RESET 重啟按鈕；讀取值 0＝未按、1＝按下　<span class="src">圖片來源：<a href="https://trgreat.com/tu-wiki/tubit-v2-%e6%a9%9f%e5%99%a8%e4%ba%ba%e6%8e%a7%e5%88%b6%e6%9d%bf-%e6%8c%89%e9%88%95%e7%af%87/" target="_blank" rel="noopener">鴻兔科技 TU Wiki</a></span></figcaption>
+      </figure>
+
+      <h3>GPIO、I2C、UART 腳位</h3>
+      <figure class="figure official">
+        <img src="https://i0.wp.com/trgreat.com/wp-content/uploads/2026/05/TUBitBlock-%E8%A8%AD%E8%A8%88%E7%99%BD%E6%9D%BF.png?ssl=1" alt="GPIO 腳位與 I2C、UART 腳位位置" loading="lazy">
+        <figcaption>上方 12 個 GPIO 腳位（下方數字為腳位號碼）；右側上兩排為 I2C、最後一排為 UART　<span class="src">圖片來源：<a href="https://trgreat.com/tu-wiki/tubit-v2%e6%a9%9f%e5%99%a8%e4%ba%ba%e6%8e%a7%e5%88%b6%e6%9d%bf-gpio%e7%af%87/" target="_blank" rel="noopener">鴻兔科技 TU Wiki</a></span></figcaption>
+      </figure>
+
+      <h3>OLED 座標</h3>
+      <figure class="figure official">
+        <img src="https://i0.wp.com/trgreat.com/wp-content/uploads/2026/05/image-11.png?ssl=1" alt="OLED 座標：左上 (0,0)、右下 (128,64)" loading="lazy">
+        <figcaption>OLED 1.3 吋，X 向右 0–128、Y 向下 0–64　<span class="src">圖片來源：<a href="https://trgreat.com/tu-wiki/tubit-v2%e6%a9%9f%e5%99%a8%e4%ba%ba%e6%8e%a7%e5%88%b6%e6%9d%bf-oled%e7%af%87/" target="_blank" rel="noopener">鴻兔科技 TU Wiki</a></span></figcaption>
+      </figure>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>功能</th><th>用途</th><th>對應課程</th></tr></thead>
+          <tbody>
+            <tr><td>編碼器馬達控制 ×4</td><td>驅動 4 顆編碼器直流馬達，可讀取轉動量</td><td>官方講義 05</td></tr>
+            <tr><td>伺服馬達控制 S0–S7</td><td>雲台、手臂、夾爪、發射器</td><td>官方講義 06</td></tr>
+            <tr><td>自定義按鈕 A／B</td><td>啟動程式、切換模式</td><td>官方講義 03</td></tr>
+            <tr><td>OLED 顯示面板</td><td>顯示文字、數值、圖片（128×64）</td><td>官方講義 04</td></tr>
+            <tr><td>藍牙／Wi-Fi</td><td>V7RC 手機遙控、PS3 手把</td><td>官方講義 07、擴充 11</td></tr>
+            <tr><td>I2C、UART、GPIO</td><td>BNO055、HuskyLens、超音波等感測器</td><td>擴充積木課程</td></tr>
+            <tr><td>燒錄接口、Reset</td><td>USB 上傳程式、重新啟動</td><td>官方講義 02</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 id="install">2. 安裝 TubitBlock</h2>
+      <ol class="steps">
+        <li>到<a href="https://trgreat.com/dongye-software-all/" target="_blank" rel="noopener">官網軟體下載</a>點「兔比積木 TubitBlock」，下載 <code>TubitBlock_v版本_win_x64.exe</code> 並安裝。</li>
+        <li>安裝 USB 驅動：控制板在電腦上會顯示為 <b>USB-SERIAL CH340（COMx）</b>。若裝置管理員看不到這個 COM 埠，請安裝 CH340 驅動（官方講義 01「TU:bitBlock 驅動安裝」）。</li>
+        <li>更新 TubitBlock 版本後，請開啟軟體 › <b>設定</b> › <b>清除緩存並重啟</b>，避免舊的擴充積木殘留。</li>
+        <li>不方便安裝時，可改用 <a href="https://tubitblock.trgreat.com/" target="_blank" rel="noopener">TubitBlock 線上版</a>，或把產生的程式碼貼到 <a href="https://tubitblock.trgreat.com/arduino-ide.html" target="_blank" rel="noopener">兔比積木 Arduino IDE 線上版</a> 編譯燒錄。</li>
+      </ol>
+      <div class="note"><b>補充</b>環境設定的完整圖文說明在 <a href="https://trgreat.com/tu-wiki/tubitblock-getstarted/" target="_blank" rel="noopener">TU Wiki：TubitBlock 入門</a>。</div>
+
+      <h2 id="device">3. 加入 TU:bit V2 設備</h2>
+      <ol class="steps">
+        <li>開啟 TubitBlock，點左上角的「<b>未選擇設備</b>」。</li>
+        <li>第一次使用需先安裝 TU:bit 設備資料庫，再選 <b>TU:bit V2 控制板</b>。</li>
+        <li>加入後左側會出現 TU:bit V2 的功能分類（按鈕、OLED、馬達、伺服馬達等）。</li>
+      </ol>
+
+      <h2 id="upload">4. 連線與上傳</h2>
+      <ol class="steps">
+        <li>用 USB 線接上控制板，按「<b>連線</b>」。</li>
+        <li>清單中選 <b>USB-SERIAL CH340（COMx）</b>，按「<b>開始連線</b>」。看不到裝置時按「重新整理」，或勾選「顯示全部可連接的設備」。</li>
+        <li>拼好積木後按「<b>上傳</b>」，等待編譯與燒錄完成。</li>
+        <li>要看感測器數值，打開<b>序列埠監控視窗</b>（程式中需有序列埠列印積木）。</li>
+      </ol>
+      <div class="note warn"><b>上傳失敗時</b>先確認 USB 線是可傳資料的線（不是只能充電的線），再確認 COM 埠沒有被其他軟體（例如另一個 TubitBlock 視窗或序列埠工具）占用。</div>
+
+      <h2 id="ext">5. 加入擴充積木</h2>
+      <p>PS3 手把、V7RC、MTC 麥克納姆輪、手臂（ATARM）、乒乓球發射器（PPGUN）、BNO055 等功能都在「擴充功能」裡。點左下角的<b>擴充功能</b>按鈕，選擇要用的模組後，左側就會多出對應的積木分類。用法見 <a href="modules.html">擴充模組</a>。</p>
+
+      <h2 id="first">6. 第一支程式：按鈕與 OLED</h2>
+      <p>先做一支不需要接任何零件的程式，確認連線與上傳都正常。</p>
+      <div class="blocks"><span class="b-ev">當 Arduino 啟動</span>
+  <span class="b-tb">TUBIT 初始化</span>
+  <span class="b-ctl">重複無限次</span>
+    <span class="b-tb">OLED 開始繪圖</span>
+      <span class="b-tb">OLED 顯示文字</span> X=0 Y=16 「按鈕 A：」＋ <span class="b-tb">讀取按鈕 A</span>
+      <span class="b-tb">OLED 顯示文字</span> X=0 Y=40 「按鈕 B：」＋ <span class="b-tb">讀取按鈕 B</span></div>
+      <ul>
+        <li>按鈕狀態：<b>0＝未按下</b>、<b>1＝按下</b>（官方講義 03）。</li>
+        <li>OLED 顯示文字的座標點在<b>文字左下角</b>，畫面範圍 (0,0) 到 (128,64)，所以第一行 Y 要設 16 左右才看得到（官方講義 04）。</li>
+        <li>控制 OLED 需要「OLED 開始繪圖」，或「更新顯示器＋清空顯示器」。</li>
+      </ul>
+
+      <h2 id="trouble">常見問題</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>狀況</th><th>先檢查</th></tr></thead>
+          <tbody>
+            <tr><td>連線清單沒有 CH340</td><td>驅動是否安裝、USB 線是否可傳資料、換一個 USB 孔</td></tr>
+            <tr><td>上傳後沒反應</td><td>電源開關是否在 ON、程式是否有「TUBIT 初始化」</td></tr>
+            <tr><td>擴充積木行為怪怪的</td><td>設定 › 清除緩存並重啟</td></tr>
+            <tr><td>OLED 沒有字</td><td>Y 座標是否太小（文字基準在左下角）</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="src">內容依據：鴻兔科技 TU:bit V2 入門課程講義 01–04、<a href="https://trgreat.com/tu-wiki/" target="_blank" rel="noopener">TU Wiki 控制板電源篇、按鈕篇、OLED 篇、GPIO 篇</a>、MTC V2 機器人資料 2026。</p>
+      <div class="btns"><a class="btn primary" href="wiring.html">下一步：組裝與接線 →</a></div>
+    </article>
+  </div>
+</main>
+<footer id="site-footer"></footer>
+</body>
+</html>

@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="TU:bit V2 擴充模組：PS3 手把連線與按鍵、V7RC 藍牙／Wi-Fi 遙控、ATARM 手臂、PPGUN 乒乓球發射器、BNO055 角度感測、超音波、HuskyLens。">
+<meta name="theme-color" content="#1D2940">
+<title>擴充模組｜TU:bit V2 機器人課程</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%A4%96%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/site.css">
+<script src="assets/site.js" defer></script>
+</head>
+<body data-page="modules">
+<header id="site-header"></header>
+<main class="wrap">
+  <div class="page-head">
+    <div class="crumb"><a href="index.html">首頁</a> › 擴充模組</div>
+    <h1>STEP 3　擴充模組</h1>
+    <p>每個模組都要先在 TubitBlock「擴充功能」加入，並在程式開頭放<b>初始化積木</b>。下面整理各模組的接法、初始化參數與常用積木。</p>
+  </div>
+
+  <div class="layout">
+    <aside class="toc">
+      <b>本頁目錄</b>
+      <a href="#ps3">PS3 遙控手把</a>
+      <a href="#v7rc">V7RC 手機遙控</a>
+      <a href="#atarm">手臂 ATARM</a>
+      <a href="#ppgun">發射器 PPGUN</a>
+      <a href="#bno">BNO055 角度感測</a>
+      <a href="#ultra">超音波</a>
+      <a href="#husky">HuskyLens 影像辨識</a>
+      <a href="#more">其他擴充積木</a>
+    </aside>
+
+    <article>
+      <h2 id="ps3" class="mt0">PS3 遙控手把</h2>
+      <p>PS3 手把透過藍牙直接連到 TU:bit V2（ESP32），不需要接收器。手把裡記著一組「主機 MAC 位址」，程式初始化時填入<b>同一組 MAC</b>，手把才會連上這台機器人。</p>
+      <ol class="steps">
+        <li>擴充功能加入 <b>PS3 遙控手把</b>（擴充積木 11）。</li>
+        <li>在「PS3 遙控初始化 MAC」積木填入這支手把的 MAC，例如 <code>20:00:00:00:63:93</code>。</li>
+        <li>接上控制板，<b>上傳程式</b>。</li>
+        <li>上傳完成後，<b>長按手把中間的 PS 鈕</b>進行連線。</li>
+        <li>用「如果 PS3 已連接」包住控制程式，並用序列埠列印 LX、LY、RX、RY 與按鈕狀態，確認有讀到數值。</li>
+      </ol>
+      <h3>連線步驟圖解</h3>
+      <div class="grid g2">
+        <figure class="figure official"><img src="assets/img/ps3-step1.jpg" alt="PS3 遙控初始化積木填入手把 MAC" loading="lazy">
+          <figcaption>① 把 PS3 手把的 MAC 填進「PS3 遙控初始化 MAC」積木（紅框處）　<span class="src">圖片來源：官方講義「TU_bit 模組課程 03-1 PS3 搖桿」</span></figcaption></figure>
+        <figure class="figure official"><img src="assets/img/ps3-step2.jpg" alt="連接控制板並上傳程式" loading="lazy">
+          <figcaption>② 用 USB 連接控制板（CH340 序列埠），上傳程式碼　<span class="src">圖片來源：官方講義「TU_bit 模組課程 03-1 PS3 搖桿」</span></figcaption></figure>
+        <figure class="figure official"><img src="assets/img/ps3-step3.jpg" alt="長按手把中間 PS 鈕連線" loading="lazy">
+          <figcaption>③ 上傳完成後，<b>長按手把中間的 PS 鈕</b>連線，燈號停止閃爍就是連上了　<span class="src">圖片來源：官方講義「TU_bit 模組課程 03-1 PS3 搖桿」</span></figcaption></figure>
+        <figure class="figure official"><img src="assets/img/ps3-step4.jpg" alt="左右搖桿與四個按鈕" loading="lazy">
+          <figcaption>④ 控制方式：左、右搖桿與右側 △ ○ □ ✕ 四個按鈕　<span class="src">圖片來源：官方講義「TU_bit 模組課程 03-1 PS3 搖桿」</span></figcaption></figure>
+        <figure class="figure official"><img src="assets/img/ps3-step5.jpg" alt="序列埠監控讀取 PS3 數值" loading="lazy">
+          <figcaption>⑤ 打開序列埠監控，推搖桿、按按鈕，確認數值有變化　<span class="src">圖片來源：官方講義「TU_bit 模組課程 03-1 PS3 搖桿」</span></figcaption></figure>
+      </div>
+      <div class="note"><b>連不上時依序檢查</b>1. 積木裡的 MAC 和手把記住的 MAC 是否一致；2. 程式是否已上傳成功；3. 手把是否有電（插 USB 充電）；4. 附近是否有另一台車用了同一組 MAC。</div>
+      <div class="note warn"><b>每支手把的 MAC 不一樣</b>官方範例中夾爪車用 <code>20:00:00:00:63:93</code>、射擊車用 <code>20:00:00:00:64:30</code>。兩台車不要填同一組 MAC，否則一支手把可能連到另一台車。手把 MAC 不明時，可用 SixaxisPairTool 讀取或改寫手把記住的主機位址（<a href="https://github.com/jvpernis/esp32-ps3" target="_blank" rel="noopener">esp32-ps3 函式庫說明</a>）。</div>
+
+      <h3>讀取值</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>積木</th><th>內容</th><th>說明</th></tr></thead>
+          <tbody>
+            <tr><td>讀取 PS3 搖桿</td><td>左搖桿 X／Y（lx、ly）、右搖桿 X／Y（rx、ry）</td><td>約 −128～127，放開時接近 0。<b>往上推 ly 是負值</b>，所以前進要乘 −1。</td></tr>
+            <tr><td>PS3 按鈕被按下</td><td>△ ○ □ ✕、↑ ↓ ← →、L1 L2 R1 R2 等</td><td>按下為真（1）</td></tr>
+            <tr><td>PS3 已連接</td><td>布林值</td><td>沒連上時應讓車停止</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>官方範例的按鍵配置</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>按鍵</th><th>手臂車（夾爪機器人_ps3搖桿）</th><th>射擊車（射擊機器人_ps3搖桿）</th></tr></thead>
+          <tbody>
+            <tr><td>左搖桿</td><td colspan="2">前後、左右平移（X＝lx、Y＝−ly）</td></tr>
+            <tr><td>右搖桿 X</td><td colspan="2">原地旋轉（R＝rx）</td></tr>
+            <tr><td>△ ／ ✕</td><td>手臂上升／下降（每次 ±0.1°累加）</td><td>砲管上仰／下壓（每次 ±0.05°累加）</td></tr>
+            <tr><td>L1 ／ R1</td><td>手臂左轉／右轉（±0.1°累加）</td><td>砲台左轉／右轉（±0.1°累加）</td></tr>
+            <tr><td>○</td><td>夾爪夾緊</td><td>砲台回正 90°</td></tr>
+            <tr><td>□</td><td>夾爪張開</td><td>砲管仰角 30°</td></tr>
+            <tr><td>↑ ／ ↓</td><td>手臂抬到 65°／降到 10°</td><td>仰角 45°／10°</td></tr>
+            <tr><td>→ ／ ←</td><td>手臂轉到 55°／125°</td><td>砲台轉到 45°／135°</td></tr>
+            <tr><td>R2</td><td>手臂轉回 90°</td><td><b>發射乒乓球</b></td></tr>
+            <tr><td>L2</td><td colspan="2">MTC 角度移動：往 −90° 方向平移（速度 255），放開就停</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="src">依據：官方講義「TU_bit 模組課程 03-1 PS3 搖桿」、資料夾內 <code>擴充積木11_PS3遙控手把範例.tb</code>、<code>夾爪機器人_ps3搖桿.tb</code>、<code>射擊機器人_ps3搖桿.tb</code>。</p>
+
+      <h2 id="v7rc">V7RC 手機遙控</h2>
+      <p>TU:bit V2 晶片內建藍牙與 Wi-Fi，可用手機 App <b>V7RC</b>（Google Play／App Store）遙控。</p>
+      <div class="grid g2">
+        <div class="card">
+          <h3 class="mt0">藍牙連線</h3>
+          <ol>
+            <li>程式：V7RC 初始化選 <b>藍牙</b>，設定藍牙名稱（例：<code>MTC_ARM_U01</code>）。</li>
+            <li>App 左上角設定 › 連接方式：<b>藍芽</b> › 控制介面：<b>Game ADV</b>。</li>
+            <li>在清單中找到自己設定的藍牙名稱並連線。</li>
+          </ol>
+        </div>
+        <div class="card">
+          <h3 class="mt0">Wi-Fi 連線</h3>
+          <ol>
+            <li>程式：V7RC 初始化選 <b>WIFI</b>，設定 Wi-Fi 名稱、密碼、頻道。</li>
+            <li>手機先連上機器人的 Wi-Fi。</li>
+            <li>App 設定 › 連接方式：<b>WIFI</b>，IP <code>192.168.4.255</code>、Port <code>6188</code>，控制介面 <b>Game ADV</b>。</li>
+          </ol>
+        </div>
+      </div>
+      <h3>App 設定圖解</h3>
+      <div class="grid g2">
+        <figure class="figure official"><img src="assets/img/v7rc-game-adv-select.jpg" alt="V7RC 控制中心選擇 GAME ADV" loading="lazy">
+          <figcaption>① 進入 App 的<b>控制中心</b>（左上角齒輪），控制介面選 <b>GAME ADV</b>（變成黃色代表已選）</figcaption></figure>
+        <figure class="figure official"><img src="assets/img/v7rc-game-adv.jpg" alt="V7RC GAME ADV 操作畫面" loading="lazy">
+          <figcaption>② GAME ADV 畫面：左搖桿送出通道 <b>1（左右）</b>、<b>2（前後）</b>；右側 8 個方向鍵改變通道 <b>3（↑↓）</b>、<b>4（←→）</b>。放開時都是 1500，上方顯示連線狀態與連線方式（BLE）</figcaption></figure>
+      </div>
+      <div class="note warn"><b>一定要選 GAME ADV</b>官方範例與<a href="generator.html#adv">程式產生器</a>都用「V7RC 模式 = SRT」判斷資料，App 控制介面要選 <b>GAME ADV</b>，搖桿與方向鍵才會送出對應的通道 1～4。選成車輛、坦克或 GAME PAD 時，車子不會照預期移動。</div>
+      <div class="note"><b>每台車的藍牙名稱要不同</b>教室裡同時有多台車時，用「車種＋編號」命名（例如 <code>MTC_ARM_U01</code>、<code>MTC_PPGUN_U02</code>），學生才不會連錯車。</div>
+      <h3>官方範例的 Game ADV 對應</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>V7RC 資料</th><th>手臂車</th><th>發射車</th></tr></thead>
+          <tbody>
+            <tr><td>ADV 搖桿 1、2（X、Y）</td><td colspan="2">前進／橫移</td></tr>
+            <tr><td>ADV 按鈕 3、4（右側 ←、→）</td><td colspan="2">左轉／右轉</td></tr>
+            <tr><td>按鈕 1／2（↑／↓）</td><td>手臂上／下（±0.45°累加）</td><td>垂直雲台上／下</td></tr>
+            <tr><td>按鈕 8／6（↘／↙）</td><td>手臂左右旋轉</td><td>砲台左右旋轉</td></tr>
+            <tr><td>按鈕 5（↖）</td><td>夾爪夾緊</td><td>—</td></tr>
+            <tr><td>按鈕 7（↗）</td><td>夾爪張開</td><td>發射乒乓球</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="src">依據：官方講義 07 V7RC 控制單元、<a href="https://drive.google.com/file/d/1eLeHE3tOTUZTt6NeQ1jW4C95wCebWUQ-/view" target="_blank" rel="noopener">V7RC 操作說明</a>、資料夾內 <code>01.MTC_手臂機器人_V7RC_(藍牙)BLE.tb</code>、<code>01.MTC_發射器機器人_(藍牙)BLE.tb</code>。</p>
+
+      <h2 id="atarm">手臂 ATARM</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>積木</th><th>官方範例參數</th><th>說明</th></tr></thead>
+          <tbody>
+            <tr><td>手臂初始化</td><td>旋轉 S0、升降 S7、夾爪 S6</td><td>一定要放在程式開頭</td></tr>
+            <tr><td>夾爪角度設定</td><td>張開 80°、夾緊 150°</td><td>依實際夾爪調整，避免夾太緊卡死</td></tr>
+            <tr><td>升降範圍設定</td><td>最低 0°、最高 65°</td><td>可動範圍限制，避免伺服撞到結構</td></tr>
+            <tr><td>旋轉範圍設定</td><td>55°～125°</td><td>90° 為正前方</td></tr>
+            <tr><td>夾爪動作</td><td>true＝夾緊、false＝張開，加秒數</td><td>每次只夾 1 個物資（賽規）</td></tr>
+            <tr><td>升降／旋轉「累加」</td><td>±0.1° 或 ±0.45°</td><td>以目前角度增減，適合按住按鈕慢慢調</td></tr>
+            <tr><td>升降／旋轉「到指定角度」</td><td>例：65°、0.5 秒</td><td>平滑轉到目標角度</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="note"><b>先跑校正程式</b>資料夾內 <code>00.手臂校正程式.tb</code>：按住 A 夾爪張開、放開則夾緊；按住 B 手臂抬到 55°、放開降到 10°。確認動作方向正確後再裝回車上。</div>
+      <p class="src">官方文件：<a href="https://drive.google.com/file/d/1F0nBofNJftbwCewc5U4hX_qmqMwiY4cv/view" target="_blank" rel="noopener">手臂套件控制</a>｜<a href="https://www.youtube.com/watch?v=VHLDQ2iBImg" target="_blank" rel="noopener">手臂組裝影片</a>｜<a href="https://drive.google.com/drive/folders/1BcbmgIS9IMwUjN19LSXrnx-bcSTxhvS3" target="_blank" rel="noopener">手臂開源圖檔</a></p>
+
+      <h2 id="ppgun">乒乓球發射器 PPGUN</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>積木</th><th>官方範例參數</th><th>說明</th></tr></thead>
+          <tbody>
+            <tr><td>發射器初始化</td><td>旋轉 S0、上下 S1、發射 S2</td><td>水平雲台／垂直雲台／發射馬達</td></tr>
+            <tr><td>發射乒乓球</td><td>—</td><td>推桿推出乒乓球，約 2 秒後回原位</td></tr>
+            <tr><td>上下／旋轉「累加」</td><td>±0.05°～±0.45°</td><td>微調瞄準</td></tr>
+            <tr><td>上下／旋轉「到指定角度」</td><td>旋轉 45°／90°／135°；仰角 10°／30°／45°</td><td>快速切換預設瞄準位置</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="note warn"><b>手不要放在推桿附近</b>發射伺服 S2：110° 為待發位置、0° 為推出。校正與裝 C 型環的角度見 <a href="wiring.html#launcher">組裝與接線</a>，<b>不可超過 140°</b>。比賽每台最多裝填 5 顆 40 mm 乒乓球。</div>
+      <p class="src">官方文件：<a href="https://drive.google.com/file/d/1SaJyEs1Rg6Miues6Rg_VTeoLTN0TK1IM/view" target="_blank" rel="noopener">乒乓球發射器套件控制 2026</a>｜<a href="https://drive.google.com/drive/folders/1l_MqW2m2prcZjLY-3It2JJNNaeJxdfbm" target="_blank" rel="noopener">發射器開源圖檔</a></p>
+
+      <h2 id="bno">BNO055 角度感測（擴充積木 12）</h2>
+      <ul>
+        <li>接 I2C 接口（<a href="wiring.html#i2c">接線圖與實車照片</a>）；程式開頭放 <b>BNO055 初始化</b>。</li>
+        <li>讀取 <code>orientationZ</code> 得到車頭角度（0～360°），開機時的車頭方向為 0°。</li>
+        <li>MTC 的「BNO 移動」積木可同時給 X、Y、Z（旋轉量），用來做<b>轉正</b>：誤差＝目標角 − 目前角，乘上比例係數當旋轉速度，直到誤差夠小。</li>
+      </ul>
+      <div class="note bad"><b>I2C 電源不要接反：VIN 接 V（VCC）、GND 接 G（GND）</b>接反會燒掉 BNO055。3Vo 腳是輸出，不要拿來接電源。</div>
+      <div class="note bad"><b>資料夾內「轉正.tb」需要修正</b>停止條件寫成「|目標 − 目前| <b>＝</b> 0.3」。角度是小數，幾乎不會剛好等於 0.3，車子可能一直轉不停。請改成「<b>小於</b> 0.3」（或 1°），並處理 0°／360° 交界。修正後的寫法見 <a href="code.html#bno">程式範例</a>。</div>
+
+      <h2 id="ultra">超音波（擴充積木 01）</h2>
+      <ul>
+        <li>MTC V2 官方接法：<b>Trig → GPIO 23、Echo → GPIO 15</b>、VCC → 5V、GND → GND（<a href="wiring.html#ultra">接線圖</a>）。</li>
+        <li>官方範例：<code>01_超音波數值讀取.tb</code>、<code>02_超音波避障範例.tb</code>（<a href="https://trgreat.com/tubitblock-%e6%93%b4%e5%85%85%e7%a9%8d%e6%9c%a8%e5%8a%9f%e8%83%bd/" target="_blank" rel="noopener">擴充積木範例</a>）。</li>
+        <li>用途：自動化任務中量測與牆面距離、在觸發閘門前停車。</li>
+      </ul>
+
+      <h2 id="husky">HuskyLens 影像辨識（擴充積木 06）</h2>
+      <p>接 I2C，可做物件追蹤、顏色辨識。官方講義「影像辨識課程：物件與顏色追蹤」與範例 <code>01.哈士奇控制範例.tb</code> 在<a href="https://trgreat.com/tubitblock-%e6%93%b4%e5%85%85%e7%a9%8d%e6%9c%a8%e5%8a%9f%e8%83%bd/" target="_blank" rel="noopener">擴充積木頁</a>的「AI 進階擴充」。</p>
+
+      <h2 id="more">其他擴充積木</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>編號</th><th>模組</th><th>編號</th><th>模組</th></tr></thead>
+          <tbody>
+            <tr><td>01</td><td>超音波</td><td>07</td><td>BLYNK IoT</td></tr>
+            <tr><td>03</td><td>PS2 遙控手把</td><td>08</td><td>陣列處理</td></tr>
+            <tr><td>04</td><td>RGB 顏色感測（TCS3472）</td><td>09</td><td>V7RC</td></tr>
+            <tr><td>05</td><td>AI 類神經網路</td><td>10／11</td><td>PS4／PS3 遙控手把</td></tr>
+            <tr><td>06</td><td>HuskyLens AI 辨識</td><td>12</td><td>BNO055 角度感測</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="src">官方雲端「TU:bit BLOCK 擴充積木使用範例」另有 ESP32 多工任務、ESP-NOW 範例（2026/10/03 查核）。</p>
+
+      <div class="btns"><a class="btn" href="wiring.html">← 組裝與接線</a><a class="btn primary" href="code.html">下一步：程式範例 →</a></div>
+    </article>
+  </div>
+</main>
+<footer id="site-footer"></footer>
+</body>
+</html>
