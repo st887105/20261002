@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="MTC V2 麥克納姆輪組裝與接線：馬達線 1–4 位置、編碼器馬達、伺服馬達 S0–S7 與 VIN 跳帽、超音波 Trig 23／Echo 15、麥克納姆輪 X 型、雲台校正 90 度。">
+<meta name="theme-color" content="#1D2940">
+<title>組裝與接線｜TU:bit V2 機器人課程</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%A4%96%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/site.css">
+<script src="assets/site.js" defer></script>
+</head>
+<body data-page="wiring">
+<header id="site-header"></header>
+<main class="wrap">
+  <div class="page-head">
+    <div class="crumb"><a href="index.html">首頁</a> › 組裝與接線</div>
+    <h1>STEP 2　組裝與接線</h1>
+    <p>MTC V2 麥克納姆輪底盤的組裝順序與所有接線位置。接錯線最常造成「車子亂跑」或「伺服馬達沒力」，上電前請逐項核對。</p>
+  </div>
+
+  <div class="layout">
+    <aside class="toc">
+      <b>本頁目錄</b>
+      <a href="#order">組裝順序</a>
+      <a href="#motor">直流／編碼器馬達</a>
+      <a href="#mecanum">麥克納姆輪 X 型</a>
+      <a href="#servo">伺服馬達與跳帽</a>
+      <a href="#pins">各套件伺服腳位</a>
+      <a href="#ultra">超音波接線</a>
+      <a href="#power">電源與上電檢查</a>
+      <a href="#qrc">快拆模組</a>
+      <a href="#launcher">發射器校正</a>
+    </aside>
+
+    <article>
+      <h2 id="order" class="mt0">組裝順序</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>章節</th><th>重點</th><th>官方文件</th></tr></thead>
+          <tbody>
+            <tr><td>step1 下板與馬達</td><td>撕掉壓克力兩面保護膜（一面霧面、一面亮面）；用馬達支架長螺絲固定馬達，再用短螺絲把馬達鎖在下板，<b>馬達要與下板邊緣貼齊平行</b>。</td><td><a href="https://drive.google.com/file/d/1kfDO9lTfiquveRb44zOSsviAHZ8Vlc0c/view" target="_blank" rel="noopener">PDF</a></td></tr>
+            <tr><td>step2 上下板內部</td><td>馬達線<b>交叉的一端</b>插入馬達；裝超音波支架（MTC 字樣朝外），超音波針腳向上彎 90°；電池用束帶固定，<b>禁止用尖銳物割電池或破壞熱縮膜</b>。</td><td><a href="https://drive.google.com/file/d/1yNBMKfMTLldRjftc2PbQjVDKx_YTKCFv/view" target="_blank" rel="noopener">PDF</a></td></tr>
+            <tr><td>step3 上下板與控制板</td><td>水平雲台伺服馬達：<b>軸心與旁邊孔洞在同一邊</b>；馬達線 1–4、電源線、超音波杜邦線依顏色框從上板對應孔穿出；接馬達口、超音波、伺服跳帽。</td><td><a href="https://drive.google.com/file/d/18NvICb9fM7rr0xDNKfsqBgFrnYjk8QfB/view" target="_blank" rel="noopener">PDF</a></td></tr>
+            <tr><td>step4 雲台校正與輪子</td><td>輪子排成 X 型、M2.5×25 螺絲加墊片（<b>禁止電動工具</b>）；用程式把伺服轉到 90° 再裝十字舵盤；轉盤箭頭朝前。</td><td><a href="https://drive.google.com/file/d/1aNOuLq1tkbBrAmQmzIt_Qy7Dx8xAxKFR/view" target="_blank" rel="noopener">PDF</a></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="src">影片：<a href="https://www.youtube.com/watch?v=7QyZBCqG5MQ&list=PLXzXZRqh4IYqVaER3gP5AODBwymgliuli" target="_blank" rel="noopener">MTC V2 YouTube 組裝影片</a>｜全部文件：<a href="https://trgreat.com/mtc-robot-m-kit/" target="_blank" rel="noopener">MTC 機器人套件組裝說明</a></p>
+
+      <h2 id="motor">直流／編碼器馬達</h2>
+      <p>依官方 step3 說明，四條馬達線從上板穿出的位置如下（俯視、超音波在車頭）。穿線後把馬達線插到控制板四角的馬達接口，<b>注意控制板擺放方向不要接錯</b>。</p>
+      <figure class="figure">
+        <svg viewBox="0 0 520 400" width="520" role="img" aria-label="MTC V2 俯視圖：馬達線1左前、馬達線4右前、馬達線2左後、馬達線3右後">
+          
+          <text x="260" y="22" font-size="14" text-anchor="middle" fill="currentColor" font-weight="700">▲ 車頭（超音波）</text>
+          <rect x="230" y="34" width="60" height="18" rx="4" fill="#5B9BFF"/>
+          <rect x="140" y="60" width="240" height="300" rx="16" fill="#283041" stroke="#5A6678" stroke-width="2"/>
+          <circle cx="260" cy="200" r="44" fill="none" stroke="#9AA6B8" stroke-dasharray="4 4"/>
+          <text x="260" y="205" font-size="12" text-anchor="middle" fill="#D9E0EA">水平雲台</text>
+          <defs>
+            <clipPath id="wc0"><rect x="92" y="78" width="44" height="84" rx="8"/></clipPath>
+            <clipPath id="wc1"><rect x="384" y="78" width="44" height="84" rx="8"/></clipPath>
+            <clipPath id="wc2"><rect x="92" y="258" width="44" height="84" rx="8"/></clipPath>
+            <clipPath id="wc3"><rect x="384" y="258" width="44" height="84" rx="8"/></clipPath>
+          </defs>
+          <rect x="92" y="78" width="44" height="84" rx="8" fill="#D9E0EA" stroke="#5A6678" stroke-width="2"/>
+          <g clip-path="url(#wc0)" stroke="#5A6678" stroke-width="4"><line x1="92" y1="42" x2="136" y2="86"/><line x1="92" y1="54" x2="136" y2="98"/><line x1="92" y1="66" x2="136" y2="110"/><line x1="92" y1="78" x2="136" y2="122"/><line x1="92" y1="90" x2="136" y2="134"/><line x1="92" y1="102" x2="136" y2="146"/><line x1="92" y1="114" x2="136" y2="158"/><line x1="92" y1="126" x2="136" y2="170"/><line x1="92" y1="138" x2="136" y2="182"/><line x1="92" y1="150" x2="136" y2="194"/><line x1="92" y1="162" x2="136" y2="206"/><line x1="92" y1="174" x2="136" y2="218"/></g>
+          <rect x="384" y="78" width="44" height="84" rx="8" fill="#D9E0EA" stroke="#5A6678" stroke-width="2"/>
+          <g clip-path="url(#wc1)" stroke="#5A6678" stroke-width="4"><line x1="384" y1="86" x2="428" y2="42"/><line x1="384" y1="98" x2="428" y2="54"/><line x1="384" y1="110" x2="428" y2="66"/><line x1="384" y1="122" x2="428" y2="78"/><line x1="384" y1="134" x2="428" y2="90"/><line x1="384" y1="146" x2="428" y2="102"/><line x1="384" y1="158" x2="428" y2="114"/><line x1="384" y1="170" x2="428" y2="126"/><line x1="384" y1="182" x2="428" y2="138"/><line x1="384" y1="194" x2="428" y2="150"/><line x1="384" y1="206" x2="428" y2="162"/><line x1="384" y1="218" x2="428" y2="174"/></g>
+          <rect x="92" y="258" width="44" height="84" rx="8" fill="#D9E0EA" stroke="#5A6678" stroke-width="2"/>
+          <g clip-path="url(#wc2)" stroke="#5A6678" stroke-width="4"><line x1="92" y1="266" x2="136" y2="222"/><line x1="92" y1="278" x2="136" y2="234"/><line x1="92" y1="290" x2="136" y2="246"/><line x1="92" y1="302" x2="136" y2="258"/><line x1="92" y1="314" x2="136" y2="270"/><line x1="92" y1="326" x2="136" y2="282"/><line x1="92" y1="338" x2="136" y2="294"/><line x1="92" y1="350" x2="136" y2="306"/><line x1="92" y1="362" x2="136" y2="318"/><line x1="92" y1="374" x2="136" y2="330"/><line x1="92" y1="386" x2="136" y2="342"/><line x1="92" y1="398" x2="136" y2="354"/></g>
+          <rect x="384" y="258" width="44" height="84" rx="8" fill="#D9E0EA" stroke="#5A6678" stroke-width="2"/>
+          <g clip-path="url(#wc3)" stroke="#5A6678" stroke-width="4"><line x1="384" y1="222" x2="428" y2="266"/><line x1="384" y1="234" x2="428" y2="278"/><line x1="384" y1="246" x2="428" y2="290"/><line x1="384" y1="258" x2="428" y2="302"/><line x1="384" y1="270" x2="428" y2="314"/><line x1="384" y1="282" x2="428" y2="326"/><line x1="384" y1="294" x2="428" y2="338"/><line x1="384" y1="306" x2="428" y2="350"/><line x1="384" y1="318" x2="428" y2="362"/><line x1="384" y1="330" x2="428" y2="374"/><line x1="384" y1="342" x2="428" y2="386"/><line x1="384" y1="354" x2="428" y2="398"/></g>
+          <g font-weight="700" font-size="15" text-anchor="middle">
+            <circle cx="180" cy="110" r="20" fill="#E5A400"/><text x="180" y="116" fill="#3A2A00">1</text>
+            <circle cx="340" cy="110" r="20" fill="#E5A400"/><text x="340" y="116" fill="#3A2A00">4</text>
+            <circle cx="180" cy="300" r="20" fill="#E5A400"/><text x="180" y="306" fill="#3A2A00">2</text>
+            <circle cx="340" cy="300" r="20" fill="#E5A400"/><text x="340" y="306" fill="#3A2A00">3</text>
+          </g>
+          <g font-size="13" fill="currentColor">
+            <text x="10" y="124">左前</text><text x="472" y="124">右前</text>
+            <text x="10" y="304">左後</text><text x="472" y="304">右後</text>
+          </g>
+          <text x="260" y="390" font-size="12" text-anchor="middle" fill="currentColor">輪上斜線＝俯視時的輥子方向，四輪連成 X 型</text>
+        </svg>
+        <figcaption>俯視示意：馬達線 1 左前、4 右前、2 左後、3 右後（依官方 step3 第 8 頁）。</figcaption>
+      </figure>
+      <div class="note warn"><b>第一次通電一定要做的檢查</b>上傳「麥克納姆輪平移」程式後，先把車架高讓輪子懸空，確認前進時四輪都往前轉、右移時是「左前與右後往前、右前與左後往後」。方向不對時，檢查馬達線是否插錯接口或控制板方向擺反。</div>
+
+      <h3>單顆馬達的接法與速度</h3>
+      <ul>
+        <li>OUTA → 馬達正極、OUTB → 馬達負極（官方講義 05）。</li>
+        <li>馬達速度範圍 <code>-255 ~ 255</code>，正負代表方向；<b>輸入超過範圍則不轉動</b>。</li>
+        <li>速度是用 PWM（脈衝寬度調變）控制：通電時間比例越高，等效電壓越高、轉越快。</li>
+      </ul>
+      <h3>編碼器 CPR 怎麼算</h3>
+      <p>編碼器每 1 個脈衝會產生 4 個計數，所以：</p>
+      <pre><code>CPR（每轉計數）= 4 × PPR × 齒輪比
+例：13 PPR 編碼器＋1:90 減速馬達 → 4 × 13 × 90 = 4680</code></pre>
+      <p>也就是輪子轉一圈，編碼器讀到 4680。要讓馬達轉到指定角度，就用「目標角度 ÷ 360 × CPR」換算計數值。</p>
+
+      <h2 id="mecanum">麥克納姆輪 X 型</h2>
+      <ul>
+        <li>四顆輪子的輥子方向必須排列成 <b>X 型</b>（官方 step4），排錯會無法橫移。</li>
+        <li>先把馬達聯軸器套到 4 個馬達上，再用 <b>M2.5×25 螺絲與墊片</b>固定輪子，這一步<b>禁止使用電動工具</b>。</li>
+      </ul>
+      <p>官方《MTC 麥克納姆輪控制單元》用 MA～MD 四顆馬達直接給速度，<b>馬達順時針轉為正、逆時針為負</b>。左右兩側馬達是鏡像安裝，所以「前進」時左右兩側的數值正負相反：</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>動作（官方講義數值）</th><th class="c">MA</th><th class="c">MB</th><th class="c">MC</th><th class="c">MD</th><th>車輪實際方向</th></tr></thead>
+          <tbody>
+            <tr><td>前進</td><td class="c">−250</td><td class="c">−250</td><td class="c">250</td><td class="c">250</td><td>四輪都往前</td></tr>
+            <tr><td>向右平移</td><td class="c">−250</td><td class="c">250</td><td class="c">250</td><td class="c">−250</td><td>左前、右後往前；右前、左後往後</td></tr>
+            <tr><td>原地右轉</td><td class="c">−250</td><td class="c">−250</td><td class="c">−250</td><td class="c">−250</td><td>左側往前、右側往後</td></tr>
+            <tr><td>往右前斜移</td><td class="c">−250</td><td class="c">0</td><td class="c">250</td><td class="c">0</td><td>只有左前、右後往前</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="muted">把這四組數值代回去推算，MA＝左前、MB＝左後、MC＝右後、MD＝右前，正好對應上圖的馬達線 1、2、3、4。後退、左移、左轉只要把數值全部乘 −1。實際寫程式時建議用 MTC V2 擴充的「X、Y、旋轉」積木，積木會自動換算四輪速度（見 <a href="code.html">程式範例</a>）。</p>
+
+      <h2 id="servo">伺服馬達與 VIN 跳帽</h2>
+      <div class="grid g2">
+        <div class="card">
+          <h3 class="mt0">三條線</h3>
+          <dl class="kv">
+            <dt>棕色</dt><dd>GND（−）</dd>
+            <dt>紅色</dt><dd>VCC（＋）</dd>
+            <dt>橘色</dt><dd>PWM 訊號</dd>
+          </dl>
+          <p class="muted">PWM 週期 20 ms，脈寬約 1 ms → 0°、1.5 ms → 90°、2 ms → 180°（官方講義 06）。</p>
+        </div>
+        <div class="card">
+          <h3 class="mt0">伺服腳位排列</h3>
+          <p class="mono">S0　S1　S2　S3　VCC　VCC　S4　S5　S6　S7</p>
+          <p><b>SERVO POWER SELECT</b> 跳帽：<span class="tag">5V</span> 或 <span class="tag red">VIN</span></p>
+          <p>MTC 套件的伺服馬達由 7.4 V 電池供電，<b>請把跳帽從 5V 切到 VIN</b>（官方 step3 步驟九）。</p>
+        </div>
+      </div>
+      <div class="note warn"><b>扭力大的伺服馬達</b>不能由控制板 5V 直接供電，要改由電池（VIN）供電（官方講義 06）。全國賽規定<b>不得使用升壓模組或升壓板</b>，電源請直接用 7.4V 以下電池。</div>
+
+      <h2 id="pins">各套件伺服腳位（官方範例預設）</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>套件</th><th>水平旋轉</th><th>上下／仰角</th><th>夾爪／發射</th><th>初始化積木</th></tr></thead>
+          <tbody>
+            <tr><td>水平雲台（底盤）</td><td>S0</td><td>—</td><td>—</td><td>校正程式：S0 轉到 90°</td></tr>
+            <tr><td>手臂 ATARM</td><td>S0</td><td>S7</td><td>S6（夾爪）</td><td><code>手臂初始化 旋轉 S0、升降 S7、夾爪 S6</code></td></tr>
+            <tr><td>乒乓球發射器 PPGUN</td><td>S0</td><td>S1</td><td>S2（發射）</td><td><code>發射器初始化 旋轉 S0、上下 S1、發射 S2</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="src">依據：官方範例 <code>00.手臂校正程式.tb</code>、<code>夾爪機器人_ps3搖桿.tb</code>、<code>射擊機器人_ps3搖桿.tb</code>、<code>MTC_V2_伺服馬達校正.tb</code>。</p>
+      <div class="note"><b>手臂與發射器裝在同一台車？</b>兩者預設都用 S0 當水平旋轉。比賽用車通常一台裝手臂、一台裝發射器；若要裝在同一台，請把其中一個改到沒用到的腳位，避免互相干擾。</div>
+
+      <h2 id="ultra">超音波接線（MTC V2 官方配置）</h2>
+      <figure class="figure">
+        <svg viewBox="0 0 560 220" width="560" role="img" aria-label="超音波接線：VCC 接 5V，Trig 接 GPIO 23，Echo 接 GPIO 15，GND 接 GND">
+          <rect x="20" y="40" width="190" height="90" rx="10" fill="#1C5DB8"/>
+          <circle cx="70" cy="85" r="28" fill="#D9E0EA"/><circle cx="160" cy="85" r="28" fill="#D9E0EA"/>
+          <g font-size="12" fill="currentColor" text-anchor="middle">
+            <text x="50" y="160">VCC</text><text x="90" y="160">Trig</text><text x="130" y="160">Echo</text><text x="170" y="160">GND</text>
+          </g>
+          <g stroke-width="4" fill="none">
+            <path d="M50 130 V145" stroke="#C8243A"/><path d="M90 130 V145" stroke="#2C8A55"/>
+            <path d="M130 130 V145" stroke="#E5A400"/><path d="M170 130 V145" stroke="#5A6678"/>
+            <path d="M50 168 C 50 200, 330 200, 360 70" stroke="#C8243A"/>
+            <path d="M90 168 C 90 190, 330 185, 360 104" stroke="#2C8A55"/>
+            <path d="M130 168 C 130 180, 420 190, 440 104" stroke="#E5A400"/>
+            <path d="M170 168 C 170 210, 330 210, 360 138" stroke="#5A6678"/>
+          </g>
+          <rect x="330" y="30" width="200" height="130" rx="8" fill="#283041"/>
+          <g font-size="12" fill="#D9E0EA" text-anchor="middle">
+            <text x="360" y="22" fill="currentColor">腳位 23</text><text x="440" y="22" fill="currentColor">腳位 15</text>
+            <text x="495" y="74">5V</text><text x="495" y="108">GPIO</text><text x="495" y="142">GND</text>
+          </g>
+          <g fill="#C8243A"><circle cx="360" cy="70" r="7"/><circle cx="440" cy="70" r="7"/></g>
+          <g fill="#F5F7FA"><circle cx="360" cy="104" r="7"/><circle cx="440" cy="104" r="7"/></g>
+          <g fill="#5A6678" stroke="#D9E0EA"><circle cx="360" cy="138" r="7"/><circle cx="440" cy="138" r="7"/></g>
+        </svg>
+        <figcaption>VCC → 腳位 23 的 5V　Trig → GPIO 23　Echo → GPIO 15　GND → 腳位 23 的 GND（官方 step3 步驟八）</figcaption>
+      </figure>
+      <div class="note"><b>杜邦線顏色每批不同</b>官方提醒「請依照實際拿到的杜邦線顏色配置」。接好後拍照或寫下每個針腳對應的線色，之後拆裝才不會接錯。程式的超音波積木腳位請設 <b>Trig 23、Echo 15</b>。</div>
+
+      <h2 id="power">電源與上電檢查</h2>
+      <ol class="steps">
+        <li>接上電源線，把開關切到 <b>ON</b>。</li>
+        <li>檢查 4 顆馬達是否正常轉動，馬達轉動時控制板上對應的指示燈會亮。</li>
+        <li>確認沒問題後關閉電源、拔掉電源線，再用 M3×10 螺絲把上下板鎖在一起。</li>
+        <li>裝透明保護板時注意：板子上預留了<b>開關與 I2C 接腳</b>的缺口，不要放反。</li>
+      </ol>
+      <h3>雲台校正（step4）</h3>
+      <ol class="steps">
+        <li>燒錄官方 <a href="https://drive.google.com/drive/folders/1m3ob3yQVAjx1667qPXwT7FEWjyhQRw10" target="_blank" rel="noopener">校正程式</a>（S0 轉到 90°）。</li>
+        <li>上電確認伺服轉到定位。不確定時：關電 → 手動輕轉伺服 → 再上電，看是否回到同一角度。</li>
+        <li>裝上十字舵盤。伺服齒輪為 25 齒，對不齊時把舵盤換個方向再裝。</li>
+        <li>用 M3×10 螺絲鎖上水平轉盤，<b>轉盤箭頭要指向車頭</b>。</li>
+      </ol>
+
+      <h2 id="qrc">快拆模組（ATA_QRC，適用水平雲台 4.2）</h2>
+      <ol class="steps">
+        <li>用 3 顆 M3×8 螺絲把<b>快拆底座</b>固定在水平雲台上。</li>
+        <li>用 3 顆 M3×8 螺絲把<b>快拆模組</b>固定在夾爪底座下方（乒乓球發射器也是同樣鎖法）。</li>
+        <li>由最前端對齊往後卡入，兩片之間要密合；有縫隙就重新對齊卡緊。</li>
+        <li>拆下時：雙手食指把卡扣往上推，再用拇指把模組往前推出。</li>
+      </ol>
+      <p class="src">依據：資料夾內 <code>2026快拆說明.pdf</code>；官方<a href="https://drive.google.com/drive/folders/1b9YfxlW4mFbyzKE6iRfn-1uQzxu3MTC5" target="_blank" rel="noopener">快拆模組雲端</a>。</p>
+
+      <h2 id="launcher">乒乓球發射器（PP_GUN 3.x）校正</h2>
+      <ol class="steps">
+        <li>先讓發射伺服（S2）轉到 <b>0°</b>，把尺條推到最底，確認在 0° 後再鎖上舵盤。</li>
+        <li>更換 C 型環時，把伺服轉到 <b>138～140°</b>，依自己的組裝微調。</li>
+        <li>發射動作：S2 轉到 0° 推出乒乓球，等待約 1 秒，再轉回 <b>110°</b>（尺條拉出的正常位置）。</li>
+      </ol>
+      <div class="note bad"><b>注意：尺條不能轉超過 140°</b>組裝說明提醒超過 140° 可能損壞發射器零件。資料夾內的 <code>發射器3.1_校正範例程式.tb</code> 按 B 會把 S2 轉到 <b>150°</b>，與這項提醒不一致，建議改成 138～140° 再使用。</div>
+      <p class="src">依據：資料夾內 PP_GUN(3.0.0) <code>組裝說明.pdf</code>；官方 <a href="https://drive.google.com/file/d/1SaJyEs1Rg6Miues6Rg_VTeoLTN0TK1IM/view" target="_blank" rel="noopener">乒乓球發射器套件控制 2026</a>。</p>
+
+      <div class="btns"><a class="btn" href="start.html">← 開始使用</a><a class="btn primary" href="modules.html">下一步：擴充模組 →</a></div>
+    </article>
+  </div>
+</main>
+<footer id="site-footer"></footer>
+</body>
+</html>
