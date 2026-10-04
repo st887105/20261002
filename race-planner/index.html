@@ -138,6 +138,14 @@ label.chk{display:flex;gap:6px;align-items:center;font-size:13px;cursor:pointer}
 .codebar{display:flex;gap:6px;padding:10px 12px;flex-wrap:wrap;border-bottom:1px solid var(--line)}
 pre#code{margin:0;padding:12px;font-family:"JetBrains Mono",Consolas,monospace;font-size:12px;line-height:1.55;white-space:pre;overflow:auto;flex:1;min-height:0;background:var(--card)}
 #paneCode.on{display:flex;flex-direction:column;padding:0}
+table.kit{width:100%;border-collapse:collapse;font-size:12px;background:var(--card);border:1px solid var(--line);border-radius:6px}
+table.kit td,table.kit th{border-bottom:1px solid var(--line);padding:5px 4px;vertical-align:top;text-align:left}
+table.kit th{color:var(--mute);font-weight:500;font-size:11px}
+table.kit td small{color:var(--mute);display:block}
+.kbox{border:1px solid var(--line);border-radius:8px;padding:8px;margin-top:8px;background:var(--card)}
+.kbox h4{margin:0 0 6px;font-size:13px}
+.kbox .maplist{font-size:11px;color:var(--mute);margin-top:4px;max-height:140px;overflow:auto}
+.note{font-size:12px;color:var(--warn);margin:6px 0}
 table.ref{width:100%;border-collapse:collapse;font-size:12px}
 table.ref td{border-bottom:1px solid var(--line);padding:5px 4px;vertical-align:top}
 table.ref code{font-family:"JetBrains Mono",Consolas,monospace;font-size:11px;word-break:break-all}
@@ -163,7 +171,7 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
 <body>
 <div class="app">
 <header>
-  <div class="brand"><h1>TU:bit V2 2026全國競賽路徑規劃器</h1><span class="ver" id="ver" title="更新紀錄">v1.3.3</span><a class="ver" href="../competition.html" title="回競賽專區">← 競賽專區</a></div>
+  <div class="brand"><h1>TU:bit V2 2026全國競賽路徑規劃器</h1><span class="ver" id="ver" title="更新紀錄">v1.4.0</span><a class="ver" href="../competition.html" title="回競賽專區">← 競賽專區</a><a class="ver" href="../generator.html#race" title="程式產生器：競賽自動化">程式產生器</a></div>
   <div class="hgroup">
     <select id="gameSel" aria-label="競賽項目">
       <option value="energy">物資能源爭霸戰 300×300</option>
@@ -183,7 +191,7 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
   <aside class="left">
     <div class="tabs" role="tablist">
       <button class="on" data-tab="paneField">場地</button>
-      <button data-tab="paneSensor">感測元件</button>
+      <button data-tab="paneSensor">套件與感測器</button>
       <button data-tab="paneParam">參數</button>
       <button data-tab="paneRef">積木對照</button>
     </div>
@@ -223,7 +231,7 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
         <label class="chk"><input type="checkbox" data-bind="ui.sweep"> 顯示車體掃過範圍</label>
       </div>
     </div>
-    <div class="pane" id="paneSensor"><div id="recList"></div></div>
+    <div class="pane" id="paneSensor"><div id="kitPane"></div></div>
     <div class="pane" id="paneParam">
       <div class="sec"><h3>車體</h3>
         <div class="row">
@@ -267,31 +275,21 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
           <label class="chk"><input type="checkbox" data-bind="axes.invBulge"> 弧線方向反向</label>
         </div>
       </div>
-      <div class="sec"><h3>BNO055 轉正</h3>
-        <div class="row3">
-          <label class="f"><span>比例增益</span><input type="number" step="0.05" data-bind="turn.gain"></label>
-          <label class="f"><span>容許誤差 °</span><input type="number" step="0.1" data-bind="turn.tol"></label>
-          <label class="f"><span>逾時 ms</span><input type="number" step="500" data-bind="turn.timeout"></label>
+      <div class="sec"><h3>BNO055 轉正（turnTo）</h3>
+        <div class="row">
+          <label class="f"><span>容許誤差 °</span><input type="number" step="0.5" min="0.1" data-bind="turn.tol"></label>
+          <label class="f"><span>逾時 秒</span><input type="number" step="0.5" min="0.5" data-bind="turn.timeout"></label>
         </div>
-        <p class="hint">預設值取自你的「轉正.tb」（-1.65）。若車子越轉越偏，把增益改成正值。BNO 角度以開機時的車頭為 0°、順時針增加。</p>
+        <p class="hint">寫法與程式產生器相同：<code>turnTo(角度, 誤差, 逾時毫秒)</code>，係數 -1.65 取自轉正.tb。BNO 角度以開機時車頭為 0°、<b>順時針增加</b>，本工具會自動把畫布車頭角換算成 BNO 角度。</p>
       </div>
-      <div class="sec"><h3>機械手臂 ATARM</h3>
+      <div class="sec"><h3>手臂動作高度（到點動作用）</h3>
         <div class="row3">
-          <label class="f"><span>旋轉腳位</span><select data-bind="arm.pan" class="servoSel"></select></label>
-          <label class="f"><span>抬升腳位</span><select data-bind="arm.lift" class="servoSel"></select></label>
-          <label class="f"><span>夾爪腳位</span><select data-bind="arm.claw" class="servoSel"></select></label>
+          <label class="f"><span>夾取（下降）</span><input type="number" data-bind="arm.liftDown"></label>
+          <label class="f"><span>搬運（抬升）</span><input type="number" data-bind="arm.liftUp"></label>
+          <label class="f"><span>放置</span><input type="number" data-bind="arm.liftPlace"></label>
         </div>
-        <div class="row" style="margin-top:6px">
-          <label class="f"><span>夾取時抬升角度</span><input type="number" data-bind="arm.liftDown"></label>
-          <label class="f"><span>搬運時抬升角度</span><input type="number" data-bind="arm.liftUp"></label>
-          <label class="f"><span>放置時抬升角度</span><input type="number" data-bind="arm.liftPlace"></label>
-          <label class="f"><span>伺服等待 ms</span><input type="number" step="50" data-bind="arm.settle"></label>
-        </div>
-        <p class="hint">函式庫預設：夾爪開 70°／關 160°，抬升 0–65°，旋轉 55–125°（中間 90°）。秒數參數是整數型別，填 0.2 會被當成 0 直接轉到位，所以本工具以整數秒＋等待毫秒處理。</p>
-      </div>
-      <div class="sec"><h3>TuIRAlign 紅外線校正</h3>
-        <label class="f"><span>6 路腳位（逗號分隔）</span><input type="text" data-bind="ir.pins"></label>
-        <label class="f" style="margin-top:6px"><span>6 路目標值</span><input type="text" data-bind="ir.targets"></label>
+        <label class="f" style="margin-top:6px"><span>伺服秒數（整數，0＝直接轉到位）</span><input type="number" min="0" max="30" step="1" data-bind="arm.sec"></label>
+        <p class="hint">腳位、夾爪開合角度與升降範圍在「套件與感測器」分頁設定。</p>
       </div>
       <div class="sec"><h3>路徑工具</h3>
         <label class="chk"><input type="checkbox" data-bind="ui.snap90"> 自動夾取／放置時車頭鎖 90° 倍數</label>
@@ -326,8 +324,9 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
         <div class="grid">
           <div class="main"><button class="btn primary" data-wp="grab">在這裡夾取</button><button class="btn primary" data-wp="place">在這裡放置</button></div>
           <button class="btn" data-wp="clawClose">夾爪夾緊</button><button class="btn" data-wp="clawOpen">夾爪張開</button><button class="btn" data-wp="lift">抬升</button><button class="btn" data-wp="lower">下降</button>
-          <button class="btn" data-wp="pan">旋轉夾爪</button><button class="btn" data-wp="turn">BNO 轉正</button><button class="btn" data-wp="align">IR 校正</button>
-          <button class="btn" data-wp="wait">等待</button><button class="btn" data-wp="fire">發射</button><button class="btn danger" data-wp="del">刪除此點</button>
+          <button class="btn" data-wp="pan">旋轉夾爪</button><button class="btn" data-wp="turn">BNO 轉正</button><button class="btn" data-wp="align">IR 校正</button><button class="btn" data-wp="wall">撞牆校正</button>
+          <button class="btn" data-wp="approach">超音波接近</button><button class="btn" data-wp="fire">發射</button><button class="btn" data-wp="fireN">連續發射</button><button class="btn" data-wp="wait">等待</button>
+          <button class="btn" data-wp="gunPan">砲台旋轉</button><button class="btn" data-wp="gunHead">砲管仰角</button><button class="btn danger" data-wp="del" style="grid-column:span 2">刪除此點</button>
         </div>
         <div class="hrow"><span>車頭</span><input type="number" step="15" id="wpH" aria-label="車頭角度">
           <button class="btn small" data-hd="-15">-15</button><button class="btn small" data-hd="15">+15</button>
@@ -351,6 +350,13 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
     </div>
     <div class="pane on" id="paneSteps" style="padding:0">
       <div class="addbar">
+        <select id="tplSel" aria-label="快速範本" style="flex:1 1 100%"><option value="">快速範本（加在選取的路徑點後面）…</option>
+          <option value="wallTurn">撞牆校正 → BNO 轉正</option>
+          <option value="approachGrab">超音波接近 → 夾取 → 後退 20 cm</option>
+          <option value="placeBack">放置 → 後退</option>
+          <option value="irTurn">IR 靠牆校正 → BNO 轉正</option>
+          <option value="fire5">砲台回正 → 連續發射 5 顆</option>
+        </select>
         <button class="btn small" data-add="move">移動</button>
         <button class="btn small" data-add="clawOpen">夾爪張開</button>
         <button class="btn small" data-add="clawClose">夾爪夾緊</button>
@@ -359,8 +365,13 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
         <button class="btn small" data-add="pan">旋轉夾爪</button>
         <button class="btn small" data-add="turn">BNO 轉正</button>
         <button class="btn small" data-add="align">IR 校正</button>
+        <button class="btn small" data-add="wall">撞牆校正</button>
+        <button class="btn small" data-add="approach">超音波接近</button>
         <button class="btn small" data-add="wait">等待</button>
         <button class="btn small" data-add="fire">發射</button>
+        <button class="btn small" data-add="fireN">連續發射</button>
+        <button class="btn small" data-add="gunPan">砲台旋轉</button>
+        <button class="btn small" data-add="gunHead">砲管仰角</button>
         <button class="btn small" data-add="code">自訂程式</button>
         <button class="btn small" id="mirrorBtn" title="把整份路徑轉成對手方">換邊</button>
         <button class="btn small danger" id="clearSteps">清空</button>
@@ -394,6 +405,7 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
 </dialog>
 <dialog id="logDlg">
   <h3 style="margin-top:0">更新紀錄</h3>
+  <p><b>v1.4.0</b>（2026-10-04）與課程網站「程式產生器」同步：程式碼改用產生器的共用核心產生（寫法完全相同）；「感測元件」改為「套件與感測器設定」（與產生器相同的 8 種套件、腳位與初始化，手臂／發射器擇一、PS3／V7RC 擇一）；新增遙控設定（搖桿／方向鍵功能、速度、死區、官方按鍵配置）與一鍵自動／手動模式（START／SELECT、AUTO OK 等裁判確認、OLED、震動）；新增撞牆校正、超音波接近、連續發射、砲台旋轉／仰角與快速範本，撞牆與接近會在畫布上模擬；IR 校正改用新版積木寫法（逾時、確認時間）。移除夏普紅外線與 HuskyLens（產生器未收錄）。</p>
   <p><b>v1.3.3</b>（2026-10-03）更名為「TU:bit V2 2026全國競賽路徑規劃器」，移到課程網站競賽專區（race-planner/）；原 planner/ 網址改為程式產生器。</p>
   <p><b>v1.3.2</b>（2026-10-03）超音波預設腳位改為 MTC V2 官方組裝說明的 Trig 23、Echo 15；收錄於 TU:bit V2 課程網站 planner/，標題旁新增「回課程網站」連結。</p>
   <p><b>v1.3.1</b>（2026-10-02）到點動作與步驟工具列新增「下降」按鈕（降到夾取高度）；手臂高度動作依角度顯示為「抬升」或「下降」。</p>
@@ -408,7 +420,7 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
 <script>
 'use strict';
 /* ================= 基本工具 ================= */
-const VERSION = 'v1.3.3';
+const VERSION = 'v1.4.0';
 const STORE_KEY = 'tubit-planner-v1';
 const uid = () => Math.random().toString(36).slice(2, 9);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -520,24 +532,725 @@ function presetTarget(){
 }
 
 /* ================= 狀態 ================= */
-function defaultModules(robot){
-  const base = {bno:true, irAlign:false, atarm:true, ppgun:false, sharp:false, sharpPin:26,
-    ultra:false, trig:23, echo:15, stopSrc:'ultra', husky:false};
-  if (robot === 'targetShooter' || robot === 'customShooter') return Object.assign(base, {atarm:false, ppgun:true});
-  if (robot === 'energyA') return Object.assign(base, {irAlign:true});
-  return base;
+/* ================= 共用程式碼產生核心 =================
+   原樣取自 TU:bit V2 課程網站「程式產生器」generator.html（v1.6.0），
+   讓路徑規劃器與程式產生器產生完全相同的寫法；只另外加入 raw／group 兩種動作與 stopNear 中斷函式。 */
+const GEN = (function () {
+  let state = null;
+  const TRIGGERS = [
+    { key: 'A', label: '按下按鈕 A 時', cond: 'tubit.readButton(Button_A)' },
+    { key: 'B', label: '按下按鈕 B 時', cond: 'tubit.readButton(Button_B)' },
+    { key: 'P1', label: 'PS3 按鍵 1 被按下時', kit: 'ps3' },
+    { key: 'P2', label: 'PS3 按鍵 2 被按下時', kit: 'ps3' },
+    { key: 'P3', label: 'PS3 按鍵 3 被按下時', kit: 'ps3' },
+    { key: 'P4', label: 'PS3 按鍵 4 被按下時', kit: 'ps3' },
+    { key: 'V1', label: 'V7RC 按鈕 1 被按下時', kit: 'v7rc' },
+    { key: 'V2', label: 'V7RC 按鈕 2 被按下時', kit: 'v7rc' },
+    { key: 'AUTO', label: '一鍵自動模式流程（按自動鍵執行一次）', mode: true },
+    { key: 'setup', label: '開機時執行一次', cond: null },
+    { key: 'loop', label: '一直重複執行', cond: null }
+  ];
+  const MOVES = {
+    fwd: { label: '前進', v: [-1, -1, 1, 1], back: [0, -1] },
+    back: { label: '後退', v: [1, 1, -1, -1], back: [0, 1] },
+    right: { label: '向右平移', v: [-1, 1, 1, -1], back: [-1, 0] },
+    left: { label: '向左平移', v: [1, -1, -1, 1], back: [1, 0] },
+    cw: { label: '原地右轉（順時針）', v: [-1, -1, -1, -1] },
+    ccw: { label: '原地左轉（逆時針）', v: [1, 1, 1, 1] },
+    fr: { label: '往右前斜移', v: [-1, 0, 1, 0] },
+    fl: { label: '往左前斜移', v: [0, -1, 0, 1] },
+    br: { label: '往右後斜移', v: [0, 1, 0, -1] },
+    bl: { label: '往左後斜移', v: [1, 0, -1, 0] },
+    custom: { label: '自訂四顆馬達', v: null }
+  };
+  const WALL_DIRS = ['fwd', 'back', 'left', 'right'];
+  const PS3_BTNS = [['cross', '✕'], ['circle', '○'], ['triangle', '△'], ['square', '□'], ['up', '↑'], ['down', '↓'], ['left', '←'], ['right', '→'],
+    ['l1', 'L1'], ['l2', 'L2'], ['l3', 'L3'], ['r1', 'R1'], ['r2', 'R2'], ['r3', 'R3'], ['select', 'SELECT'], ['start', 'START'], ['ps', 'PS']];
+  // V7RC Game ADV 右側 8 方向按鈕（官方 tubitv2v7rc_ADVBUT）
+  const V7_BTNS = { 1: ['↑ 上', 2000, 1500], 2: ['↓ 下', 1000, 1500], 3: ['← 左', 1500, 1000], 4: ['→ 右', 1500, 2000], 5: ['↖ 左上', 2000, 1000], 6: ['↙ 左下', 1000, 1000], 7: ['↗ 右上', 2000, 2000], 8: ['↘ 右下', 1000, 2000] };
+  const v7Btn = n => { const b = V7_BTNS[n] || V7_BTNS[1]; return '(v7rc.readSRTdata(3) == ' + b[1] + ' && v7rc.readSRTdata(4) == ' + b[2] + ')'; };
+  const IR_PINS = ['23', '15', '12', '5', '2', '0', '33', '32', '35', '34', '39', '36'];
+  const IR_POS = [['f', '前', 'UP'], ['b', '後', 'BK'], ['lf', '左前', 'LU'], ['lb', '左後', 'LB'], ['rf', '右前', 'RU'], ['rb', '右後', 'RB']];
+  const IR_MAIN = [['IR_L', '左'], ['IR_R', '右'], ['IR_NONE', '無']];
+  const IR_SEC = [['IR_UP', '前'], ['IR_BACK', '後'], ['IR_L', '左'], ['IR_R', '右'], ['IR_NONE', '無']];
+  const IR_SINGLE = [['IR_UP', '前'], ['IR_BACK', '後'], ['IR_L', '左'], ['IR_R', '右']];
+  // 遙控按鍵對應的動作（按住時每圈執行一次，寫法同官方範例）
+  const MAP_ACTS = {
+    liftAdd: { label: '手臂升降累加', kit: 'arm', v: 0.1, code: m => 'ATARM_LiftAdd(' + plain(m.v) + ');' },
+    panAdd: { label: '手臂旋轉累加', kit: 'arm', v: 0.1, code: m => 'ATARM_PanAdd(' + plain(m.v) + ');' },
+    clawClose: { label: '夾爪夾緊', kit: 'arm', t: 0.5, code: m => 'ATARM_ClawCtrl(true,' + plain(m.t) + ');' },
+    clawOpen: { label: '夾爪張開', kit: 'arm', t: 0.5, code: m => 'ATARM_ClawCtrl(false,' + plain(m.t) + ');' },
+    liftSet: { label: '手臂升降到', kit: 'arm', v: 65, t: 0.5, code: m => 'ATARM_LiftSet(' + plain(m.v) + ',' + plain(m.t) + ');' },
+    panSet: { label: '手臂旋轉到', kit: 'arm', v: 90, t: 0.5, code: m => 'ATARM_PanSet(' + plain(m.v) + ',' + plain(m.t) + ');' },
+    headAdd: { label: '砲管仰角累加', kit: 'gun', v: 0.05, code: m => 'PPGUN_HeadAdd(' + plain(m.v) + ');' },
+    gPanAdd: { label: '砲台旋轉累加', kit: 'gun', v: 0.1, code: m => 'PPGUN_PanAdd(' + plain(m.v) + ');' },
+    headSet: { label: '砲管仰角到', kit: 'gun', v: 30, t: 0.5, code: m => 'PPGUN_HeadSet(' + plain(m.v) + ',' + plain(m.t) + ');' },
+    gPanSet: { label: '砲台旋轉到', kit: 'gun', v: 90, t: 0.5, code: m => 'PPGUN_PanSet(' + plain(m.v) + ',' + plain(m.t) + ');' },
+    fire: { label: '發射乒乓球', kit: 'gun', code: () => 'PPGUN_launch();' },
+    angle: { label: 'MTC 角度移動', v: -90, sp: 255, code: m => 'mtc.angleToXY(' + fmtNum(m.v) + ',' + fmt(clampInt(m.sp, -255, 255, 255)) + ');' },
+    servo: { label: '伺服轉到', v: 90, pin: 'S4', code: m => 'tubit.setServoAngle(' + (m.pin || 'S4') + ', ' + clampInt(m.v, 0, 180, 90) + ');' },
+    servoAdd: { label: '伺服累加（雲台）', v: 0.2, pin: 'S0', code: m => { const i = Math.max(0, ['S0', 'S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7'].indexOf(m.pin || 'S0')); return 'servoDeg[' + i + '] = constrain(servoDeg[' + i + '] + ' + fmtNum(m.v) + ', 0, 180); tubit.setServoAngle(' + (m.pin || 'S0') + ', (int)servoDeg[' + i + ']);'; } },
+    rumble: { label: '手把震動', ps3only: true, code: () => 'Ps3.setRumble(100, 300);' },
+    stop: { label: '停止馬達', code: () => 'tubit.stopAllMotors();' }
+  };
+  const mapRow = (btn, act, extra) => Object.assign({ btn: String(btn), act, mod: '' }, (({ v, t, sp, pin }) => ({ v, t, sp, pin }))(MAP_ACTS[act]), extra || {});
+  // 組合鍵範本：按住某鍵時，方向鍵改調整雲台／手臂／砲台（依目前套件）
+  const shiftLayer = (mod, kits) => {
+    const pan = kits.arm ? 'panAdd' : kits.gun ? 'gPanAdd' : 'servoAdd';
+    const tilt = kits.arm ? 'liftAdd' : kits.gun ? 'headAdd' : 'servoAdd';
+    const st = 0.2;
+    return [mapRow('left', pan, { mod, v: st, pin: 'S0' }), mapRow('right', pan, { mod, v: -st, pin: 'S0' }),
+      mapRow('up', tilt, { mod, v: st, pin: 'S1' }), mapRow('down', tilt, { mod, v: -st, pin: 'S1' })];
+  };
+  // 官方範例的按鍵配置（夾爪機器人_ps3搖桿.tb、射擊機器人_ps3搖桿.tb、01.MTC_手臂／發射器機器人_V7RC_(藍牙)BLE.tb）
+  const OFFICIAL_MAP = {
+    ps3arm: () => [mapRow('cross', 'liftAdd', { v: -0.1 }), mapRow('triangle', 'liftAdd', { v: 0.1 }), mapRow('l1', 'panAdd', { v: 0.1 }), mapRow('r1', 'panAdd', { v: -0.1 }),
+      mapRow('circle', 'clawClose'), mapRow('square', 'clawOpen'), mapRow('up', 'liftSet', { v: 65 }), mapRow('down', 'liftSet', { v: 10 }),
+      mapRow('right', 'panSet', { v: 55 }), mapRow('left', 'panSet', { v: 125 }), mapRow('r2', 'panSet', { v: 90 }), mapRow('l2', 'angle')],
+    ps3gun: () => [mapRow('cross', 'headAdd', { v: -0.05 }), mapRow('triangle', 'headAdd', { v: 0.05 }), mapRow('l1', 'gPanAdd', { v: 0.1 }), mapRow('r1', 'gPanAdd', { v: -0.1 }),
+      mapRow('circle', 'gPanSet', { v: 90 }), mapRow('square', 'headSet', { v: 30 }), mapRow('up', 'headSet', { v: 45 }), mapRow('down', 'headSet', { v: 10 }),
+      mapRow('right', 'gPanSet', { v: 45 }), mapRow('left', 'gPanSet', { v: 135 }), mapRow('r2', 'fire'), mapRow('l2', 'angle')],
+    v7arm: () => [mapRow('1', 'liftAdd', { v: 0.45 }), mapRow('2', 'liftAdd', { v: -0.45 }), mapRow('8', 'panAdd', { v: -0.45 }), mapRow('6', 'panAdd', { v: 0.45 }),
+      mapRow('7', 'clawOpen'), mapRow('5', 'clawClose')],
+    v7gun: () => [mapRow('1', 'headAdd', { v: 0.45 }), mapRow('2', 'headAdd', { v: -0.45 }), mapRow('8', 'gPanAdd', { v: -0.45 }), mapRow('6', 'gPanAdd', { v: 0.45 }), mapRow('7', 'fire')]
+  };
+  // 搖桿與方向鍵各自指定功能（移動車子／調整瞄準／不使用）
+  const STICK_FN = {
+    ps3: [['move', '移動車子：左搖桿前後左右、右搖桿旋轉（官方）'], ['moveAim', '左搖桿移動車子、右搖桿調整瞄準'], ['aim', '左搖桿調整瞄準（右搖桿不用）'], ['none', '不使用']],
+    v7rc: [['move', '移動車子：左搖桿前後左右（官方）'], ['aim', '調整瞄準'], ['none', '不使用']]
+  };
+  const DPAD_FN = {
+    ps3: [['none', '不使用（交給按鍵對應；官方配置有用到方向鍵）'], ['move', '移動車子：↑↓ 前後、←→ 平移、L1／R1 旋轉'], ['aim', '調整瞄準：←→ 旋轉、↑↓ 升降／仰角']],
+    v7rc: [['turn', '← → 原地旋轉（官方）'], ['move', '移動車子：↑↓ 前後、←→ 平移、↖ ↗ 旋轉'], ['aim', '調整瞄準：←→ 旋轉、↑↓ 升降／仰角'], ['none', '不使用（交給按鍵對應）']]
+  };
+  const aimTarget = on => on.arm ? { pan: '手臂旋轉', tilt: '手臂升降' } : on.gun ? { pan: '砲台旋轉', tilt: '砲管仰角' } : { pan: '雲台 S0 旋轉', tilt: 'S1 仰角' };
+  // 舊版 drive 設定轉成新版「搖桿／方向鍵」各自的功能
+  function normalizeRemote(R, rk) {
+    if (!R) return;
+    if (!STICK_FN[rk].some(x => x[0] === R.stick) || !DPAD_FN[rk].some(x => x[0] === R.dpad)) {
+      const d = R.drive || 'stick';
+      if (rk === 'ps3') { R.stick = d === 'stick' ? 'move' : 'none'; R.dpad = d === 'dpad' ? 'move' : 'none'; }
+      else { R.stick = d === 'none' ? 'none' : 'move'; R.dpad = d === 'none' ? 'none' : 'turn'; }
+    }
+    if (R.aim === undefined || R.aim === '') R.aim = rk === 'ps3' ? 0.3 : 0.45;
+  }
+  const ACTIONS = {
+    motor: { label: '馬達移動', level: 'basic' },
+    single: { label: '單顆馬達', level: 'basic' },
+    mtc: { label: 'MTC 精準移動', level: 'basic' },
+    servo: { label: '伺服馬達', level: 'basic' },
+    oled: { label: 'OLED 顯示文字', level: 'basic' },
+    wait: { label: '等待', level: 'basic' },
+    stop: { label: '停止馬達', level: 'basic' },
+    gimbal: { label: '水平雲台轉到', level: 'adv', kit: 'gimbal' },
+    armClaw: { label: '手臂夾爪', level: 'adv', kit: 'arm' },
+    armLift: { label: '手臂升降到', level: 'adv', kit: 'arm' },
+    armPan: { label: '手臂旋轉到', level: 'adv', kit: 'arm' },
+    gunFire: { label: '發射乒乓球', level: 'adv', kit: 'gun' },
+    gunPan: { label: '砲台旋轉到', level: 'adv', kit: 'gun' },
+    gunHead: { label: '砲管仰角到', level: 'adv', kit: 'gun' },
+    ultraShow: { label: 'OLED 顯示超音波距離', level: 'adv', kit: 'ultra' },
+    bnoShow: { label: 'OLED 顯示 BNO 角度', level: 'adv', kit: 'bno' },
+    bnoTurn: { label: 'BNO 轉正', level: 'adv', kit: 'bno' },
+    mtcVec: { label: 'MTC X Y 旋轉（開迴路）', level: 'adv' },
+    mtcAngle: { label: 'MTC 角度移動', level: 'adv' },
+    mtcCurve: { label: 'MTC 弧線移動', level: 'adv' },
+    mtcParam: { label: 'MTC 車體參數', level: 'adv' },
+    ps3Drive: { label: 'PS3 搖桿遙控移動', level: 'adv', kit: 'ps3', hidden: true },
+    ps3Rumble: { label: 'PS3 手把震動', level: 'adv', kit: 'ps3' },
+    v7Drive: { label: 'V7RC 遙控移動', level: 'adv', kit: 'v7rc', hidden: true },
+    irAlign: { label: 'IR 靠牆校正', level: 'adv', kit: 'ir' },
+    irSingle: { label: 'IR 次校正（單一方向）', level: 'adv', kit: 'ir' },
+    irShow: { label: 'OLED 顯示 IR 數值', level: 'adv', kit: 'ir' },
+    wall: { label: '撞牆校正', level: 'race' },
+    approach: { label: '超音波接近', level: 'race', kit: 'ultra' },
+    grab: { label: '夾取組合', level: 'race', kit: 'arm' },
+    place: { label: '放置組合', level: 'race', kit: 'arm' },
+    fireN: { label: '連續發射', level: 'race', kit: 'gun' }
+  };
+  const KITS = {
+    gimbal: { label: '水平雲台（底盤）', pins: 'S0', row: ['S0', '—', '—', '校正：S0 轉到 90°'] },
+    arm: { label: '手臂 ATARM', row: ['S0', 'S7', 'S6（夾爪）', '手臂初始化 旋轉 S0、升降 S7、夾爪 S6'] },
+    gun: { label: '乒乓球發射器 PPGUN（與手臂擇一）', row: ['S0', 'S1', 'S2（發射）', '發射器初始化 旋轉 S0、上下 S1、發射 S2'] },
+    ultra: { label: '超音波', row: ['—', '—', '—', 'Trig GPIO 23、Echo GPIO 15'] },
+    bno: { label: 'BNO055 角度感測', row: ['—', '—', '—', 'I2C：VIN→V、GND→G，bno.start()'] },
+    ps3: { label: 'PS3 遙控手把', row: ['—', '—', '—', 'PS3 遙控初始化 MAC'] },
+    v7rc: { label: 'V7RC 手機遙控', row: ['—', '—', '—', 'V7RC 初始化 藍牙／Wi-Fi'] },
+    ir: { label: 'IR 靠牆校正', row: ['—', '—', '—', 'MTC 模式，前33 後32 左前35 左後34 右前39 右後36'] }
+  };
+  const ORDER = ['basic', 'adv', 'race'];
+  const newAction = type => JSON.parse(JSON.stringify({
+    motor: { move: 'fwd', speed: 255, sec: 1, stop: true, m: [0, 0, 0, 0] },
+    single: { motor: 'M1', speed: 200 },
+    mtc: { x: 0, y: 20, r: 0, vm: 600, a: 800 },
+    servo: { pin: 'S0', deg: 90 },
+    oled: { text: 'Hello TU:bit', x: 0, y: 16, font: 'en' },
+    wait: { sec: 1 },
+    stop: {},
+    gimbal: { deg: 90 },
+    armClaw: { close: 'true', sec: 1 },
+    armLift: { deg: 65, sec: 1 },
+    armPan: { deg: 90, sec: 1 },
+    gunFire: {},
+    gunPan: { deg: 90, sec: 1 },
+    gunHead: { deg: 30, sec: 1 },
+    ultraShow: {},
+    bnoShow: {},
+    mtcVec: { x: 0, y: 150, r: 0, sec: 1, stop: true },
+    mtcAngle: { deg: 0, speed: 255, sec: 1, stop: true },
+    mtcCurve: { x: 30, y: 30, r: 0, bulge: 10, vm: 1200, a: 800 },
+    mtcParam: { wh: 6, ww: 3, mh: 20, mw: 20 },
+    ps3Drive: { scale: 1 },
+    ps3Rumble: { power: 100, ms: 500 },
+    v7Drive: {},
+    irAlign: { main: 'IR_L', sec: 'IR_UP', timeout: 8, confirm: 1 },
+    irSingle: { dir: 'IR_UP', timeout: 8, confirm: 1 },
+    irShow: {},
+    wall: { dir: 'fwd', speed: 120, sec: 1.5, backCm: 5 },
+    bnoTurn: { deg: 0, tol: 1, timeout: 3 },
+    approach: { cm: 10, speed: 120, timeout: 5 },
+    grab: { down: 0, fwdCm: 5, up: 65 },
+    place: { down: 20, backCm: 10, up: 65 },
+    fireN: { n: 5, gap: 0.5 }
+  }[type] || {})) ;
+  const mk = (type, extra) => Object.assign({ type }, newAction(type), extra || {});
+
+  const emptyTrig = () => ({ A: { on: false, acts: [] }, B: { on: false, acts: [] },
+    P1: { on: false, acts: [], btn: 'cross', mod: '' }, P2: { on: false, acts: [], btn: 'circle', mod: '' },
+    P3: { on: false, acts: [], btn: 'triangle', mod: '' }, P4: { on: false, acts: [], btn: 'square', mod: '' },
+    V1: { on: false, acts: [], btn: '1' }, V2: { on: false, acts: [], btn: '2' },
+    AUTO: { on: false, acts: [] }, setup: { on: false, acts: [] }, loop: { on: false, acts: [] } });
+  const KIT_KEYS = ['gimbal', 'arm', 'gun', 'ultra', 'bno', 'ps3', 'v7rc', 'ir'];
+  const defaultKits = () => ({
+    on: { gimbal: false, arm: false, gun: false, ultra: false, bno: false, ps3: false, v7rc: false, ir: false },
+    arm: { pan: 'S0', lift: 'S7', claw: 'S6', open: 80, close: 150, down: 0, up: 65, panMin: 55, panMax: 125 },
+    gun: { pan: 'S0', head: 'S1', shoot: 'S2' },
+    ultra: { trig: 23, echo: 15 },
+    ps3: { mac: '20:00:00:00:63:93', stick: 'move', dpad: 'none', speed: 128, turn: 128, dead: 8, aim: 0.3, map: [] },
+    v7rc: { mode: 'BT', name: 'MTC_ARM_U01', ssid: 'V7RC_AP', pass: '12345678', ch: '1', stick: 'move', dpad: 'turn', speed: 250, turn: 180, dead: 20, aim: 0.45, map: [] },
+    mode: { on: false, autoKey: 'ps3:start', manKey: 'ps3:select', after: 'stay', oled: true, rumble: true },
+    ir: { f: '33', b: '32', lf: '35', lb: '34', rf: '39', rb: '36', tf: 25, tb: 25, tlf: 25, tlb: 25, trf: 25, trb: 25 }
+  });
+  // ATARM.h 與 PPGUN.h 都定義了 panPin、panDeg，同一支程式同時 include 會編譯失敗，所以兩者互斥
+  let kitNote = '';
+  function setKit(k, on) {
+    state.kits.on[k] = on;
+    kitNote = '';
+    if (on && k === 'arm' && state.kits.on.gun) { state.kits.on.gun = false; kitNote = '已取消發射器：ATARM 與 PPGUN 函式庫不能放在同一支程式。'; }
+    if (on && k === 'gun' && state.kits.on.arm) { state.kits.on.arm = false; kitNote = '已取消手臂：ATARM 與 PPGUN 函式庫不能放在同一支程式。'; }
+    if (on && k === 'ps3' && state.kits.on.v7rc) { state.kits.on.v7rc = false; kitNote = '已取消 V7RC：一支程式只用一種遙控方式。'; }
+    if (on && k === 'v7rc' && state.kits.on.ps3) { state.kits.on.ps3 = false; kitNote = '已取消 PS3：一支程式只用一種遙控方式。'; }
+  }
+  // 自動／手動鍵若指到沒啟用的遙控，換成可用的按鍵
+  function keyValid(k) {
+    k = String(k || '');
+    if (k === 'btnA' || k === 'btnB') return true;
+    if (k.startsWith('ps3:')) return !!state.kits.on.ps3 && PS3_BTNS.some(b => b[0] === k.slice(4));
+    if (k.startsWith('v7:')) return !!state.kits.on.v7rc && !!V7_BTNS[k.slice(3)];
+    return false;
+  }
+  function normalizeMode() {
+    normalizeRemote(state.kits.ps3, 'ps3'); normalizeRemote(state.kits.v7rc, 'v7rc');
+    const M = state.kits.mode, on = state.kits.on;
+    if (!['stay', 'repeat', 'back'].includes(M.after)) M.after = M.back ? 'back' : 'stay';   // 舊版勾選框轉換
+    const def = on.ps3 ? ['ps3:start', 'ps3:select'] : on.v7rc ? ['v7:5', 'btnB'] : ['btnA', 'btnB'];
+    if (!keyValid(M.autoKey)) M.autoKey = def[0];
+    if (!keyValid(M.manKey)) M.manKey = def[1];
+  }
+  const esc = v => String(v === undefined || v === null ? '' : v)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const num = (v, d) => { const n = Number(v); return Number.isFinite(n) ? n : d; };
+  const clampInt = (v, lo, hi, d) => Math.max(lo, Math.min(hi, Math.round(num(v, d))));
+  const fmt = n => (n < 0 ? '(' + n + ')' : String(n));
+  const fmtNum = n => fmt(Math.round(num(n, 0) * 1000) / 1000);
+  const plain = n => String(Math.round(num(n, 0) * 1000) / 1000);
+  const cStr = s => '"' + String(s).replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"';
+  const secInt = v => clampInt(v, 0, 30, 1);   // ATARM／PPGUN 的秒數參數取整數
+
+  /* ---------- 程式碼產生 ---------- */
+  function motorLine(move, sp) { return 'tubit.setMotorsPwm(' + MOVES[move].v.map(k => fmt(k * sp === 0 ? 0 : k * sp)).join(',') + ');'; }
+  function mtcLine(x, y, r, vm, a) {
+    const ac = Math.abs(num(a, 800));
+    return 'mtc.moveSCurve(' + [fmtNum(x), fmtNum(y), fmtNum(r), plain(Math.abs(num(vm, 600))), plain(ac)].join(',') + ',-(' + plain(ac) + '),0,0);';
+  }
+  function genActions(acts, ind, need) {
+    const L = [];
+    const K = state.kits;
+    acts.forEach(a => {
+      if (a.type === 'motor') {
+        const sp = clampInt(a.speed, 0, 255, 255);
+        const vals = a.move === 'custom' ? a.m.map(x => clampInt(x, -255, 255, 0)) : MOVES[a.move].v.map(k => k * sp);
+        L.push(ind + 'tubit.setMotorsPwm(' + vals.map(v => fmt(v === 0 ? 0 : v)).join(',') + ');');
+        if (num(a.sec, 0) > 0) L.push(ind + 'delay(' + fmtNum(a.sec) + ' * 1000);');
+        if (a.stop) L.push(ind + 'tubit.stopAllMotors();');
+      } else if (a.type === 'single') {
+        L.push(ind + 'tubit.setMotorPwm(' + a.motor + ', ' + fmt(clampInt(a.speed, -255, 255, 0)) + ');');
+      } else if (a.type === 'mtc') {
+        need.mtc = true;
+        L.push(ind + mtcLine(a.x, a.y, a.r, a.vm, a.a));
+      } else if (a.type === 'servo') {
+        L.push(ind + 'tubit.setServoAngle(' + a.pin + ', ' + clampInt(a.deg, 0, 180, 90) + ');');
+      } else if (a.type === 'oled' || a.type === 'ultraShow') {
+        need.oled = true;
+        const x = clampInt(a.x, 0, 127, 0), y = clampInt(a.y, 0, 63, 16);
+        L.push(ind + 'display.clearDisplay();');
+        if (a.type === 'oled' && a.font === 'zh') {
+          need.zh = true;
+          L.push(ind + 'u8g2.setFont(u8g2_font_unifont_t_chinese1);');
+          L.push(ind + 'u8g2.setCursor(' + x + ', ' + y + ');');
+          L.push(ind + 'u8g2.print(' + cStr(a.text) + ');');
+        } else {
+          L.push(ind + 'display.setFont();');
+          L.push(ind + 'display.setTextSize(' + (a.type === 'ultraShow' ? 2 : 1) + ');');
+          L.push(ind + 'display.setTextColor(SH110X_WHITE);');
+          L.push(ind + 'display.setCursor(' + x + ', ' + y + ');');
+          if (a.type === 'ultraShow') {
+            need.ultra = true;
+            L.push(ind + 'display.print(String(frontDistCm(), 0) + " cm");');
+          } else {
+            L.push(ind + 'display.print(' + cStr(a.text) + ');');
+          }
+        }
+        L.push(ind + 'display.display();');
+      } else if (a.type === 'wait') {
+        L.push(ind + 'delay(' + fmtNum(Math.max(0, num(a.sec, 1))) + ' * 1000);');
+      } else if (a.type === 'stop') {
+        L.push(ind + 'tubit.stopAllMotors();');
+      } else if (a.type === 'gimbal') {
+        need.gimbal = true;
+        L.push(ind + 'tubit.setServoAngle(S0, ' + clampInt(a.deg, 0, 180, 90) + ');   // 水平雲台');
+      } else if (a.type === 'armClaw') {
+        need.arm = true;
+        L.push(ind + 'ATARM_ClawCtrl(' + (a.close === 'true') + ',' + secInt(a.sec) + ');   // 夾爪' + (a.close === 'true' ? '夾緊' : '張開'));
+      } else if (a.type === 'armLift') {
+        need.arm = true;
+        L.push(ind + 'ATARM_LiftSet(' + clampInt(a.deg, 0, 180, 65) + ',' + secInt(a.sec) + ');   // 手臂升降');
+      } else if (a.type === 'armPan') {
+        need.arm = true;
+        L.push(ind + 'ATARM_PanSet(' + clampInt(a.deg, 0, 180, 90) + ',' + secInt(a.sec) + ');   // 手臂旋轉');
+      } else if (a.type === 'gunFire') {
+        need.gun = true;
+        L.push(ind + 'PPGUN_launch();   // 發射乒乓球');
+      } else if (a.type === 'gunPan') {
+        need.gun = true;
+        L.push(ind + 'PPGUN_PanSet(' + clampInt(a.deg, 0, 180, 90) + ',' + secInt(a.sec) + ');   // 砲台旋轉');
+      } else if (a.type === 'gunHead') {
+        need.gun = true;
+        L.push(ind + 'PPGUN_HeadSet(' + clampInt(a.deg, 0, 180, 30) + ',' + secInt(a.sec) + ');   // 砲管仰角');
+      } else if (a.type === 'wall') {
+        need.mtc = true;
+        const sp = clampInt(a.speed, 0, 255, 120);
+        const dir = WALL_DIRS.includes(a.dir) ? a.dir : 'fwd';
+        const d = Math.max(0, num(a.backCm, 0));
+        L.push(ind + '// 撞牆校正：' + MOVES[dir].label + '低速推牆，讓車身貼齊牆面');
+        L.push(ind + motorLine(dir, sp));
+        L.push(ind + 'delay(' + fmtNum(Math.max(0, num(a.sec, 1.5))) + ' * 1000);');
+        L.push(ind + 'tubit.stopAllMotors();');
+        L.push(ind + 'delay(200);');
+        L.push(ind + 'tubit.resetEnc();');
+        if (d > 0) {
+          const b = MOVES[dir].back;
+          L.push(ind + mtcLine(b[0] * d, b[1] * d, 0, 400, 600) + '   // 退開 ' + plain(d) + ' cm');
+        }
+      } else if (a.type === 'bnoTurn') {
+        need.mtc = true; need.bno = true; need.turn = true;
+        L.push(ind + 'turnTo(' + plain(a.deg) + ', ' + plain(Math.max(0.1, num(a.tol, 1))) + ', ' + Math.round(Math.max(0.5, num(a.timeout, 3)) * 1000) + ');   // BNO 轉正到 ' + plain(a.deg) + '°');
+      } else if (a.type === 'approach') {
+        need.ultra = true;
+        const sp = clampInt(a.speed, 0, 255, 120);
+        L.push(ind + '// 超音波接近：前進到前方距離小於 ' + plain(a.cm) + ' cm');
+        L.push(ind + motorLine('fwd', sp));
+        L.push(ind + '{');
+        L.push(ind + '  unsigned long t0 = millis();');
+        L.push(ind + '  while (frontDistCm() > ' + plain(Math.max(1, num(a.cm, 10))) + ' && millis() - t0 < ' + Math.round(Math.max(0.5, num(a.timeout, 5)) * 1000) + ') {');
+        L.push(ind + '    delay(20);');
+        L.push(ind + '  }');
+        L.push(ind + '}');
+        L.push(ind + 'tubit.stopAllMotors();');
+      } else if (a.type === 'grab') {
+        need.arm = true;
+        L.push(ind + '// 夾取組合');
+        L.push(ind + 'ATARM_ClawCtrl(false,1);   // 張開');
+        L.push(ind + 'ATARM_LiftSet(' + clampInt(a.down, 0, 180, 0) + ',1);   // 降到夾取高度');
+        if (num(a.fwdCm, 0) !== 0) { need.mtc = true; L.push(ind + mtcLine(0, a.fwdCm, 0, 400, 600) + '   // 前進到物資'); }
+        L.push(ind + 'ATARM_ClawCtrl(true,1);   // 夾緊');
+        L.push(ind + 'ATARM_LiftSet(' + clampInt(a.up, 0, 180, 65) + ',1);   // 抬升');
+      } else if (a.type === 'place') {
+        need.arm = true;
+        L.push(ind + '// 放置組合');
+        L.push(ind + 'ATARM_LiftSet(' + clampInt(a.down, 0, 180, 20) + ',1);   // 降到放置高度');
+        L.push(ind + 'ATARM_ClawCtrl(false,1);   // 張開');
+        L.push(ind + 'ATARM_LiftSet(' + clampInt(a.up, 0, 180, 65) + ',1);   // 抬升');
+        if (num(a.backCm, 0) > 0) { need.mtc = true; L.push(ind + mtcLine(0, -num(a.backCm, 0), 0, 400, 600) + '   // 後退'); }
+      } else if (a.type === 'bnoShow') {
+        need.bno = true; need.oled = true;
+        L.push(ind + 'display.clearDisplay();');
+        L.push(ind + 'display.setFont();');
+        L.push(ind + 'display.setTextSize(2);');
+        L.push(ind + 'display.setTextColor(SH110X_WHITE);');
+        L.push(ind + 'display.setCursor(0, 16);');
+        L.push(ind + 'display.print(String(bno.orientationZ, 1));   // BNO055 車頭角度 0~360');
+        L.push(ind + 'display.display();');
+      } else if (a.type === 'mtcVec') {
+        need.mtc = true;
+        L.push(ind + 'mtc.driveVectorOpen(' + [a.x, a.y, a.r].map(v => fmt(clampInt(v, -255, 255, 0))).join(',') + ');   // X 橫移, Y 前後, R 旋轉');
+        if (num(a.sec, 0) > 0) L.push(ind + 'delay(' + fmtNum(a.sec) + ' * 1000);');
+        if (a.stop) L.push(ind + 'tubit.stopAllMotors();');
+      } else if (a.type === 'mtcAngle') {
+        need.mtc = true;
+        L.push(ind + 'mtc.angleToXY(' + fmtNum(a.deg) + ',' + fmt(clampInt(a.speed, -255, 255, 255)) + ');   // 往 ' + plain(a.deg) + '° 方向平移');
+        if (num(a.sec, 0) > 0) L.push(ind + 'delay(' + fmtNum(a.sec) + ' * 1000);');
+        if (a.stop) L.push(ind + 'tubit.stopAllMotors();');
+      } else if (a.type === 'mtcCurve') {
+        need.mtc = true;
+        const ac = plain(Math.abs(num(a.a, 800)));
+        L.push(ind + 'mtc.moveCurveSCurve(' + [fmtNum(a.x), fmtNum(a.y), fmtNum(a.r), fmtNum(a.bulge), plain(Math.abs(num(a.vm, 1200))), ac].join(',') + ',-(' + ac + '),0,0);   // 弧線移動');
+      } else if (a.type === 'mtcParam') {
+        need.mtc = true;
+        L.push(ind + 'mtc.setMtcParameters(' + [a.wh, a.ww, a.mh, a.mw].map(v => plain(Math.abs(num(v, 0)))).join(',') + ');   // 車體參數');
+      } else if (a.type === 'ps3Drive') {
+        need.mtc = true; need.ps3 = true;
+        const k = num(a.scale, 1);
+        const sc = v => (k === 1 ? v : v + ' * ' + plain(k));
+        L.push(ind + 'if (Ps3.isConnected()) {   // PS3 遙控：左搖桿移動、右搖桿 X 旋轉');
+        L.push(ind + '  mtc.driveVectorOpen(' + sc('Ps3.data.analog.stick.lx') + ',(-1 * Ps3.data.analog.stick.ly)' + (k === 1 ? '' : ' * ' + plain(k)) + ',' + sc('Ps3.data.analog.stick.rx') + ');');
+        L.push(ind + '} else {');
+        L.push(ind + '  tubit.stopAllMotors();   // 手把斷線就停車');
+        L.push(ind + '}');
+      } else if (a.type === 'ps3Rumble') {
+        need.ps3 = true;
+        L.push(ind + 'Ps3.setRumble(' + clampInt(a.power, 0, 100, 100) + ', ' + clampInt(a.ms, 0, 5000, 500) + ');   // 手把震動');
+      } else if (a.type === 'v7Drive') {
+        need.mtc = true; need.v7rc = true;
+        L.push(ind + 'if (v7rc.connect()) {   // V7RC Game ADV：左搖桿移動、右側左右鍵旋轉');
+        L.push(ind + '  if (v7rc.setMode("SRT")) {');
+        L.push(ind + '    mtc.driveVectorOpen(( (v7rc.readSRTdata(1) - 1500) / 2 ),( (v7rc.readSRTdata(2) - 1500) / 2 ),' + v7Btn(3) + '*-180 + ' + v7Btn(4) + '*180);');
+        L.push(ind + '    delay(5);');
+        L.push(ind + '  }');
+        L.push(ind + '} else {');
+        L.push(ind + '  tubit.stopAllMotors();   // 斷線就停車');
+        L.push(ind + '}');
+      } else if (a.type === 'irAlign') {
+        need.ir = true; need.mtc = true;
+        const main = IR_MAIN.some(o => o[0] === a.main) ? a.main : 'IR_L';
+        const sec2 = IR_SEC.some(o => o[0] === a.sec) ? a.sec : 'IR_UP';
+        const to = '(unsigned long)((' + plain(Math.max(0.5, num(a.timeout, 8))) + ') * 1000UL)';
+        const cf = '(unsigned long)((' + plain(Math.max(0, num(a.confirm, 1))) + ') * 1000UL)';
+        L.push(ind + '// IR 靠牆校正：主校正 ' + IR_MAIN.find(o => o[0] === main)[1] + '、次校正 ' + IR_SEC.find(o => o[0] === sec2)[1]);
+        if (main === 'IR_NONE' && sec2 === 'IR_NONE') L.push(ind + '// （主、次校正都選「無」，不執行）');
+        else if (main === 'IR_NONE') L.push(ind + 'tuirAlign().alignBlocking(IR_NONE,' + sec2 + ',' + to + ',' + cf + ');');
+        else if (sec2 === 'IR_L' || sec2 === 'IR_R') {
+          L.push(ind + 'if (tuirAlign().alignBlocking(' + main + ',IR_NONE,' + to + ',' + cf + ')) {');
+          L.push(ind + '    tuirAlign().alignBlocking(IR_NONE,' + sec2 + ',' + to + ',' + cf + ');');
+          L.push(ind + '}');
+        } else L.push(ind + 'tuirAlign().alignBlocking(' + main + ',' + sec2 + ',' + to + ',' + cf + ');');
+      } else if (a.type === 'irSingle') {
+        need.ir = true; need.mtc = true;
+        const d = IR_SINGLE.some(o => o[0] === a.dir) ? a.dir : 'IR_UP';
+        L.push(ind + 'tuirAlign().alignBlocking(IR_NONE,' + d + ',(unsigned long)((' + plain(Math.max(0.5, num(a.timeout, 8))) + ') * 1000UL),(unsigned long)((' + plain(Math.max(0, num(a.confirm, 1))) + ') * 1000UL));   // IR 次校正：' + IR_SINGLE.find(o => o[0] === d)[1]);
+      } else if (a.type === 'irShow') {
+        need.ir = true; need.mtc = true; need.oled = true;
+        const rd = g => '(tuirAlign().readAllIR_(), tuirAlign().getFiltered' + g + '())';
+        L.push(ind + 'display.clearDisplay();');
+        L.push(ind + 'display.setFont();');
+        L.push(ind + 'display.setTextSize(1);');
+        L.push(ind + 'display.setTextColor(SH110X_WHITE);');
+        L.push(ind + 'display.setCursor(0, 0);');
+        IR_POS.forEach(p => L.push(ind + 'display.println(String("' + p[2] + ' ") + String(' + rd(p[2]) + '));   // ' + p[1]));
+        L.push(ind + 'display.display();');
+      } else if (a.type === 'raw') {   // 路徑規劃器：預先算好的程式行
+        if (a.need) Object.assign(need, a.need);
+        if (a.stop) (need.stops = need.stops || new Set()).add(a.stop);
+        (a.lines || []).forEach(l => L.push(ind + l));
+      } else if (a.type === 'group') {   // 路徑規劃器：一個路徑點或到點動作（含註解）
+        if (a.label) L.push(ind + '// ' + a.label);
+        genActions(a.acts || [], ind, need).forEach(l => L.push(l));
+      } else if (a.type === 'fireN') {
+        need.gun = true;
+        L.push(ind + 'for (int i = 0; i < ' + clampInt(a.n, 1, 5, 5) + '; i++) {   // 連續發射');
+        L.push(ind + '  PPGUN_launch();');
+        L.push(ind + '  delay(' + fmtNum(Math.max(0, num(a.gap, 0.5))) + ' * 1000);');
+        L.push(ind + '}');
+      }
+    });
+    return L;
+  }
+
+  function generate() {
+    normalizeMode();
+    const need = {};
+    const K = state.kits;
+    const setupBody = state.trig.setup.on ? genActions(state.trig.setup.acts, '  ', need) : [];
+    const loopBody = [];
+    const advOn = state.level !== 'basic';
+    const psB = b => PS3_BTNS.some(x => x[0] === b) ? b : 'cross';
+    // PS3 組合鍵（按住 ○ 等）：從按鍵對應與 PS3 觸發收集
+    const ps3Mods = advOn && K.on.ps3 ? [...new Set((K.ps3.map || []).map(m => m.mod).concat(['P1', 'P2', 'P3', 'P4'].filter(k => state.trig[k].on).map(k => state.trig[k].mod)).filter(Boolean))] : [];
+    const shiftExpr = ps3Mods.map(b => 'Ps3.data.button.' + psB(b)).join(' || ');
+    const ps3Cond = (btn, mod, local) => {
+      const b = 'Ps3.data.button.' + psB(btn);
+      if (mod) return 'Ps3.data.button.' + psB(mod) + ' && ' + b;
+      if (ps3Mods.length && !ps3Mods.includes(btn)) return (local ? '!shiftHeld' : '!(' + shiftExpr + ')') + ' && ' + b;
+      return b;
+    };
+    ['A', 'B', 'P1', 'P2', 'P3', 'P4', 'V1', 'V2'].forEach(k => {
+      const t = state.trig[k];
+      if (!t || !t.on) return;
+      let cond = TRIGGERS.find(x => x.key === k).cond, wait = null;
+      if (k[0] === 'P') { if (!advOn) return; need.ps3 = true; cond = 'Ps3.isConnected() && ' + ps3Cond(t.btn, t.mod, false); wait = 'Ps3.isConnected() && Ps3.data.button.' + psB(t.btn); }
+      if (k[0] === 'V') { if (!advOn) return; need.v7rc = true; cond = 'v7rc.connect() && ' + v7Btn(t.btn); wait = cond; }
+      loopBody.push('  if (' + cond + ') {');
+      genActions(state.trig[k].acts, '    ', need).forEach(l => loopBody.push(l));
+      if (wait) loopBody.push('    while (' + wait + ') delay(10);   // 等放開按鍵，避免一直重複觸發');
+      loopBody.push('  }');
+    });
+    if (state.trig.loop.on) genActions(state.trig.loop.acts, '  ', need).forEach(l => loopBody.push(l));
+    // 勾選的套件即使沒有動作也會初始化
+    KIT_KEYS.forEach(k => { if (K.on[k] && state.level !== 'basic') need[k] = true; });
+    if (need.bno) need.mtc = need.mtc || need.turn;
+    if (need.ir) need.mtc = true;
+    if (need.stops) need.ultra = true;
+
+    /* ----- 遙控（PS3／V7RC）與一鍵自動／手動模式 ----- */
+    const rcDefs = [], rcFns = [], loopHead = [];
+    const M = K.mode;
+    const modeOn = advOn && M.on;
+    const remote = advOn ? (K.on.ps3 ? 'ps3' : (K.on.v7rc ? 'v7rc' : '')) : '';
+    const keyCond = key => {
+      key = String(key || '');
+      if (key === 'btnA') return 'tubit.readButton(Button_A)';
+      if (key === 'btnB') return 'tubit.readButton(Button_B)';
+      if (key.startsWith('ps3:')) { need.ps3 = true; return 'Ps3.isConnected() && Ps3.data.button.' + (PS3_BTNS.some(b => b[0] === key.slice(4)) ? key.slice(4) : 'start'); }
+      if (key.startsWith('v7:')) { need.v7rc = true; return 'v7rc.connect() && ' + v7Btn(key.slice(3)); }
+      return 'false';
+    };
+    const mapLines = (rows, btnExpr, ind) => (rows || []).filter(m => MAP_ACTS[m.act]).map(m => {
+      const A = MAP_ACTS[m.act];
+      if (A.kit) need[A.kit] = true;
+      if (m.act === 'angle') need.mtc = true;
+      if (m.act === 'servoAdd') { need.servoArr = true; (need.servoPins = need.servoPins || new Set()).add(m.pin || 'S0'); }
+      const pl = b => (PS3_BTNS.find(x => x[0] === b) || ['', b])[1];
+      const lab = remote === 'ps3' ? (m.mod ? '按住 ' + pl(m.mod) + ' ＋ ' : '') + pl(m.btn) : 'V7RC ' + m.btn + ' ' + ((V7_BTNS[m.btn] || [''])[0]);
+      const c = A.code(m);
+      return ind + 'if (' + btnExpr(m.btn, m.mod) + ') ' + (c.split(';').length > 2 ? '{ ' + c + ' }' : c) + '   // ' + lab + ' → ' + A.label;
+    });
+    if (remote) {
+      const R = K[remote];
+      const isP = remote === 'ps3';
+      const sf = R.stick, df = R.dpad;
+      const sp = clampInt(R.speed, 0, 255, isP ? 128 : 250);
+      const tn = clampInt(R.turn, 0, 255, isP ? 128 : 180);
+      const dz = clampInt(R.dead, 0, 200, isP ? 8 : 20);
+      const aimSp = Math.max(0, num(R.aim, isP ? 0.3 : 0.45));
+      const moving = ['move', 'moveAim'].includes(sf) || ['move', 'turn'].includes(df);
+      const aiming = ['aim', 'moveAim'].includes(sf) || df === 'aim';
+      need[remote] = true;
+      if (moving) need.mtc = true;
+      rcDefs.push('', '// ===== 遙控可調參數（可直接改數字） =====');
+      rcDefs.push('const int DRIVE_SPEED = ' + sp + ';   // 移動最高速度' + (isP ? '（128＝官方範例原值）' : '（250＝官方範例原值）'));
+      rcDefs.push('const int TURN_SPEED = ' + tn + ';    // 旋轉速度' + (isP ? '（128＝官方範例原值）' : '（180＝官方範例原值）'));
+      rcDefs.push('const int DEADZONE = ' + dz + ';       // 死區：搖桿小於這個值當作 0，放手時車子不會慢慢飄');
+      if (aiming) rcDefs.push('const float AIM_SPEED = ' + plain(aimSp) + ';   // 瞄準調整速度：搖桿推到底或按住方向鍵時，每圈轉幾度');
+      if (aiming) {
+        const T = aimTarget(K.on);
+        let pan, tilt;
+        if (K.on.arm) { need.arm = true; pan = ['ATARM_PanAdd(d);']; tilt = ['ATARM_LiftAdd(d);']; }
+        else if (K.on.gun) { need.gun = true; pan = ['PPGUN_PanAdd(d);']; tilt = ['PPGUN_HeadAdd(d);']; }
+        else {
+          need.servoArr = true; (need.servoPins = need.servoPins || new Set()).add('S0'); need.servoPins.add('S1');
+          pan = ['servoDeg[0] = constrain(servoDeg[0] + d, 0, 180);', 'tubit.setServoAngle(S0, (int)servoDeg[0]);'];
+          tilt = ['servoDeg[1] = constrain(servoDeg[1] + d, 0, 180);', 'tubit.setServoAngle(S1, (int)servoDeg[1]);'];
+        }
+        rcFns.push('', 'void aimPan(float d) {   // 瞄準：' + T.pan + '（正值往左）');
+        pan.forEach(l => rcFns.push('  ' + l)); rcFns.push('}');
+        rcFns.push('', 'void aimTilt(float d) {   // 瞄準：' + T.tilt + '（正值往上）');
+        tilt.forEach(l => rcFns.push('  ' + l)); rcFns.push('}');
+      }
+      const body = [];
+      if (moving) body.push('  int x = 0, y = 0, r = 0;   // 車子移動量：x 左右平移、y 前後、r 旋轉');
+      if (aiming) body.push('  float ap = 0, at = 0;      // 瞄準調整量：ap 旋轉、at 升降／仰角');
+      if (isP) {
+        const lx = 'stickVal(Ps3.data.analog.stick.lx)', ly = 'stickVal(Ps3.data.analog.stick.ly)', rx = 'stickVal(Ps3.data.analog.stick.rx)', ry = 'stickVal(Ps3.data.analog.stick.ry)';
+        const B = b => '(int)Ps3.data.button.' + b;
+        if (sf === 'move') body.push('  // 搖桿：左搖桿上下＝前進／後退、左右＝平移；右搖桿左右＝原地旋轉', '  x += ' + lx + ' * DRIVE_SPEED / 128;', '  y -= ' + ly + ' * DRIVE_SPEED / 128;   // 往上推 ly 是負值', '  r += ' + rx + ' * TURN_SPEED / 128;');
+        if (sf === 'moveAim') body.push('  // 搖桿：左搖桿移動車子；右搖桿左右＝瞄準旋轉、上下＝升降／仰角', '  x += ' + lx + ' * DRIVE_SPEED / 128;', '  y -= ' + ly + ' * DRIVE_SPEED / 128;', '  ap -= ' + rx + ' * AIM_SPEED / 128.0;', '  at -= ' + ry + ' * AIM_SPEED / 128.0;');
+        if (sf === 'aim') body.push('  // 搖桿：左搖桿左右＝瞄準旋轉、上下＝升降／仰角', '  ap -= ' + lx + ' * AIM_SPEED / 128.0;', '  at -= ' + ly + ' * AIM_SPEED / 128.0;');
+        if (df !== 'none') {
+          const g = ps3Mods.length ? '  ' : '';
+          if (ps3Mods.length) body.push('  if (!shiftHeld) {   // 按住組合鍵時，方向鍵改做按鍵對應裡設定的功能');
+          if (df === 'move') body.push(g + '  // 方向鍵：↑↓＝前進／後退、←→＝平移；L1／R1＝原地左轉／右轉', g + '  x += (' + B('right') + ' - ' + B('left') + ') * DRIVE_SPEED;', g + '  y += (' + B('up') + ' - ' + B('down') + ') * DRIVE_SPEED;', g + '  r += (' + B('r1') + ' - ' + B('l1') + ') * TURN_SPEED;');
+          if (df === 'aim') body.push(g + '  // 方向鍵：←→＝瞄準旋轉、↑↓＝升降／仰角', g + '  ap += (' + B('left') + ' - ' + B('right') + ') * AIM_SPEED;', g + '  at += (' + B('up') + ' - ' + B('down') + ') * AIM_SPEED;');
+          if (ps3Mods.length) body.push('  }');
+        }
+        rcFns.push('', 'int stickVal(int v) {   // 套用死區', '  return abs(v) < DEADZONE ? 0 : v;', '}');
+        rcFns.push('', 'void remoteControl() {   // 手動遙控（PS3）', '  if (!Ps3.isConnected()) {', '    tubit.stopAllMotors();   // 手把斷線就停車', '    return;', '  }');
+        if (ps3Mods.length) rcFns.push('  bool shiftHeld = ' + shiftExpr + ';   // 是否按住組合鍵（' + ps3Mods.map(b => (PS3_BTNS.find(x => x[0] === b) || ['', b])[1]).join('、') + '）');
+      } else {
+        const K2 = n => '(int)v7Key(' + n + ')';
+        if (sf === 'move') body.push('  // 左搖桿：上下（通道 2）＝前進／後退、左右（通道 1）＝平移', '  x += v7Axis(1) * DRIVE_SPEED / 500;', '  y += v7Axis(2) * DRIVE_SPEED / 500;');
+        if (sf === 'aim') body.push('  // 左搖桿：左右＝瞄準旋轉、上下＝升降／仰角', '  ap -= v7Axis(1) * AIM_SPEED / 500.0;', '  at += v7Axis(2) * AIM_SPEED / 500.0;');
+        if (df === 'turn') body.push('  // 右側方向鍵：← → ＝原地左轉／右轉（官方）', '  r += (' + K2(4) + ' - ' + K2(3) + ') * TURN_SPEED;');
+        if (df === 'move') body.push('  // 右側方向鍵：↑↓＝前進／後退、←→＝平移、↖ ↗＝原地左轉／右轉', '  y += (' + K2(1) + ' - ' + K2(2) + ') * DRIVE_SPEED;', '  x += (' + K2(4) + ' - ' + K2(3) + ') * DRIVE_SPEED;', '  r += (' + K2(7) + ' - ' + K2(5) + ') * TURN_SPEED;');
+        if (df === 'aim') body.push('  // 右側方向鍵：←→＝瞄準旋轉、↑↓＝升降／仰角', '  ap += (' + K2(3) + ' - ' + K2(4) + ') * AIM_SPEED;', '  at += (' + K2(1) + ' - ' + K2(2) + ') * AIM_SPEED;');
+        rcFns.push('', 'int v7Axis(int ch) {   // GAME ADV 搖桿：1500 為中間，回傳 -500～500（含死區）', '  int d = v7rc.readSRTdata(ch) - 1500;', '  return abs(d) < DEADZONE ? 0 : d;', '}');
+        rcFns.push('', 'bool v7Key(int n) {   // GAME ADV 右側 8 方向鍵：1↑ 2↓ 3← 4→ 5↖ 6↙ 7↗ 8↘', '  int a = v7rc.readSRTdata(3), b = v7rc.readSRTdata(4);', '  switch (n) {',
+          '    case 1: return a == 2000 && b == 1500;', '    case 2: return a == 1000 && b == 1500;', '    case 3: return a == 1500 && b == 1000;', '    case 4: return a == 1500 && b == 2000;',
+          '    case 5: return a == 2000 && b == 1000;', '    case 6: return a == 1000 && b == 1000;', '    case 7: return a == 2000 && b == 2000;', '    case 8: return a == 1000 && b == 2000;', '  }', '  return false;', '}');
+        rcFns.push('', 'void remoteControl() {   // 手動遙控（V7RC，App 選 GAME ADV）', '  if (!v7rc.connect()) {', '    tubit.stopAllMotors();   // 斷線就停車', '    return;', '  }',
+          '  if (!v7rc.setMode("SRT")) return;   // 不是 GAME ADV 送來的資料就不動作');
+      }
+      body.forEach(l => rcFns.push(l));
+      if (moving) rcFns.push('  mtc.driveVectorOpen(constrain(x, -255, 255), constrain(y, -255, 255), constrain(r, -255, 255));');
+      if (aiming) rcFns.push('  if (ap != 0) aimPan(ap);', '  if (at != 0) aimTilt(at);');
+      mapLines(R.map, isP ? (b, mod) => ps3Cond(b, mod, true) : b => 'v7Key(' + b + ')', '  ').forEach(l => rcFns.push(l));
+      if (!isP) rcFns.push('  delay(5);');
+      rcFns.push('}');
+    }
+    if (modeOn) {
+      const after = { stay: 0, repeat: 1, back: 2 }[M.after] || 0;
+      if (M.oled) need.oled = true;
+      const autoC = keyCond(M.autoKey), manC = keyCond(M.manKey);
+      const rum = M.rumble && (need.ps3 || remote === 'ps3') ? '    Ps3.setRumble(100, 300);' : null;
+      rcDefs.push('', '// ===== 一鍵自動／手動模式 =====');
+      rcDefs.push('const int AUTO_AFTER = ' + after + ';   // 自動流程做完後：0＝停在自動（AUTO OK）等按手動鍵　1＝重複執行直到按手動鍵　2＝立刻回手動');
+      rcDefs.push('bool autoMode = false;   // 目前是否為自動模式', 'bool autoDone = false;   // 自動流程是否已跑完');
+      rcFns.push('', 'bool autoKey() {   // 切到自動模式的按鍵', '  return ' + autoC + ';', '}', '', 'bool manualKey() {   // 切回手動模式的按鍵', '  return ' + manC + ';', '}');
+      rcFns.push('', 'bool abortAuto() {   // 自動途中按手動鍵就中止（每個動作做完檢查一次）', '  if (manualKey()) {', '    autoMode = false;', '    tubit.stopAllMotors();', '    return true;', '  }', '  return false;', '}');
+      if (M.oled) rcFns.push('', 'void showMode() {   // OLED 顯示目前模式', '  display.clearDisplay();', '  display.setFont();', '  display.setTextSize(2);', '  display.setTextColor(SH110X_WHITE);',
+        '  display.setCursor(0, 20);', '  display.print(autoMode ? (autoDone ? "AUTO OK" : "AUTO") : "MANUAL");', '  display.display();', '}');
+      rcFns.push('', 'void runAuto() {   // 一鍵自動流程', '  if (abortAuto()) return;');
+      const acts = state.trig.AUTO.on ? state.trig.AUTO.acts : [];
+      acts.forEach(a => { genActions([a], '  ', need).forEach(l => rcFns.push(l)); rcFns.push('  if (abortAuto()) return;'); });
+      if (!acts.length) rcFns.push('  // 還沒有自動動作：在「一鍵自動模式流程」加入動作');
+      rcFns.push('}');
+      loopHead.push('  if (!autoMode && autoKey()) {   // 一鍵切換到自動', '    autoMode = true;', '    autoDone = false;');
+      if (rum) loopHead.push(rum);
+      if (M.oled) loopHead.push('    showMode();');
+      loopHead.push('  }', '  if (autoMode && manualKey()) {   // 一鍵切回手動', '    autoMode = false;', '    tubit.stopAllMotors();');
+      if (rum) loopHead.push(rum);
+      if (M.oled) loopHead.push('    showMode();');
+      loopHead.push('  }', '  if (autoMode) {', '    if (!autoDone) {', '      runAuto();', '      if (!autoMode) {   // 途中按了手動鍵');
+      if (M.oled) loopHead.push('        showMode();');
+      loopHead.push('        return;', '      }', '      if (AUTO_AFTER != 1) {   // 1＝重複執行：不標記完成，下一圈再跑一次', '        autoDone = true;', '        tubit.stopAllMotors();', '        if (AUTO_AFTER == 2) autoMode = false;');
+      if (M.oled) loopHead.push('        showMode();');
+      loopHead.push('      }', '    }', '    return;   // 自動模式中不接受遙控，按手動鍵才切回', '  }');
+      if (M.oled) setupBody.push('  showMode();');
+    }
+    if (remote) loopHead.push('  remoteControl();   // 手動遙控：移動＋按鍵對應');
+    loopBody.unshift(...loopHead);
+    const conflict = need.arm && need.gun;
+    const rcConflict = need.ps3 && need.v7rc;
+    const v7mode = K.v7rc.mode === 'WIFI' ? 'WIFI' : 'BT';
+
+    const trig = num(K.ultra.trig, 23), echo = num(K.ultra.echo, 15);
+    const uname = 'ultrasonic_' + trig + '_' + echo;
+    const inc = ['#include <Arduino.h>', '#include <TuBitCore.h>', '#include <Wire.h>'];
+    if (need.mtc) inc.push('#include <TuMTC.h>');
+    if (need.ir) inc.push('#include <TuIRAlign.h>');
+    if (need.ps3) inc.push('#include <Ps3Controller.h>');
+    if (need.v7rc) inc.push('#include <V7RC_' + v7mode + '.h>');
+    if (need.oled) inc.push('#include <Adafruit_GFX.h>', '#include <Adafruit_SH110X.h>');
+    if (need.zh) inc.push('#include <U8g2_for_Adafruit_GFX.h>');
+    if (need.gun) inc.push('#include <PPGUN.h>');
+    if (need.arm) inc.push('#include <ATARM.h>');
+    if (need.ultra) inc.push('#include <Ultrasonic.h>');
+    if (need.bno) inc.push('#include <EasyBNO055_ESP.h>');
+    const def = ['TuBitCore tubit;'];
+    if (need.mtc) def.push('TuMTC mtc(tubit);');
+    if (need.oled) def.push('Adafruit_SH1106G display(128, 64, &Wire);');
+    if (need.zh) def.push('U8G2_FOR_ADAFRUIT_GFX u8g2;');
+    if (need.ultra) def.push('Ultrasonic ' + uname + '(' + trig + ', ' + echo + ');   // Trig, Echo');
+    if (need.bno) def.push('EasyBNO055_ESP bno;');
+    if (need.servoArr) def.push('float servoDeg[8] = {90, 90, 90, 90, 90, 90, 90, 90};   // S0～S7 目前角度（累加調整用，開機假設在 90°）');
+    if (need.v7rc) {
+      def.push('V7RC_' + v7mode + ' v7rc;');
+      if (v7mode === 'WIFI') def.push('const char* ssid = ' + cStr(K.v7rc.ssid) + ' ;', 'const char* password = ' + cStr(K.v7rc.pass) + ';', 'const int channel = ' + clampInt(K.v7rc.ch, 1, 13, 1) + ';');
+    }
+    if (need.ir) def.push('extern TuBitCore tubit;', 'TuMTC& tuirRobot() {', '    return mtc;', '}', 'TuIRAlign<TuMTC>& tuirAlign() {', '    static TuIRAlign<TuMTC> align(tubit, tuirRobot());', '    return align;', '}');
+    const helpers = [];
+    if (need.ultra) {
+      helpers.push('', 'float frontDistCm() {   // 前方距離 (cm)，0 代表沒收到回波，視為很遠',
+        '  unsigned int d = ' + uname + '.read(CM);', '  return d == 0 ? 999 : d;', '}');
+    }
+    if (need.stops) [...need.stops].sort((a, b) => a - b).forEach(cm => helpers.push('', 'bool stopNear_' + String(cm).replace('.', '_') + '() {   // 前方距離小於 ' + plain(cm) + ' cm 就中斷移動（moveSCurve 中斷用）', '  return frontDistCm() < ' + plain(cm) + ';', '}'));
+    if (need.turn) {
+      helpers.push('', 'double headingErr(double target) {   // 目標角與 BNO 角度差，換算到 -180~180',
+        '  double e = target - bno.orientationZ;', '  while (e > 180) e -= 360;', '  while (e < -180) e += 360;', '  return e;', '}',
+        '', 'void turnTo(double deg, double tol, unsigned long timeoutMs) {   // BNO 轉正（改寫自轉正.tb，係數 -1.65）',
+        '  tubit.resetEnc();', '  tubit.stopAllMotors();', '  unsigned long t0 = millis();',
+        '  while (fabs(headingErr(deg)) > tol && millis() - t0 < timeoutMs) {',
+        '    mtc.bnoMoveClosed(0, 0, headingErr(deg) * -1.65, bno.orientationZ);', '    delay(5);', '  }',
+        '  tubit.resetEnc();', '  tubit.stopAllMotors();', '}');
+    }
+    const setups = ['  tubit.init();'];
+    if (need.oled) setups.push('  display.begin(0x3C, true);');
+    if (need.zh) setups.push('  u8g2.begin(display);');
+    if (need.bno) setups.push('  bno.start();');
+    if (need.ps3) {
+      const mac = String(K.ps3.mac || '').trim();
+      setups.push(/^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$/.test(mac) && mac !== '00:00:00:00:00:00' ? '  Ps3.begin(' + cStr(mac) + ');   // 改成自己手把記住的 MAC' : '  Ps3.begin();');
+    }
+    if (need.v7rc) setups.push(v7mode === 'WIFI' ? '  v7rc.setupWIFI(ssid, password, channel);' : '  v7rc.setupBLE(' + cStr(K.v7rc.name) + ');   // 每台車的藍牙名稱要不同');
+    if (need.ir) {
+      const I = K.ir, pin = v => (IR_PINS.includes(String(v)) ? String(v) : '33');
+      setups.push('  tuirAlign();   // 初始化 IR 靠牆校正模式 麥克納姆輪 MTC');
+      setups.push('  tuirAlign().setPins(' + ['f', 'b', 'lf', 'lb', 'rf', 'rb'].map(k => pin(I[k])).join(',') + ');   // 前 後 左前 左後 右前 右後');
+      setups.push('  tuirAlign().setTargets(' + ['tf', 'tb', 'tlf', 'tlb', 'trf', 'trb'].map(k => plain(num(I[k], 25))).join(',') + ');   // 貼牆時各感測器的目標值');
+    }
+    if (need.gun) setups.push('  PPGUN_INIT(' + K.gun.pan + ',' + K.gun.head + ',' + K.gun.shoot + ');   // 旋轉, 上下, 發射');
+    if (need.arm) {
+      setups.push('  ATARM_INIT(' + K.arm.pan + ',' + K.arm.lift + ',' + K.arm.claw + ');   // 旋轉, 升降, 夾爪');
+      setups.push('  ATARM_SetClawRange(' + clampInt(K.arm.open, 0, 180, 80) + ',' + clampInt(K.arm.close, 0, 180, 150) + ');   // 張開, 夾緊');
+      setups.push('  ATARM_SetLiftRange(' + clampInt(K.arm.down, 0, 180, 0) + ',' + clampInt(K.arm.up, 0, 180, 65) + ');   // 最低, 最高');
+      setups.push('  ATARM_SetPanRange(' + clampInt(K.arm.panMin, 0, 180, 55) + ',' + clampInt(K.arm.panMax, 0, 180, 125) + ');   // 旋轉範圍');
+    }
+    if (need.gimbal && !need.arm && !need.gun) setups.push('  tubit.setServoAngle(S0, 90);   // 水平雲台回正');
+    if (need.servoPins) [...need.servoPins].filter(pn => !((need.arm || need.gun) && pn === 'S0') && !(need.gimbal && pn === 'S0')).forEach(pn => setups.push('  tubit.setServoAngle(' + pn + ', 90);   // 累加調整的起點'));
+
+    const head = ['// generated by OpenBlock'];
+    if (conflict) head.push('// ⚠ 同時用了手臂與發射器動作：ATARM.h 與 PPGUN.h 不能放在同一支程式，請刪除其中一種動作');
+    if (rcConflict) head.push('// ⚠ 同時用了 PS3 與 V7RC：一支程式只用一種遙控方式，請刪除其中一種');
+    const out = head.concat(inc, [''], def, rcDefs, helpers, rcFns, ['', 'void setup() {'], setups, [''], setupBody, ['}', '', 'void loop() {'], loopBody, ['}', '']);
+    return { code: out.join('\n'), need };
+  }
+
+
+  return {
+    generate: st => { state = st; return generate(); },
+    setKit: (st, k, on) => { state = st; setKit(k, on); return kitNote; },
+    normalizeMode: st => { state = st; normalizeMode(); },
+    KITS, KIT_KEYS, defaultKits, OFFICIAL_MAP, STICK_FN, DPAD_FN, PS3_BTNS, V7_BTNS, IR_PINS, IR_POS, IR_MAIN, IR_SEC, MAP_ACTS, WALL_DIRS, MOVES, emptyTrig, aimTarget
+  };
+})();
+
+/* 各機器人預設套件（與程式產生器相同的 kits 結構） */
+function defaultKitsFor(robot){
+  const K = GEN.defaultKits();
+  const shooter = /Shooter/.test(robot);
+  K.on.bno = true;
+  if (shooter){ K.on.gun = true; } else { K.on.arm = true; }
+  if (robot === 'energyA') K.on.ir = true;
+  if (robot !== 'customArm' && robot !== 'customShooter'){
+    K.on.ps3 = true;
+    K.ps3.map = shooter ? GEN.OFFICIAL_MAP.ps3gun() : GEN.OFFICIAL_MAP.ps3arm();
+    K.ps3.mapPreset = shooter ? 'gun' : 'arm';
+    if (shooter) K.ps3.mac = '20:00:00:00:64:30';
+    if (shooter) K.v7rc.name = 'MTC_PPGUN_U01';   // 官方發射車範例的藍牙名稱
+    K.mode.on = true;   // START 一鍵自動、SELECT 切手動；做完停在 AUTO OK 等裁判確認
+  }
+  return K;
 }
 function demoSteps(){
   const mv = (x, y, h) => ({id:uid(), type:'move', x, y, h, curve:false, bulge:0, vm:'', a:'', ad:'', stopCm:0});
   return [
-    {id:uid(), type:'align', main:'IR_R', sub:'IR_BACK', reset:true, rx:20, ry:282, rh:180},
+    {id:uid(), type:'align', main:'IR_R', sub:'IR_BACK', timeout:8, confirm:1, reset:true, rx:20, ry:282, rh:180},
     mv(20, 215, 180),
     mv(55, 205, 180),
-    {id:uid(), type:'claw', close:false, sec:0},
-    {id:uid(), type:'lift', deg:0, sec:0},
+    {id:uid(), type:'claw', close:false, sec:1},
+    {id:uid(), type:'lift', deg:0, sec:1},
     mv(75, 195, 180),
-    {id:uid(), type:'claw', close:true, sec:0},
-    {id:uid(), type:'lift', deg:40, sec:0},
+    {id:uid(), type:'claw', close:true, sec:1},
+    {id:uid(), type:'lift', deg:65, sec:1},
   ];
 }
 function presetCustom(W, H){ return {W, H, objects:[]}; }
@@ -546,27 +1259,50 @@ function newState(game, robot, W, H){
   robot = robot || ({energy:'energyA', target:'targetArm', custom:'customArm'})[game];
   const f = game === 'energy' ? presetEnergy() : game === 'target' ? presetTarget() : presetCustom(W || 200, H || 200);
   const st = {
-    v:1, game, rtype:robot, field:{W:f.W, H:f.H}, objects:f.objects,
+    v:1, kv:2, game, rtype:robot, field:{W:f.W, H:f.H}, objects:f.objects,
     robot: {w:28, l:28, clawOff:20, start: game === 'energy' ? {x:35, y:282, h:180} : {x:Math.round(f.W / 2), y:30, h:0}},
     motion:{vm:600, a:800, ad:800, wheelD:6},
     axes:{frame:'body', map:'xr_yf', invX:false, invY:false, zCW:false, invBulge:false},
-    arm:{pan:'S0', lift:'S7', claw:'S6', liftDown:0, liftUp:40, liftPlace:20, settle:400},
-    ir:{pins:'33,32,35,34,39,36', targets:'25,25,25,25,25,25'},
-    ppgun:{pan:'S0', head:'S1', launch:'S2'},
-    remote:{type:'none', mac:'20:00:00:00:63:93', ble:'車城本校01'},
-    turn:{gain:-1.65, tol:0.3, timeout:3000},
-    modules: defaultModules(robot),
+    arm:{liftDown:0, liftUp:65, liftPlace:20, sec:1},
+    turn:{tol:1, timeout:3},
+    kits: defaultKitsFor(robot),
     ui:{grid1:true, ghosts:true, sweep:true, snap:'1', snap90:true, backoff:10, color: game === 'energy' ? 'green' : 'yellow'},
     steps: game === 'energy' && robot === 'energyA' ? demoSteps() : [],
   };
-  if (robot === 'targetShooter' || robot === 'customShooter'){ st.robot.w = 24; st.robot.l = 24; }
+  if (/Shooter/.test(robot)){ st.robot.w = 24; st.robot.l = 24; }
   return st;
 }
-/* 舊版方案補齊新欄位 */
+/* 舊版方案補齊新欄位；v1.3 以前的 modules／remote 轉成 kits */
 function upgradeState(o){
   const d = newState(o.game, o.rtype, o.field && o.field.W, o.field && o.field.H);
+  if (!o.kits || o.kv !== 2){
+    const K = GEN.defaultKits(), M = o.modules || {}, R = o.remote || {};
+    K.on.bno = !!M.bno; K.on.arm = !!M.atarm; K.on.gun = !!M.ppgun && !M.atarm; K.on.ultra = !!M.ultra; K.on.ir = !!M.irAlign;
+    K.on.ps3 = R.type === 'ps3'; K.on.v7rc = R.type === 'v7rc';
+    if (R.mac) K.ps3.mac = R.mac; if (R.ble) K.v7rc.name = R.ble;
+    if (M.trig) K.ultra.trig = M.trig; if (M.echo) K.ultra.echo = M.echo;
+    if (o.arm && o.arm.pan){ K.arm.pan = o.arm.pan; K.arm.lift = o.arm.lift; K.arm.claw = o.arm.claw; }
+    if (o.ppgun){ K.gun.pan = o.ppgun.pan; K.gun.head = o.ppgun.head; K.gun.shoot = o.ppgun.launch; }
+    if (o.ir && o.ir.pins){ const pp = String(o.ir.pins).split(','), tt = String(o.ir.targets || '').split(',');
+      ['f','b','lf','lb','rf','rb'].forEach((k, i) => { if (pp[i]) K.ir[k] = pp[i].trim(); if (tt[i]) K.ir['t' + k] = num(tt[i], 25); }); }
+    const shooter = /Shooter/.test(o.rtype);
+    if (K.on.ps3){ K.ps3.map = shooter ? GEN.OFFICIAL_MAP.ps3gun() : GEN.OFFICIAL_MAP.ps3arm(); K.ps3.mapPreset = shooter ? 'gun' : 'arm'; }
+    if (K.on.v7rc){ K.v7rc.map = shooter ? GEN.OFFICIAL_MAP.v7gun() : GEN.OFFICIAL_MAP.v7arm(); K.v7rc.mapPreset = shooter ? 'gun' : 'arm'; }
+    K.mode.on = o.game === 'energy' && (K.on.ps3 || K.on.v7rc);
+    o.kits = K; o.kv = 2;
+    if (o.arm){ o.arm = {liftDown:num(o.arm.liftDown, 0), liftUp:num(o.arm.liftUp, 65), liftPlace:num(o.arm.liftPlace, 20), sec:1}; }
+    if (o.turn){ o.turn = {tol:Math.max(0.1, num(o.turn.tol, 1)), timeout:Math.max(0.5, num(o.turn.timeout, 3000) / (num(o.turn.timeout, 3) > 100 ? 1000 : 1))}; }
+    (o.steps || []).forEach(s => {
+      if (s.type === 'align'){
+        if (!['IR_L','IR_R','IR_NONE'].includes(s.main)){ if (!s.sub || s.sub === 'IR_NONE') s.sub = s.main; s.main = 'IR_NONE'; }
+        if (s.timeout === undefined) s.timeout = 8; if (s.confirm === undefined) s.confirm = 1;
+      }
+    });
+    delete o.modules; delete o.remote; delete o.ppgun; delete o.ir;
+  }
+  // 預設套件結構補齊（產生器新增欄位時）
   const fill = (a, b) => { for (const k in b){ if (a[k] === undefined) a[k] = clone(b[k]); else if (b[k] && typeof b[k] === 'object' && !Array.isArray(b[k]) && a[k] && typeof a[k] === 'object') fill(a[k], b[k]); } };
-  ['robot','motion','axes','arm','ir','ppgun','remote','turn','modules','ui'].forEach(k => { if (!o[k]) o[k] = clone(d[k]); else fill(o[k], d[k]); });
+  ['robot','motion','axes','arm','turn','kits','ui'].forEach(k => { if (!o[k]) o[k] = clone(d[k]); else fill(o[k], d[k]); });
   o.v = 1; return o;
 }
 
@@ -644,15 +1380,40 @@ function buildSeg(S, from, s){
 function clawPoint(S, p){ const F = fwdVec(p.h); return {x:p.x + F.x * S.robot.clawOff, y:p.y + F.y * S.robot.clawOff}; }
 
 /* ================= 模擬 ================= */
+/* 撞牆校正／超音波接近的模擬：沿機身方向一步一步前進，直到碰到牆或前方距離到達 */
+function pushPose(S, p, dir, untilFn, maxCm){
+  const F = fwdVec(p.h), R = rightVec(p.h);
+  const v = dir === 'fwd' ? F : dir === 'back' ? {x:-F.x, y:-F.y} : dir === 'right' ? R : {x:-R.x, y:-R.y};
+  const solids = S.objects.filter(o => o.solid);
+  let last = Object.assign({}, p), found = false;
+  for (let d = 0.5; d <= maxCm; d += 0.5){
+    const q = {x:p.x + v.x * d, y:p.y + v.y * d, h:p.h};
+    if (untilFn(q, solids)){ found = true; break; }
+    last = q;
+  }
+  return {pose:last, found, v};
+}
+function hitsAny(S, q, solids){
+  const poly = robotPoly(S, q.x, q.y, q.h);
+  if (poly.some(c => c.x < 0 || c.y < 0 || c.x > S.field.W || c.y > S.field.H)) return true;
+  return solids.some(o => polysHit(poly, rectPoly(o)));
+}
+function frontBlocked(S, q, solids, cm){
+  const F = fwdVec(q.h), pt = {x:q.x + F.x * (S.robot.l / 2 + cm), y:q.y + F.y * (S.robot.l / 2 + cm)};
+  if (pt.x < 0 || pt.y < 0 || pt.x > S.field.W || pt.y > S.field.H) return true;
+  return solids.some(o => inRect(pt, o));
+}
+function straightSeg(from, to){ return {from, to, dh:0, curve:false, len:Math.hypot(to.x - from.x, to.y - from.y), hits:[], hitIds:new Set()}; }
 function simulate(S){
   let p = Object.assign({}, S.robot.start);
-  const res = {pose:[], segs:[], timeline:[], total:0, notes:[], clawClosed:false, triggerDone:false, multiGrab:false, doubleClose:false,
-    neutralShooter:false, crossLine:false, placed:[], grabbed:[], durations:{}};
+  const res = {pose:[], segs:[], pseudo:[], timeline:[], total:0, notes:[], clawClosed:false, triggerDone:false, multiGrab:false, doubleClose:false,
+    neutralShooter:false, crossLine:false, placed:[], grabbed:[], durations:{}, noWall:[], noTarget:[]};
   let clawClosed = false, holding = [];
   const items = S.objects.filter(o => o.type === 'item');
   for (const s of S.steps){
     res.pose.push({id:s.id, before:Object.assign({}, p)});
     let dur = 0;
+    const sec = Math.max(0, Math.round(num(s.sec, 1)));
     if (s.type === 'move'){
       const seg = buildSeg(S, Object.assign({}, p), s);
       res.segs.push(seg); dur = seg.time + (s.fix ? 0.4 : 0);
@@ -668,10 +1429,30 @@ function simulate(S){
         }
       }
       p = Object.assign({}, seg.to);
+    } else if (s.type === 'wall' || s.type === 'approach'){
+      const from = Object.assign({}, p);
+      let r;
+      if (s.type === 'wall') r = pushPose(S, p, s.dir || 'fwd', (q, so) => hitsAny(S, q, so), 80);
+      else r = pushPose(S, p, 'fwd', (q, so) => hitsAny(S, q, so) || frontBlocked(S, q, so, Math.max(1, num(s.cm, 10))), 250);
+      let to = r.pose;
+      if (s.type === 'wall'){
+        if (r.found) to = Object.assign({}, to, {h:Math.round(to.h / 90) * 90});   // 推牆後車身與牆面對齊
+        else res.noWall.push(s.id);
+        const back = Math.max(0, num(s.backCm, 0));
+        if (back > 0) to = {x:to.x - r.v.x * back, y:to.y - r.v.y * back, h:to.h};
+        dur = num(s.sec, 1.5) + 0.2 + (back > 0 ? 0.3 + back / 15 : 0);
+      } else {
+        if (!r.found) res.noTarget.push(s.id);
+        dur = 0.2 + Math.hypot(to.x - from.x, to.y - from.y) / Math.max(5, num(s.speed, 120) / 4);
+      }
+      if (to.h === -180) to.h = 180;
+      const sg = straightSeg(from, to); sg.dh = normDeg(to.h - from.h);
+      res.pseudo.push(sg);
+      res.timeline.push({kind:'move', seg:sg, t0:res.total, dur});
+      p = to;
     } else {
-      const settle = num(S.arm.settle, 400) / 1000;
       if (s.type === 'claw'){
-        dur = Math.max(0, Math.round(num(s.sec))) + settle;
+        dur = sec + 0.15;
         const cp = clawPoint(S, p);
         if (s.close){
           if (clawClosed) res.doubleClose = true;
@@ -691,11 +1472,12 @@ function simulate(S){
           }
           holding = []; clawClosed = false;
         }
-      } else if (s.type === 'lift' || s.type === 'pan'){ dur = Math.max(0, Math.round(num(s.sec))) + settle; }
-      else if (s.type === 'align'){ dur = 1.5; if (s.reset) p = {x:num(s.rx), y:num(s.ry), h:num(s.rh)}; }
+      } else if (['lift','pan','gunPan','gunHead'].includes(s.type)){ dur = sec + 0.15; }
+      else if (s.type === 'align'){ dur = 1.5 + num(s.confirm, 1); if (s.reset) p = {x:num(s.rx), y:num(s.ry), h:num(s.rh)}; }
       else if (s.type === 'turn'){ const dh = Math.abs(normDeg(num(s.h) - p.h)); dur = 0.3 + dh / 120; p = {x:p.x, y:p.y, h:num(s.h)}; }
       else if (s.type === 'wait'){ dur = num(s.ms) / 1000; }
       else if (s.type === 'fire'){ dur = 0.6; }
+      else if (s.type === 'fireN'){ dur = Math.max(1, Math.min(5, Math.round(num(s.n, 5)))) * (0.3 + num(s.gap, 0.5)); }
       res.timeline.push({kind:s.type, step:s, t0:res.total, dur, pose:Object.assign({}, p), clawClosed});
     }
     res.durations[s.id] = dur;
@@ -707,7 +1489,7 @@ function simulate(S){
   return res;
 }
 
-/* ================= 程式碼產生 ================= */
+/* ================= 程式碼產生（使用共用核心 GEN） ================= */
 function mapAxes(S, from, to){
   const dx = to.x - from.x, dy = to.y - from.y, dh = normDeg(to.h - from.h);
   let a, b;
@@ -722,9 +1504,10 @@ function mapAxes(S, from, to){
   const z = S.axes.zCW ? -dh : dh;
   return {X:a, Y:b, Z:z};
 }
+const TYPE_NAMES_CORE = {turn:'BNO 轉正', move:'移動', claw:'夾爪', lift:'抬升', pan:'旋轉夾爪', align:'IR 校正', wait:'等待', fire:'發射乒乓球',
+  code:'自訂程式', wall:'撞牆校正', approach:'超音波接近', fireN:'連續發射', gunPan:'砲台旋轉', gunHead:'砲管仰角'};
 function liftName(S, s){ return num(s.deg) <= num(S.arm.liftDown, 0) ? '下降' : '抬升'; }
 function stepName(S, s){ return s.type === 'lift' ? liftName(S, s) : TYPE_NAMES_CORE[s.type]; }
-const TYPE_NAMES_CORE = {turn:'BNO 轉正', move:'移動', claw:'夾爪', lift:'抬升', pan:'旋轉夾爪', align:'IR 校正', wait:'等待', fire:'發射乒乓球', code:'自訂程式'};
 function stepLabels(S){
   let k = 0, sub = 0; const out = [];
   for (const s of S.steps){
@@ -734,290 +1517,127 @@ function stepLabels(S){
   return out;
 }
 function bnoTarget(S, h){ let v = ((num(S.robot.start.h) - num(h)) % 360 + 360) % 360; return Math.round(v * 10) / 10; }
-function distOn(M){ return M.ultra || M.sharp; }
-function distSrc(M){ if (M.ultra && M.sharp) return M.stopSrc === 'sharp' ? 'sharp' : 'ultra'; return M.ultra ? 'ultra' : 'sharp'; }
-function irList(str){ return String(str).split(',').map(v => v.trim()).filter(Boolean).join(','); }
-
-function genCode(S, sim){
-  const M = S.modules, L = [];
-  const usesArm = M.atarm, usesGun = M.ppgun;
-  const sharpStops = [...new Set(S.steps.filter(s => s.type === 'move' && distOn(M) && num(s.stopCm) > 0).map(s => num(s.stopCm)))];
-  const needTurn = M.bno && S.steps.some(s => s.type === 'turn' || (s.type === 'move' && s.fix));
-  const RT = S.remote.type, shooter = /Shooter/.test(S.rtype);
-  const gname = {energy:'物資能源爭霸戰', target:'標靶爭奪賽', custom:`自訂場地 ${S.field.W}×${S.field.H} cm`}[S.game];
-  L.push(`// generated by TU:bit V2 2026全國競賽路徑規劃器 ${VERSION}（OpenBlock 相容）`);
-  L.push(`// 賽事：${gname}｜${ROBOTS[S.rtype].name}`);
-  L.push(`// 起點 (${fmt(S.robot.start.x)}, ${fmt(S.robot.start.y)}) 車頭 ${fmt(S.robot.start.h)}°｜估算 ${sim.total.toFixed(1)} 秒`);
-  L.push('#include <Arduino.h>');
-  L.push('#include <TuBitCore.h>');
-  L.push('#include <Wire.h>');
-  if (M.bno) L.push('#include <EasyBNO055_ESP.h>');
-  if (usesArm) L.push('#include <ATARM.h>');
-  L.push('#include <TuMTC.h>');
-  if (M.irAlign) L.push('#include <TuIRAlign.h>');
-  if (usesGun) L.push('#include <PPGUN.h>');
-  if (M.sharp) L.push('#include <ESP32SharpIR.h>');
-  if (M.ultra) L.push('#include <Ultrasonic.h>');
-  if (M.husky) L.push('#include <HUSKYLENS.h>');
-  if (RT === 'ps3') L.push('#include <Ps3Controller.h>');
-  if (RT === 'v7rc') L.push('#include <V7RC_BT.h>');
-  L.push('');
-  L.push('TuBitCore tubit;');
-  L.push('TuMTC mtc(tubit);   // 只宣告一次，重複宣告會編譯失敗');
-  if (M.bno) L.push('EasyBNO055_ESP bno;');
-  if (M.irAlign){
-    L.push('extern TuBitCore tubit;');
-    L.push('TuMTC& tuirRobot() {');
-    L.push('    return mtc;');
-    L.push('}');
-    L.push('TuIRAlign<TuMTC>& tuirAlign() {');
-    L.push('    static TuIRAlign<TuMTC> align(tubit, tuirRobot());');
-    L.push('    return align;');
-    L.push('}');
+const STEP_KIT = {claw:'arm', lift:'arm', pan:'arm', fire:'gun', fireN:'gun', gunPan:'gun', gunHead:'gun', align:'ir', approach:'ultra', turn:'bno'};
+const KIT_NAME = {arm:'手臂 ATARM', gun:'乒乓球發射器 PPGUN', ir:'IR 靠牆校正', ultra:'超音波', bno:'BNO055', gimbal:'水平雲台', ps3:'PS3 遙控手把', v7rc:'V7RC 手機遙控'};
+const DIR_NAMES = {fwd:'前', back:'後', left:'左', right:'右'};
+const g1 = v => { const r = Math.round(num(v) * 10) / 10; const z = Object.is(r, -0) ? 0 : r; return z < 0 ? '(' + z + ')' : String(z); };
+function stepDesc(S, s){
+  switch (s.type){
+    case 'claw': return '夾爪' + (s.close ? '夾緊' : '張開');
+    case 'lift': return '手臂' + liftName(S, s) + '到 ' + fmt(num(s.deg)) + '°';
+    case 'pan': return '手臂旋轉到 ' + fmt(num(s.deg)) + '°';
+    case 'turn': return 'BNO 轉正：車頭 ' + fmt(num(s.h)) + '°（BNO ' + bnoTarget(S, s.h) + '°）';
+    case 'align': return 'IR 靠牆校正' + (s.reset ? `，校正後位置 (${fmt(num(s.rx))}, ${fmt(num(s.ry))}) ${fmt(num(s.rh))}°` : '');
+    case 'wall': return '撞牆校正：往' + (DIR_NAMES[s.dir] || '前') + '推牆';
+    case 'approach': return '超音波接近到 ' + fmt(num(s.cm)) + ' cm';
+    case 'fireN': return '連續發射 ' + Math.round(num(s.n, 5)) + ' 顆';
+    case 'gunPan': return '砲台旋轉到 ' + fmt(num(s.deg)) + '°';
+    case 'gunHead': return '砲管仰角到 ' + fmt(num(s.deg)) + '°';
+    case 'wait': return '等待 ' + fmt(num(s.ms) / 1000) + ' 秒';
+    default: return TYPE_NAMES_CORE[s.type] || s.type;
   }
-  if (M.sharp) L.push(`ESP32SharpIR sharpIR_1(ESP32SharpIR::GP2Y0A21YK0F, ${num(M.sharpPin, 26)});`);
-  const ut = num(M.trig, 23), ue = num(M.echo, 15), uname = `ultrasonic_${ut}_${ue}`;
-  if (M.ultra) L.push(`Ultrasonic ${uname}(${ut}, ${ue});   // TRIG, ECHO`);
-  if (M.husky){ L.push('HUSKYLENS huskylens;'); L.push('HUSKYLENSResult HuskyResultBuffer;'); }
-  if (RT === 'v7rc') L.push('V7RC_BT v7rc;');
-  if (RT !== 'none') L.push(`bool remoteOn = ${S.game === 'energy' ? 'false;   // 自動化結束、裁判確認後按 B 鍵才開啟遙控' : 'true;'}`);
-  if (distOn(M) && sharpStops.length){
-    L.push('float frontDistCm() {   // 前方距離 (cm)');
-    if (distSrc(M) === 'ultra'){ L.push(`  unsigned int d = ${uname}.read(CM);`); L.push('  return d == 0 ? 999 : d;   // 0 代表沒收到回波'); }
-    else L.push('  return sharpIR_1.getDistanceFloat();');
-    L.push('}');
-    sharpStops.forEach(cm => {
-      L.push(`bool stopNear_${String(cm).replace('.', '_')}() {   // 前方距離小於 ${cm} cm 就中斷移動`);
-      L.push(`  return frontDistCm() < ${cm};`);
-      L.push('}');
-    });
-  }
-  if (needTurn){
-    L.push('double headingErr(double target) {   // 目標角與 BNO 角度差，換算到 -180~180，避免 0/360 繞遠路');
-    L.push('  double e = target - bno.orientationZ;');
-    L.push('  while (e > 180) e -= 360;');
-    L.push('  while (e < -180) e += 360;');
-    L.push('  return e;');
-    L.push('}');
-    L.push('void turnTo(double deg) {   // BNO 轉正（改寫自轉正.tb）');
-    L.push('  tubit.resetEnc();');
-    L.push('  tubit.stopAllMotors();');
-    L.push('  unsigned long t0 = millis();');
-    L.push(`  while (fabs(headingErr(deg)) > ${fmt(num(S.turn.tol, 0.3))} && millis() - t0 < ${Math.round(num(S.turn.timeout, 3000))}) {`);
-    L.push(`    mtc.bnoMoveClosed(0, 0, headingErr(deg) * ${num(S.turn.gain, -1.65)}, bno.orientationZ);`);
-    L.push('    delay(5);');
-    L.push('  }');
-    L.push('  tubit.resetEnc();');
-    L.push('  tubit.stopAllMotors();');
-    L.push('}');
-  }
-  L.push('');
-  L.push('void setup() {');
-  L.push('  tubit.init();');
-  if (M.bno) L.push('  bno.start();');
-  if (usesGun) L.push(`  PPGUN_INIT(${S.ppgun.pan},${S.ppgun.head},${S.ppgun.launch});`);
-  if (usesArm) L.push(`  ATARM_INIT(${S.arm.pan},${S.arm.lift},${S.arm.claw});   // 旋轉, 抬升, 夾爪`);
-  if (M.irAlign){
-    L.push('  tuirAlign();');
-    L.push(`  tuirAlign().setPins(${irList(S.ir.pins)});`);
-    L.push(`  tuirAlign().setTargets(${irList(S.ir.targets)});`);
-  }
-  if (M.sharp) L.push('  sharpIR_1.setFilterRate(0.1f);');
-  if (M.husky){
-    L.push('  Wire.begin();');
-    L.push('  for (int i = 0; i < 20 && !huskylens.begin(Wire); i++) {   // 最多試 2 秒，避免沒接鏡頭時卡死');
-    L.push('    delay(100);');
-    L.push('  }');
-  }
-  if (RT === 'ps3') L.push(`  Ps3.begin("${S.remote.mac}");   // 手把配對的 MAC`);
-  if (RT === 'v7rc') L.push(`  v7rc.setupBLE("${S.remote.ble}");   // V7RC APP 搜尋的藍牙名稱`);
-  L.push('');
-  L.push('}');
-  L.push('');
-  L.push('void loop() {');
-  L.push('  if (tubit.readButton(Button_A)) {');
-  L.push('');
-  L.push('    // ===== 主程式（依路徑規劃器產生）=====');
-  const ind = '    ';
-  let p = Object.assign({}, S.robot.start);
-  const LB = stepLabels(S);
-  S.steps.forEach((s, i) => {
-    const n = LB[i];
-    const settle = Math.max(0, Math.round(num(S.arm.settle, 400)));
-    const sec = Math.max(0, Math.round(num(s.sec)));
-    switch (s.type){
-      case 'move': {
-        const to = {x:num(s.x), y:num(s.y), h:num(s.h)};
-        const m = mapAxes(S, p, to);
-        const vm = num(s.vm, S.motion.vm) || S.motion.vm, a = num(s.a, S.motion.a) || S.motion.a, ad = Math.abs(num(s.ad, S.motion.ad) || S.motion.ad);
-        const cb = distOn(M) && num(s.stopCm) > 0 ? `, stopNear_${String(num(s.stopCm)).replace('.', '_')}` : '';
-        L.push(`${ind}// ===== ${n} 移動到 (${fmt(to.x)}, ${fmt(to.y)}) 車頭 ${fmt(to.h)}° =====`);
-        if (s.curve && Math.abs(num(s.bulge)) > 0.01){
-          const bg = (S.axes.invBulge ? -1 : 1) * num(s.bulge);
-          L.push(`${ind}mtc.moveCurveSCurve(${fmt(m.X)}, ${fmt(m.Y)}, ${fmt(m.Z)}, ${fmt(bg)}, ${fmt(vm)}, ${fmt(a)}, -${fmt(ad)}, 0, 0${cb});`);
-        } else {
-          L.push(`${ind}mtc.moveSCurve(${fmt(m.X)}, ${fmt(m.Y)}, ${fmt(m.Z)}, ${fmt(vm)}, ${fmt(a)}, -${fmt(ad)}, 0, 0${cb});`);
-        }
-        if (s.fix){
-          if (M.bno) L.push(`${ind}turnTo(${bnoTarget(S, to.h)});   // BNO 轉正到車頭 ${fmt(to.h)}°`);
-          else L.push(`${ind}// 需要勾選 BNO055 才能轉正`);
-        }
-        p = to; break;
-      }
-      case 'turn':
-        L.push(`${ind}// ${n} BNO 轉正：車頭 ${fmt(num(s.h))}°（BNO 目標 ${bnoTarget(S, s.h)}°）`);
-        L.push(M.bno ? `${ind}turnTo(${bnoTarget(S, s.h)});` : `${ind}// 需要在感測元件勾選 BNO055`);
-        p = {x:p.x, y:p.y, h:num(s.h)}; break;
-      case 'claw':
-        if (!M.atarm){ L.push(`${ind}// ${n} 夾爪動作略過：未勾選機械手臂 ATARM`); break; }
-        L.push(`${ind}// ${n} 夾爪${s.close ? '夾緊（抓起）' : '張開（放開）'}`);
-        L.push(`${ind}ATARM_ClawCtrl(${s.close ? 'true' : 'false'}, ${sec});`);
-        if (settle) L.push(`${ind}delay(${settle});`);
-        break;
-      case 'lift':
-        if (!M.atarm){ L.push(`${ind}// ${n} 抬升略過：未勾選機械手臂 ATARM`); break; }
-        L.push(`${ind}// ${n} 手臂${liftName(S, s)}到 ${fmt(num(s.deg))}°`);
-        L.push(`${ind}ATARM_LiftSet(${fmt(num(s.deg))}, ${sec});`);
-        if (settle) L.push(`${ind}delay(${settle});`);
-        break;
-      case 'pan':
-        if (!M.atarm){ L.push(`${ind}// ${n} 夾爪旋轉略過：未勾選機械手臂 ATARM`); break; }
-        L.push(`${ind}// ${n} 夾爪旋轉到 ${fmt(num(s.deg))}°`);
-        L.push(`${ind}ATARM_PanSet(${fmt(num(s.deg))}, ${sec});`);
-        if (settle) L.push(`${ind}delay(${settle});`);
-        break;
-      case 'align':
-        if (!M.irAlign){ L.push(`${ind}// ${n} IR 校正略過：未勾選紅外線 IR 對牆校正`); if (s.reset) p = {x:num(s.rx), y:num(s.ry), h:num(s.rh)}; break; }
-        L.push(`${ind}// ${n} IR 校正：主 ${IR_NAMES[s.main]}、次 ${IR_NAMES[s.sub]}${s.reset ? `，校正後位置 (${fmt(num(s.rx))}, ${fmt(num(s.ry))}) ${fmt(num(s.rh))}°` : ''}`);
-        L.push(`${ind}tuirAlign().alignBlocking(${s.main}, ${s.sub});`);
-        if (s.reset) p = {x:num(s.rx), y:num(s.ry), h:num(s.rh)};
-        break;
-      case 'wait':
-        L.push(`${ind}// ${n} 等待`);
-        L.push(`${ind}delay(${Math.max(0, Math.round(num(s.ms)))});`);
-        break;
-      case 'fire':
-        if (!M.ppgun){ L.push(`${ind}// ${n} 發射略過：未勾選乒乓球發射器`); break; }
-        L.push(`${ind}// ${n} 發射乒乓球`);
-        L.push(`${ind}PPGUN_launch();`);
-        L.push(`${ind}delay(300);`);
-        break;
-      case 'code':
-        L.push(`${ind}// ${n} 自訂程式`);
-        String(s.text || '').split('\n').forEach(t => L.push(ind + t));
-        break;
-    }
-    L.push('');
-  });
-  if (S.game === 'energy'){
-    L.push(`${ind}// 自動化結束：選手舉手向裁判報告，經裁判確認後才可切換手動遙控（未經確認每次扣 2 分）`);
-  }
-  L.push('  }');
-  L.push('');
-  if (RT === 'none'){
-    L.push('  // 遙控程式區（到「感測元件」選 PS3 或 V7RC 就會自動產生）');
-  } else {
-    if (S.game === 'energy'){
-      L.push('  if (tubit.readButton(Button_B)) {   // 裁判確認後按 B：切換為手動遙控');
-      L.push('    remoteOn = true;');
-      L.push('  }');
-    }
-    L.push(...genRemote(S, shooter));
-  }
-  L.push('}');
-  return L.join('\n');
 }
-
-function genRemote(S, shooter){
-  const L = [], i = '    ', i2 = '      ';
-  if (S.remote.type === 'ps3'){
-    L.push('  if (remoteOn && Ps3.isConnected()) {   // 對照官方範例「夾爪機器人_ps3搖桿」');
-    L.push(`${i}mtc.driveVectorOpen(Ps3.data.analog.stick.lx, (-1 * Ps3.data.analog.stick.ly), Ps3.data.analog.stick.rx);`);
-    if (!shooter && S.modules.atarm){
-      L.push(`${i}if (Ps3.data.button.triangle) ATARM_LiftAdd(0.1);    // △ 手臂上升`);
-      L.push(`${i}if (Ps3.data.button.cross) ATARM_LiftAdd(-0.1);      // ✕ 手臂下降`);
-      L.push(`${i}if (Ps3.data.button.l1) ATARM_PanAdd(0.1);           // L1 夾爪左轉`);
-      L.push(`${i}if (Ps3.data.button.r1) ATARM_PanAdd(-0.1);          // R1 夾爪右轉`);
-      L.push(`${i}if (Ps3.data.button.circle) ATARM_ClawCtrl(true, 0);   // ○ 夾緊`);
-      L.push(`${i}if (Ps3.data.button.square) ATARM_ClawCtrl(false, 0);  // □ 張開`);
-      L.push(`${i}if (Ps3.data.button.up) ATARM_LiftSet(${S.arm.liftUp}, 0);      // ↑ 搬運高度`);
-      L.push(`${i}if (Ps3.data.button.down) ATARM_LiftSet(${S.arm.liftDown}, 0);    // ↓ 夾取高度`);
-      L.push(`${i}if (Ps3.data.button.r2) ATARM_PanSet(90, 0);         // R2 夾爪回正`);
-    } else if (S.modules.ppgun){
-      L.push(`${i}if (Ps3.data.button.up) PPGUN_HeadAdd(0.1);          // ↑ 仰角`);
-      L.push(`${i}if (Ps3.data.button.down) PPGUN_HeadAdd(-0.1);       // ↓ 俯角`);
-      L.push(`${i}if (Ps3.data.button.l1) PPGUN_PanAdd(0.1);           // L1 左轉`);
-      L.push(`${i}if (Ps3.data.button.r1) PPGUN_PanAdd(-0.1);          // R1 右轉`);
-      L.push(`${i}if (Ps3.data.button.circle) {                        // ○ 發射`);
-      L.push(`${i2}PPGUN_launch();`);
-      L.push(`${i2}delay(250);   // 防止按住連發`);
-      L.push(`${i}}`);
-    }
-    L.push('  }');
-  } else if (S.remote.type === 'v7rc'){
-    const B = k => ({1:'(v7rc.readSRTdata(3) == 2000 && v7rc.readSRTdata(4) == 1500)', 2:'(v7rc.readSRTdata(3) == 1000 && v7rc.readSRTdata(4) == 1500)',
-      3:'(v7rc.readSRTdata(3) == 1500 && v7rc.readSRTdata(4) == 1000)', 4:'(v7rc.readSRTdata(3) == 1500 && v7rc.readSRTdata(4) == 2000)',
-      5:'(v7rc.readSRTdata(3) == 2000 && v7rc.readSRTdata(4) == 1000)', 6:'(v7rc.readSRTdata(3) == 1000 && v7rc.readSRTdata(4) == 1000)',
-      7:'(v7rc.readSRTdata(3) == 2000 && v7rc.readSRTdata(4) == 2000)', 8:'(v7rc.readSRTdata(3) == 1000 && v7rc.readSRTdata(4) == 2000)'})[k];
-    L.push('  if (remoteOn && v7rc.connect()) {   // 對照官方範例「夾爪機器人_V7RC版」');
-    L.push(`${i}if (v7rc.setMode("SRT")) {`);
-    L.push(`${i2}mtc.driveVectorOpen(( (v7rc.readSRTdata(1) - 1500) / 2 ), ( (v7rc.readSRTdata(2) - 1500) / 2 ), ${B(3)}*-180 + ${B(4)}*180);`);
-    if (!shooter && S.modules.atarm){
-      L.push(`${i2}if (${B(1)}) ATARM_LiftAdd(0.1);       // 上：手臂上升`);
-      L.push(`${i2}if (${B(2)}) ATARM_LiftAdd(-0.1);      // 下：手臂下降`);
-      L.push(`${i2}if (${B(5)}) ATARM_ClawCtrl(true, 0);  // 左上：夾緊`);
-      L.push(`${i2}if (${B(7)}) ATARM_ClawCtrl(false, 0); // 右上：張開`);
-      L.push(`${i2}if (${B(6)}) ATARM_PanAdd(0.1);        // 左下：夾爪左轉`);
-      L.push(`${i2}if (${B(8)}) ATARM_PanAdd(-0.1);       // 右下：夾爪右轉`);
-    } else if (S.modules.ppgun){
-      L.push(`${i2}if (${B(1)}) PPGUN_HeadAdd(0.1);       // 上：仰角`);
-      L.push(`${i2}if (${B(2)}) PPGUN_HeadAdd(-0.1);      // 下：俯角`);
-      L.push(`${i2}if (${B(6)}) PPGUN_PanAdd(0.1);        // 左下：左轉`);
-      L.push(`${i2}if (${B(8)}) PPGUN_PanAdd(-0.1);       // 右下：右轉`);
-      L.push(`${i2}if (${B(5)}) {                          // 左上：發射`);
-      L.push(`${i2}  PPGUN_launch();`);
-      L.push(`${i2}  delay(250);`);
-      L.push(`${i2}}`);
-    }
-    L.push(`${i}}`);
-    L.push('  }');
+/* 把一個步驟轉成產生器的動作物件 */
+function stepToActs(S, s, p){
+  const K = S.kits.on, sec = Math.max(0, Math.round(num(s.sec, num(S.arm.sec, 1))));
+  const kit = STEP_KIT[s.type];
+  if (kit && !K[kit]) return [{type:'raw', lines:['// 略過：未勾選「' + KIT_NAME[kit] + '」']}];
+  switch (s.type){
+    case 'claw': return [{type:'armClaw', close:s.close ? 'true' : 'false', sec}];
+    case 'lift': return [{type:'armLift', deg:num(s.deg), sec}];
+    case 'pan': return [{type:'armPan', deg:num(s.deg), sec}];
+    case 'turn': return [{type:'bnoTurn', deg:bnoTarget(S, s.h), tol:num(S.turn.tol, 1), timeout:num(S.turn.timeout, 3)}];
+    case 'align': return [{type:'irAlign', main:s.main, sec:s.sub, timeout:num(s.timeout, 8), confirm:num(s.confirm, 1)}];
+    case 'wait': return [{type:'wait', sec:Math.max(0, num(s.ms)) / 1000}];
+    case 'fire': return [{type:'gunFire'}];
+    case 'fireN': return [{type:'fireN', n:num(s.n, 5), gap:num(s.gap, 0.5)}];
+    case 'gunPan': return [{type:'gunPan', deg:num(s.deg), sec}];
+    case 'gunHead': return [{type:'gunHead', deg:num(s.deg), sec}];
+    case 'wall': return [{type:'wall', dir:s.dir || 'fwd', speed:num(s.speed, 120), sec:num(s.sec, 1.5), backCm:num(s.backCm, 5)}];
+    case 'approach': return [{type:'approach', cm:num(s.cm, 10), speed:num(s.speed, 120), timeout:num(s.timeout, 5)}];
+    case 'code': return [{type:'raw', lines:String(s.text || '').split('\n')}];
   }
-  return L;
+  return [];
+}
+function planActs(S){
+  const LB = stepLabels(S), out = [];
+  let p = Object.assign({}, S.robot.start);
+  const sim0 = simulate(S);
+  S.steps.forEach((s, i) => {
+    if (s.type === 'move'){
+      const to = {x:num(s.x), y:num(s.y), h:num(s.h)};
+      const m = mapAxes(S, p, to);
+      const vm = Math.abs(num(s.vm, S.motion.vm) || S.motion.vm), a = Math.abs(num(s.a, S.motion.a) || S.motion.a), ad = Math.abs(num(s.ad, S.motion.ad) || S.motion.ad);
+      const acts = [];
+      const cm = num(s.stopCm);
+      const useStop = cm > 0 && S.kits.on.ultra;
+      const cb = useStop ? ',stopNear_' + String(cm).replace('.', '_') : '';
+      const line = s.curve && Math.abs(num(s.bulge)) > 0.01
+        ? `mtc.moveCurveSCurve(${g1(m.X)},${g1(m.Y)},${g1(m.Z)},${g1((S.axes.invBulge ? -1 : 1) * num(s.bulge))},${vm},${a},-(${ad}),0,0${cb});`
+        : `mtc.moveSCurve(${g1(m.X)},${g1(m.Y)},${g1(m.Z)},${vm},${a},-(${ad}),0,0${cb});`;
+      acts.push({type:'raw', need:{mtc:true}, stop:useStop ? cm : undefined, lines:[line + (useStop ? '   // 前方小於 ' + cm + ' cm 中斷' : '')]});
+      if (cm > 0 && !S.kits.on.ultra) acts.push({type:'raw', lines:['// 測距中斷略過：未勾選「超音波」']});
+      if (s.fix) acts.push(...(S.kits.on.bno ? [{type:'bnoTurn', deg:bnoTarget(S, to.h), tol:num(S.turn.tol, 1), timeout:num(S.turn.timeout, 3)}] : [{type:'raw', lines:['// 轉正略過：未勾選「BNO055」']}]));
+      out.push({type:'group', label:`===== ${LB[i]} 移動到 (${fmt(to.x)}, ${fmt(to.y)}) 車頭 ${fmt(to.h)}° =====`, acts});
+      p = to;
+    } else {
+      out.push({type:'group', label:`${LB[i]} ${stepDesc(S, s)}`, acts:stepToActs(S, s, p)});
+      const ps = sim0.pose[i]; if (ps) p = Object.assign({}, ps.after);
+      if (s.type === 'align' && s.reset) p = {x:num(s.rx), y:num(s.ry), h:num(s.rh)};
+    }
+  });
+  return out;
+}
+function genCode(S, sim){
+  const acts = planActs(S);
+  const st = {level:'race', kits:S.kits, trig:GEN.emptyTrig()};
+  if (S.kits.mode.on) st.trig.AUTO = {on:true, acts};
+  else st.trig.A = {on:true, acts};
+  const r = GEN.generate(st);
+  const gname = {energy:'物資能源爭霸戰', target:'標靶爭奪賽', custom:`自訂場地 ${S.field.W}×${S.field.H} cm`}[S.game];
+  const info = [`// TU:bit V2 2026全國競賽路徑規劃器 ${VERSION}（程式寫法與課程網站「程式產生器」相同）`,
+    `// 賽事：${gname}｜${ROBOTS[S.rtype].name}｜起點 (${fmt(S.robot.start.x)}, ${fmt(S.robot.start.y)}) 車頭 ${fmt(S.robot.start.h)}°｜估算 ${sim.total.toFixed(1)} 秒`,
+    S.kits.mode.on ? '// 一鍵自動流程在 runAuto()；按自動鍵執行，做完停在 AUTO OK，經裁判確認後按手動鍵切回遙控' : '// 按控制板 A 鍵執行路徑'];
+  const lines = r.code.split('\n');
+  lines.splice(1, 0, ...info);
+  return lines.join('\n');
 }
 
 function genTestCode(S){
-  const M = S.modules, vm = S.motion.vm, a = S.motion.a, ad = S.motion.ad;
+  const vm = S.motion.vm, a = S.motion.a, ad = S.motion.ad;
   return [
+    '// generated by OpenBlock',
     '// TU:bit V2 軸向測試程式：放在空地，按 A 鍵後依序觀察',
     '// 1. 第一段應「前進 20 cm」  2. 第二段應「右移 20 cm」  3. 第三段應「逆時針轉 90°」',
     '// 若方向不同，到「參數 > 座標換算」勾選對應的反向或改軸向後再產生程式',
-    '#include <Arduino.h>', '#include <TuBitCore.h>', '#include <Wire.h>',
-    M.bno ? '#include <EasyBNO055_ESP.h>' : null, '#include <TuMTC.h>', '',
-    'TuBitCore tubit;', 'TuMTC mtc(tubit);', M.bno ? 'EasyBNO055_ESP bno;' : null, '',
-    'void setup() {', '  tubit.init();', M.bno ? '  bno.start();' : null, '}', '',
+    '#include <Arduino.h>', '#include <TuBitCore.h>', '#include <Wire.h>', '#include <TuMTC.h>', '',
+    'TuBitCore tubit;', 'TuMTC mtc(tubit);', '',
+    'void setup() {', '  tubit.init();', '}', '',
     'void loop() {', '  if (tubit.readButton(Button_A)) {',
-    `    mtc.moveSCurve(0, 20, 0, ${vm}, ${a}, -${ad}, 0, 0);   // 測試 1：Y = 20`, '    delay(1500);',
-    `    mtc.moveSCurve(20, 0, 0, ${vm}, ${a}, -${ad}, 0, 0);   // 測試 2：X = 20`, '    delay(1500);',
-    `    mtc.moveSCurve(0, 0, 90, ${vm}, ${a}, -${ad}, 0, 0);   // 測試 3：Z = 90`, '    delay(1500);',
-    `    mtc.moveSCurve(0, 0, -90, ${vm}, ${a}, -${ad}, 0, 0);`,
-    `    mtc.moveSCurve(-20, -20, 0, ${vm}, ${a}, -${ad}, 0, 0);   // 回到原點`,
-    '  }', '}',
-  ].filter(l => l !== null).join('\n');
+    `    mtc.moveSCurve(0,20,0,${vm},${a},-(${ad}),0,0);   // 測試 1：Y = 20`, '    delay(1500);',
+    `    mtc.moveSCurve(20,0,0,${vm},${a},-(${ad}),0,0);   // 測試 2：X = 20`, '    delay(1500);',
+    `    mtc.moveSCurve(0,0,90,${vm},${a},-(${ad}),0,0);   // 測試 3：Z = 90`, '    delay(1500);',
+    `    mtc.moveSCurve(0,0,(-90),${vm},${a},-(${ad}),0,0);`,
+    `    mtc.moveSCurve((-20),(-20),0,${vm},${a},-(${ad}),0,0);   // 回到原點`,
+    '  }', '}', '',
+  ].join('\n');
 }
 
 /* ================= 賽規檢查 ================= */
 function ruleChecks(S, sim){
-  const R = ROBOTS[S.rtype], out = [];
+  const R = ROBOTS[S.rtype], out = [], K = S.kits, on = K.on;
   const push = (lv, t) => out.push({lv, t});
+  const LB = stepLabels(S);
   const sizeOk = S.robot.w <= R.maxW && S.robot.l <= R.maxL;
-  push(sizeOk ? 'ok' : 'bad', `車體 ${S.robot.w}×${S.robot.l} cm（${R.name}上限 ${R.maxW}×${R.maxL} cm${S.rtype === 'targetShooter' ? '、高 20 cm' : ''}）`);
+  push(sizeOk ? 'ok' : 'bad', `車體 ${S.robot.w}×${S.robot.l} cm（${R.name}上限 ${R.maxW}×${R.maxL} cm${/Shooter/.test(S.rtype) ? '、高 20 cm' : ''}）`);
   const hitSegs = sim.segs.filter(s => s.hits.length);
   if (!sim.segs.length) push('warn', '尚未規劃任何移動');
   else if (hitSegs.length){
-    const LB = stepLabels(S);
     const idx = hitSegs.map(sg => LB[S.steps.findIndex(s => s.id === sg.stepId)]);
     push('bad', `路徑點 ${idx.join('、')} 車體會碰到障礙物${hitSegs.some(s => s.oob) ? '或超出場地' : ''}（畫布上紅色車框）`);
   } else push('ok', '所有移動段都沒有碰撞（以目前車體尺寸取樣每 2 cm 檢查）');
+  if (sim.noWall.length) push('warn', `${sim.noWall.map(id => LB[S.steps.findIndex(s => s.id === id)]).join('、')} 撞牆校正方向 80 cm 內沒有牆，車子會推空`);
+  if (sim.noTarget.length) push('warn', `${sim.noTarget.map(id => LB[S.steps.findIndex(s => s.id === id)]).join('、')} 超音波接近前方找不到障礙物，會一直走到逾時`);
   const lim = R.limit;
   if (S.game === 'custom'){
     push('ok', `自訂場地 ${S.field.W}×${S.field.H} cm，估算 ${sim.total.toFixed(1)} 秒`);
@@ -1032,24 +1652,26 @@ function ruleChecks(S, sim){
   if (sim.doubleClose) push('warn', '夾爪在已夾緊狀態下再次夾緊，請確認中間是否漏了「張開」');
   if (S.rtype === 'targetShooter') push(sim.neutralShooter ? 'bad' : 'ok', sim.neutralShooter ? '射擊機器人路徑進入中立物資區：越界警告且所得分數不計' : '射擊機器人未越過中立物資區');
   if (S.rtype === 'targetArm') push(sim.crossLine ? 'bad' : 'ok', sim.crossLine ? '手臂機器人路徑跨到對方陣線：警告，情節重大取消該回合' : '手臂機器人未跨到對方陣線');
-  if (S.modules.atarm && S.modules.ppgun) push('warn', 'ATARM 與 PPGUN 同時啟用：兩者預設都用 S0，請確認腳位不衝突，且 ATARM_INIT 要放在 PPGUN_INIT 之後');
-  const servos = (S.modules.atarm ? 3 : 0) + (S.modules.ppgun ? 3 : 0);
+  const servos = (on.arm ? 3 : 0) + (on.gun ? 3 : 0) + (on.gimbal && !on.arm && !on.gun ? 1 : 0);
   push(servos <= 5 ? 'ok' : 'bad', `伺服馬達 ${servos} 顆（上限 5 顆、扭力 20 kg 以下）`);
   push('ok', '電池以標示 7.4V 以下為準，不得使用升壓板；直流馬達 8V 以下' + (/Shooter/.test(S.rtype) ? '最多 6 顆' : '最多 4 顆'));
-  if (S.remote.type === 'none') push('warn', S.game === 'energy' ? '機器人 A 必須同時具備遙控及夾取功能：到「感測元件」選 PS3 或 V7RC 遙控' : '兩台機器人都必須具備遙控功能：到「感測元件」選 PS3 或 V7RC 遙控');
-  else push('ok', `已加入 ${S.remote.type === 'ps3' ? 'PS3 搖桿' : 'V7RC 藍牙'} 遙控${S.game === 'energy' ? '；自動化結束、裁判確認後按 B 鍵才會開始遙控' : ''}`);
+  const remote = on.ps3 ? 'PS3 手把' : on.v7rc ? 'V7RC 手機' : '';
+  if (!remote && S.game !== 'custom') push('warn', S.game === 'energy' ? '機器人 A 必須同時具備遙控及夾取功能：到「套件與感測器」勾選 PS3 或 V7RC' : '兩台機器人都必須具備遙控功能：到「套件與感測器」勾選 PS3 或 V7RC');
+  else if (remote) push('ok', `已加入 ${remote} 遙控（寫法與程式產生器相同）`);
+  if (S.game === 'energy'){
+    if (!K.mode.on) push('warn', '建議開啟「一鍵自動／手動模式」：自動做完停在 AUTO OK，舉手經裁判確認後再按手動鍵（未經確認切換每次扣 2 分）');
+    else if (K.mode.after === 'back') push('warn', '一鍵自動做完設定為「立刻回手動」：規則要求經裁判確認才能切換，建議改成「停在自動（AUTO OK）」');
+    else push('ok', '一鍵自動做完會停在 AUTO OK，經裁判確認後按手動鍵切回遙控');
+  }
   const skipped = [];
-  const LB2 = stepLabels(S);
   S.steps.forEach((s, i) => {
-    if ((s.type === 'claw' || s.type === 'lift' || s.type === 'pan') && !S.modules.atarm) skipped.push(LB2[i]);
-    if (s.type === 'align' && !S.modules.irAlign) skipped.push(LB2[i]);
-    if (s.type === 'fire' && !S.modules.ppgun) skipped.push(LB2[i]);
+    const k = STEP_KIT[s.type];
+    if (k && !on[k]) skipped.push(LB[i] + '（' + KIT_NAME[k] + '）');
+    if (s.type === 'move' && s.fix && !on.bno) skipped.push(LB[i] + ' 轉正（BNO055）');
+    if (s.type === 'move' && num(s.stopCm) > 0 && !on.ultra) skipped.push(LB[i] + ' 測距中斷（超音波）');
   });
-  if (skipped.length) push('warn', `步驟 ${skipped.join('、')} 需要的元件沒有勾選，程式中已略過（改成註解）`);
-  const turns = S.steps.some(s => s.type === 'turn' || (s.type === 'move' && s.fix));
-  if (turns && !S.modules.bno) push('bad', '有轉正步驟但沒有勾選 BNO055');
-  if (S.modules.ultra && S.modules.sharp) push('ok', `測距中斷使用${distSrc(S.modules) === 'ultra' ? '超聲波' : '夏普紅外線'}`);
-  if (S.modules.husky && S.modules.bno) push('warn', 'HuskyLens 與 BNO055 共用 I2C，請確認接線與位址不衝突');
+  if (skipped.length) push('warn', `需要的套件沒有勾選，程式中已略過（改成註解）：${skipped.join('、')}`);
+  if ((on.ps3 || on.v7rc) && K.mode.on && K.mode.oled) push('ok', 'OLED 會顯示 MANUAL／AUTO／AUTO OK；遙控＋OLED 程式約占 90% 空間');
   return out;
 }
 
@@ -1224,6 +1846,11 @@ function drawPath(){
     ctx.stroke();
   }
   ctx.restore();
+  // 撞牆校正／超音波接近（模擬推進）
+  ctx.save(); ctx.setLineDash([4, 3]); ctx.lineWidth = 2; ctx.strokeStyle = css('--blue');
+  for (const sg of sim.pseudo){ const a = toS(sg.from.x, sg.from.y), b = toS(sg.to.x, sg.to.y); ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke(); }
+  ctx.restore();
+  for (const sg of sim.pseudo) drawRobot(sg.to, {stroke:css('--blue'), lw:1.2, dash:[2, 2]});
   // 碰撞位置
   for (const seg of sim.segs) if (seg.hits.length){
     const h = seg.hits[0]; drawRobot(h, {stroke:bad, lw:2, fill:bad, alpha:.15});
@@ -1232,7 +1859,7 @@ function drawPath(){
   drawRobot(S.robot.start, {stroke:gear, lw:2, dash:[5, 3], fill:gear, alpha:sel && sel.kind === 'start' ? .25 : .08});
   // 路徑點
   let idx = 0;
-  const SHORT = {claw:null, lift:null, pan:'轉爪', turn:'轉正', align:'IR', wait:'等', fire:'射', code:'碼'};
+  const SHORT = {claw:null, lift:null, pan:'轉爪', turn:'轉正', align:'IR', wait:'等', fire:'射', code:'碼', wall:'撞牆', approach:'接近', fireN:'連射', gunPan:'砲台', gunHead:'仰角'};
   S.steps.forEach((s, i) => {
     const ps = sim.pose[i]; if (!ps) return;
     if (s.type === 'move'){
@@ -1296,8 +1923,12 @@ function renderWpBar(s){
     else if (a.type === 'pan') ed = `<input type="number" data-af="deg" value="${num(a.deg)}" min="55" max="125" title="夾爪旋轉角度 55–125°">`;
     else if (a.type === 'turn') ed = `<input type="number" data-af="h" value="${num(a.h)}" step="15" title="車頭角度">`;
     else if (a.type === 'wait') ed = `<input type="number" data-af="ms" value="${num(a.ms)}" step="100" title="毫秒">`;
-    else if (a.type === 'align') ed = `<select data-af="main">${IR_DIRS.map(d => `<option value="${d}" ${a.main === d ? 'selected' : ''}>主${IR_NAMES[d]}</option>`).join('')}</select>`;
-    const unit = {lift:'°', pan:'°', turn:'°', wait:'ms'}[a.type] || '';
+    else if (a.type === 'align') ed = `<select data-af="main">${GEN.IR_MAIN.map(d => `<option value="${d[0]}" ${a.main === d[0] ? 'selected' : ''}>主${d[1]}</option>`).join('')}</select>`;
+    else if (a.type === 'gunPan' || a.type === 'gunHead') ed = `<input type="number" data-af="deg" value="${num(a.deg)}" title="角度">`;
+    else if (a.type === 'fireN') ed = `<input type="number" data-af="n" value="${num(a.n, 5)}" min="1" max="5" title="顆數">`;
+    else if (a.type === 'approach') ed = `<input type="number" data-af="cm" value="${num(a.cm, 10)}" min="1" title="停止距離 cm">`;
+    else if (a.type === 'wall') ed = `<select data-af="dir">${['fwd','back','left','right'].map(d => `<option value="${d}" ${a.dir === d ? 'selected' : ''}>往${DIR_NAMES[d]}</option>`).join('')}</select>`;
+    const unit = {lift:'°', pan:'°', turn:'°', wait:'ms', gunPan:'°', gunHead:'°', fireN:'顆', approach:'cm'}[a.type] || '';
     rows.push(`<div class="ar" data-aid="${a.id}"><span class="k">${j - i}</span><span>${stepName(S, a)}</span><span>${ed}${unit ? ' ' + unit : ''}</span><button class="x" data-adel title="刪除這個動作" aria-label="刪除">✕</button></div>`);
   }
   $('#wpActs').innerHTML = rows.length ? rows.join('') : '到這個點後還沒有動作，按上方按鈕加入。';
@@ -1326,7 +1957,7 @@ $('#wpBar').addEventListener('input', e => {
     const row = e.target.closest('[data-aid]'), f = e.target.dataset.af; if (!row || !f) return;
     const a = S.steps.find(x => x.id === row.dataset.aid); if (!a) return;
     if (f === 'close') a.close = e.target.value === '1';
-    else if (f === 'main') a.main = e.target.value;
+    else if (f === 'main' || f === 'dir') a[f] = e.target.value;
     else a[f] = num(e.target.value);
   }
   changed(false); renderSteps();
@@ -1355,18 +1986,16 @@ $('#wpBar').addEventListener('click', e => {
   }
   if (k === 'grab'){
     // 到點前先張開＋放低，到點後夾緊＋抬起
-    S.steps.splice(start, 0, A({type:'claw', close:false, sec:0}), A({type:'lift', deg:S.arm.liftDown, sec:0}));
+    S.steps.splice(start, 0, newStep('clawOpen', mv), newStep('lower', mv));
     const e2 = groupEnd(mv.id) + 1;
-    S.steps.splice(e2, 0, A({type:'claw', close:true, sec:0}), A({type:'lift', deg:S.arm.liftUp, sec:0}));
+    S.steps.splice(e2, 0, newStep('clawClose', mv), newStep('lift', mv));
     toast('已設定：移動前張開放低，到點後夾緊抬起');
   } else if (k === 'place'){
-    S.steps.splice(end, 0, A({type:'lift', deg:S.arm.liftPlace, sec:0}), A({type:'claw', close:false, sec:0}), A({type:'lift', deg:S.arm.liftUp, sec:0}));
+    S.steps.splice(end, 0, newStep('place', mv), newStep('clawOpen', mv), newStep('lift', mv));
     toast('已設定：到點後放低、張開、抬起');
   } else {
-    const map = {clawClose:{type:'claw', close:true, sec:0}, clawOpen:{type:'claw', close:false, sec:0}, lift:{type:'lift', deg:S.arm.liftUp, sec:0}, lower:{type:'lift', deg:S.arm.liftDown, sec:0},
-      pan:{type:'pan', deg:90, sec:0}, turn:{type:'turn', h:mv.h}, align:{type:'align', main:'IR_L', sub:'IR_UP', reset:false, rx:Math.round(mv.x), ry:Math.round(mv.y), rh:mv.h},
-      wait:{type:'wait', ms:500}, fire:{type:'fire'}};
-    S.steps.splice(end, 0, A(map[k]));
+    const ns = newStep(k, {x:num(mv.x), y:num(mv.y), h:num(mv.h)});
+    if (ns) S.steps.splice(end, 0, ns);
   }
   sel = {kind:'step', id:mv.id};
   changed(true);
@@ -1412,11 +2041,9 @@ function addGrab(item){
   const off = S.robot.clawOff;
   snapshot();
   insertSteps([
-    {id:uid(), type:'claw', close:false, sec:0},
-    {id:uid(), type:'lift', deg:S.arm.liftDown, sec:0},
+    newStep('clawOpen', L), newStep('lower', L),
     newMove(c.x - F.x * off, c.y - F.y * off, h),
-    {id:uid(), type:'claw', close:true, sec:0},
-    {id:uid(), type:'lift', deg:S.arm.liftUp, sec:0},
+    newStep('clawClose', L), newStep('lift', L),
   ], S.steps.length, true);
   const mv = S.steps[S.steps.length - 3]; sel = {kind:'step', id:mv.id};
   changed(true); toast(`已加入夾取「${item.label || '物資'}」的 5 個步驟`);
@@ -1427,9 +2054,7 @@ function addPlace(obj){
   snapshot();
   const arr = [
     newMove(c.x - F.x * off, c.y - F.y * off, h),
-    {id:uid(), type:'lift', deg:S.arm.liftPlace, sec:0},
-    {id:uid(), type:'claw', close:false, sec:0},
-    {id:uid(), type:'lift', deg:S.arm.liftUp, sec:0},
+    newStep('place', L), newStep('clawOpen', L), newStep('lift', L),
   ];
   if (back > 0) arr.push(newMove(c.x - F.x * (off + back), c.y - F.y * (off + back), h));
   insertSteps(arr, S.steps.length, true); sel = {kind:'step', id:arr[0].id};
@@ -1556,28 +2181,60 @@ $('#playBtn').onclick = () => {
 };
 
 /* ---------- 步驟清單 ---------- */
-const TYPE_NAMES = {turn:'BNO 轉正', move:'移動', claw:'夾爪', lift:'抬升', pan:'旋轉夾爪', align:'IR 校正', wait:'等待', fire:'發射乒乓球', code:'自訂程式'};
+function newStep(t, L){
+  const sec = Math.max(0, Math.round(num(S.arm.sec, 1)));
+  const id = uid();
+  switch (t){
+    case 'clawOpen': return {id, type:'claw', close:false, sec};
+    case 'clawClose': return {id, type:'claw', close:true, sec};
+    case 'lift': return {id, type:'lift', deg:S.arm.liftUp, sec};
+    case 'lower': return {id, type:'lift', deg:S.arm.liftDown, sec};
+    case 'place': return {id, type:'lift', deg:S.arm.liftPlace, sec};
+    case 'pan': return {id, type:'pan', deg:90, sec};
+    case 'turn': return {id, type:'turn', h:L.h};
+    case 'align': return {id, type:'align', main:'IR_L', sub:'IR_UP', timeout:8, confirm:1, reset:false, rx:Math.round(L.x), ry:Math.round(L.y), rh:L.h};
+    case 'wall': return {id, type:'wall', dir:'fwd', speed:120, sec:1.5, backCm:5};
+    case 'approach': return {id, type:'approach', cm:10, speed:120, timeout:5};
+    case 'wait': return {id, type:'wait', ms:500};
+    case 'fire': return {id, type:'fire'};
+    case 'fireN': return {id, type:'fireN', n:5, gap:0.5};
+    case 'gunPan': return {id, type:'gunPan', deg:90, sec};
+    case 'gunHead': return {id, type:'gunHead', deg:30, sec};
+    case 'code': return {id, type:'code', text:''};
+  }
+  return null;
+}
+const TYPE_NAMES = TYPE_NAMES_CORE;
 function stepFields(s){
   const f = (label, key, attrs = '') => `<label class="f"><span>${label}</span><input type="number" data-f="${key}" value="${s[key] ?? ''}" ${attrs}></label>`;
   const ck = (label, key) => `<label class="chk"><input type="checkbox" data-f="${key}" ${s[key] ? 'checked' : ''}>${label}</label>`;
-  const selIR = key => `<select data-f="${key}">${IR_DIRS.map(d => `<option value="${d}" ${s[key] === d ? 'selected' : ''}>${IR_NAMES[d]}（${d}）</option>`).join('')}</select>`;
+  const selIR = (key, list) => `<select data-f="${key}">${list.map(d => `<option value="${d[0]}" ${s[key] === d[0] ? 'selected' : ''}>${d[1]}（${d[0]}）</option>`).join('')}</select>`;
+  const need = k => S.kits.on[k] ? '' : `<p class="hint wide">請先在「套件與感測器」勾選 ${KIT_NAME[k]}，否則程式會略過這一步。</p>`;
   switch (s.type){
     case 'move': return `<div class="sb">${f('X cm', 'x', 'step="1"')}${f('Y cm', 'y', 'step="1"')}${f('車頭 °', 'h', 'step="15"')}
       <label class="f"><span>&nbsp;</span>${ck('弧線', 'curve')}</label>
       ${s.curve ? f('弧偏移 cm', 'bulge', 'step="1"') : ''}
       ${f('速度', 'vm', `placeholder="${S.motion.vm}"`)}${f('加速', 'a', `placeholder="${S.motion.a}"`)}${f('減速', 'ad', `placeholder="${S.motion.ad}"`)}
-      ${distOn(S.modules) ? f('測距 &lt; cm 停', 'stopCm', 'step="1" min="0"') : ''}
+      ${S.kits.on.ultra ? f('超音波 &lt; cm 停', 'stopCm', 'step="1" min="0"') : ''}
       <div class="wide">${ck('到點後 BNO 轉正（修正車頭偏差）', 'fix')}</div></div>`;
     case 'turn': return `<div class="sb">${f('車頭 °', 'h', 'step="15"')}<label class="f" style="grid-column:span 3"><span>BNO 目標</span><input type="text" value="${bnoTarget(S, s.h)}°（開機方向為 0°）" disabled></label>
-      ${S.modules.bno ? '' : '<p class="hint wide">請先在「感測元件」勾選 BNO055。</p>'}</div>`;
-    case 'claw': return `<div class="sb"><label class="f" style="grid-column:span 2"><span>動作</span><select data-f="close"><option value="0" ${!s.close ? 'selected' : ''}>張開（false）</option><option value="1" ${s.close ? 'selected' : ''}>夾緊（true）</option></select></label>${f('秒數(整數)', 'sec', 'step="1" min="0"')}</div>`;
-    case 'lift': return `<div class="sb">${f('角度 0–65（小＝下降）', 'deg', 'step="1"')}${f('秒數(整數)', 'sec', 'step="1" min="0"')}</div>`;
-    case 'pan': return `<div class="sb">${f('角度 55–125', 'deg', 'step="1"')}${f('秒數(整數)', 'sec', 'step="1" min="0"')}</div>`;
-    case 'align': return `<div class="sb"><label class="f" style="grid-column:span 2"><span>主校正</span>${selIR('main')}</label><label class="f" style="grid-column:span 2"><span>次校正</span>${selIR('sub')}</label>
+      ${need('bno')}</div>`;
+    case 'claw': return `<div class="sb"><label class="f" style="grid-column:span 2"><span>動作</span><select data-f="close"><option value="0" ${!s.close ? 'selected' : ''}>張開（false）</option><option value="1" ${s.close ? 'selected' : ''}>夾緊（true）</option></select></label>${f('秒數(整數)', 'sec', 'step="1" min="0"')}${need('arm')}</div>`;
+    case 'lift': return `<div class="sb">${f(`角度 ${S.kits.arm.down}–${S.kits.arm.up}（小＝下降）`, 'deg', 'step="1"')}${f('秒數(整數)', 'sec', 'step="1" min="0"')}${need('arm')}</div>`;
+    case 'pan': return `<div class="sb">${f(`角度 ${S.kits.arm.panMin}–${S.kits.arm.panMax}`, 'deg', 'step="1"')}${f('秒數(整數)', 'sec', 'step="1" min="0"')}${need('arm')}</div>`;
+    case 'gunPan': return `<div class="sb">${f('砲台角度', 'deg', 'step="1"')}${f('秒數(整數)', 'sec', 'step="1" min="0"')}${need('gun')}</div>`;
+    case 'gunHead': return `<div class="sb">${f('仰角', 'deg', 'step="1"')}${f('秒數(整數)', 'sec', 'step="1" min="0"')}${need('gun')}</div>`;
+    case 'align': return `<div class="sb"><label class="f" style="grid-column:span 2"><span>主校正</span>${selIR('main', GEN.IR_MAIN)}</label><label class="f" style="grid-column:span 2"><span>次校正</span>${selIR('sub', GEN.IR_SEC)}</label>
+      ${f('逾時 秒', 'timeout', 'step="0.5" min="0.5"')}${f('確認 秒', 'confirm', 'step="0.5" min="0"')}
       <div class="wide">${ck('校正後把位置重設為', 'reset')}</div>
-      ${s.reset ? f('X', 'rx') + f('Y', 'ry') + f('車頭 °', 'rh', 'step="15"') : ''}</div>`;
+      ${s.reset ? f('X', 'rx') + f('Y', 'ry') + f('車頭 °', 'rh', 'step="15"') : ''}${need('ir')}</div>`;
+    case 'wall': return `<div class="sb"><label class="f"><span>推牆方向</span><select data-f="dir">${['fwd','back','left','right'].map(d => `<option value="${d}" ${s.dir === d ? 'selected' : ''}>${DIR_NAMES[d]}</option>`).join('')}</select></label>
+      ${f('PWM 0–255', 'speed', 'step="10" min="0" max="255"')}${f('推牆 秒', 'sec', 'step="0.5" min="0"')}${f('退開 cm', 'backCm', 'step="1" min="0"')}
+      <p class="hint wide">低速推牆讓車身貼齊牆面，畫布會模擬推到牆並把車頭對齊 90° 倍數。</p></div>`;
+    case 'approach': return `<div class="sb">${f('停在 cm', 'cm', 'step="1" min="1"')}${f('PWM 0–255', 'speed', 'step="10" min="0" max="255"')}${f('逾時 秒', 'timeout', 'step="0.5" min="0.5"')}${need('ultra')}</div>`;
+    case 'fireN': return `<div class="sb">${f('顆數 1–5', 'n', 'step="1" min="1" max="5"')}${f('間隔 秒', 'gap', 'step="0.1" min="0"')}${need('gun')}</div>`;
     case 'wait': return `<div class="sb">${f('毫秒', 'ms', 'step="100" min="0"')}</div>`;
-    case 'fire': return S.modules.ppgun ? '' : `<p class="hint">請先在「感測元件」勾選乒乓球發射器。</p>`;
+    case 'fire': return need('gun');
     case 'code': return `<div class="sb"><div class="wide"><textarea data-f="text" spellcheck="false" placeholder="例如：tubit.setLED(...)">${(s.text || '').replace(/</g, '&lt;')}</textarea></div></div>`;
   }
   return '';
@@ -1591,7 +2248,10 @@ function renderSteps(){
   box.innerHTML = S.steps.map((s, i) => {
     let sub = '';
     if (s.type === 'claw') sub = s.close ? '夾緊' : '張開';
-    else if (s.type === 'align') sub = `${IR_NAMES[s.main]}／${IR_NAMES[s.sub]}`;
+    else if (s.type === 'align') sub = `${(GEN.IR_MAIN.find(d => d[0] === s.main) || ['', '?'])[1]}／${(GEN.IR_SEC.find(d => d[0] === s.sub) || ['', '?'])[1]}`;
+    else if (s.type === 'wall') sub = '往' + (DIR_NAMES[s.dir] || '前');
+    else if (s.type === 'approach') sub = fmt(num(s.cm)) + ' cm';
+    else if (s.type === 'fireN') sub = Math.round(num(s.n, 5)) + ' 顆';
     else if (s.type === 'move') sub = [s.curve ? '弧線' : '', s.fix ? '轉正' : ''].filter(Boolean).join('＋');
     else if (s.type === 'turn') sub = fmt(num(s.h)) + '°';
     const t = sim.durations[s.id];
@@ -1634,20 +2294,30 @@ $('#steps').addEventListener('input', e => {
 $('#steps').addEventListener('focusout', () => { inputSnap = false; });
 
 $$('[data-add]').forEach(b => b.onclick = () => {
-  const L = endPose(), t = b.dataset.add; let s;
-  if (t === 'move') s = newMove(L.x, L.y + 10, L.h);
-  if (t === 'clawOpen') s = {id:uid(), type:'claw', close:false, sec:0};
-  if (t === 'clawClose') s = {id:uid(), type:'claw', close:true, sec:0};
-  if (t === 'lift') s = {id:uid(), type:'lift', deg:S.arm.liftUp, sec:0};
-  if (t === 'lower') s = {id:uid(), type:'lift', deg:S.arm.liftDown, sec:0};
-  if (t === 'pan') s = {id:uid(), type:'pan', deg:90, sec:0};
-  if (t === 'align') s = {id:uid(), type:'align', main:'IR_L', sub:'IR_UP', reset:false, rx:Math.round(L.x), ry:Math.round(L.y), rh:L.h};
-  if (t === 'turn') s = {id:uid(), type:'turn', h:L.h};
-  if (t === 'wait') s = {id:uid(), type:'wait', ms:500};
-  if (t === 'fire') s = {id:uid(), type:'fire'};
-  if (t === 'code') s = {id:uid(), type:'code', text:''};
+  const L = endPose(), t = b.dataset.add;
+  const s = t === 'move' ? newMove(L.x, L.y + 10, L.h) : newStep(t, L);
+  if (!s) return;
   snapshot(); insertSteps([s]); changed(true);
 });
+/* 快速範本：與程式產生器「競賽自動化」相同的組合，加在選取的路徑點之後 */
+$('#tplSel').onchange = e => {
+  const k = e.target.value; e.target.value = ''; if (!k) return;
+  const mv = selMove();
+  let at = mv ? groupEnd(mv.id) + 1 : S.steps.length;
+  const L = mv ? {x:num(mv.x), y:num(mv.y), h:num(mv.h)} : endPose();
+  const F = fwdVec(L.h);
+  const back = cm => newMove(L.x - F.x * cm, L.y - F.y * cm, L.h);
+  const arr = {
+    wallTurn: () => [newStep('wall', L), newStep('turn', L)],
+    approachGrab: () => [newStep('clawOpen', L), newStep('lower', L), newStep('approach', L), newStep('clawClose', L), newStep('lift', L), back(20)],
+    placeBack: () => [newStep('place', L), newStep('clawOpen', L), newStep('lift', L), back(num(S.ui.backoff, 10))],
+    irTurn: () => [newStep('align', L), newStep('turn', L)],
+    fire5: () => [newStep('gunPan', L), newStep('gunHead', L), newStep('fireN', L)],
+  }[k]();
+  snapshot(); S.steps.splice(at, 0, ...arr);
+  sel = mv ? {kind:'step', id:mv.id} : {kind:'step', id:arr[arr.length - 1].id};
+  changed(true); toast('已加入範本：' + e.target.options[[...e.target.options].findIndex(o => o.value === k)].textContent);
+};
 $('#clearSteps').onclick = () => { if (!S.steps.length) return; if (!confirm('清空所有步驟？（可用「復原」找回）')) return; snapshot(); S.steps = []; sel = null; changed(true); };
 $('#mirrorBtn').onclick = () => {
   snapshot();
@@ -1662,6 +2332,7 @@ $('#mirrorBtn').onclick = () => {
     if (s.type === 'turn'){ const p = tf(0, 0, num(s.h)); s.h = fix(p.h); }
     if (s.type === 'align' && s.reset){ const p = tf(num(s.rx), num(s.ry), num(s.rh)); s.rx = p.x; s.ry = p.y; s.rh = fix(p.h); }
     if (s.type === 'align' && S.game === 'target'){ const sw = {IR_L:'IR_R', IR_R:'IR_L'}; s.main = sw[s.main] || s.main; s.sub = sw[s.sub] || s.sub; }
+    if (s.type === 'wall' && S.game === 'target'){ const sw = {left:'right', right:'left'}; s.dir = sw[s.dir] || s.dir; }
   });
   changed(true);
   toast(S.game !== 'target' ? '已轉成對手方路徑。此場地是 180° 對稱，機身座標輸出的程式兩邊通用' : '已鏡像到對手方，左右校正方向也一併對調');
@@ -1713,80 +2384,139 @@ $('#sizePresets').addEventListener('click', e => {
 $('#resetField').onclick = () => { if (!confirm(S.game === 'custom' ? '清空自訂場地的所有物件？（步驟會保留）' : '把場地物件重設為大會圖面？（步驟會保留）')) return; snapshot(); const f = S.game === 'energy' ? presetEnergy() : S.game === 'target' ? presetTarget() : presetCustom(S.field.W, S.field.H); S.objects = f.objects; sel = null; changed(true); };
 $('#clearItems').onclick = () => { snapshot(); S.objects = S.objects.filter(o => o.type !== 'item'); changed(true); };
 
-/* ---------- 感測元件建議 ---------- */
-const REC = {
-  bno:   {k:'bno', n:'BNO055 姿態感測器', w:'閉迴路維持車頭角度；配合「BNO 轉正」步驟在每段移動後修正偏差（寫法取自你的轉正.tb，已修正 0°/360° 換算與停止條件）。'},
-  atarm: {k:'atarm', n:'機械手臂套件 ATARM', w:'夾爪／抬升／旋轉 3 顆伺服，符合最多 5 顆限制。'},
-  ir:    {k:'irAlign', n:'紅外線 IR 對牆校正 v1.0.0', w:'靠牆或迷宮隔板（高 10 cm）校正，消除擺放與累積誤差；校正步驟可重設座標。寫法依網站產生的範本：setPins、setTargets、alignBlocking。'},
-  ultra: {k:'ultra', n:'超聲波 HC-SR04（Liang 版）', w:'Arduino／ESP32 可用：#include <Ultrasonic.h>，read(CM) 回傳整數公分。適合量牆面與觸發台；5 cm 小物資反射面小，近距離（約 3 cm 內）量不準。', pins:true},
-  sharp: {k:'sharp', n:'夏普紅外線測距 GP2Y0A21', w:'10–80 cm，對小物體比超聲波穩；目前你的擴充清單顯示「未載入」，要先在兔比積木加入。', sharp:true},
-  husky: {k:'husky', n:'HuskyLens AI（哈士奇）', w:'I2C 模式初始化。官方積木在鏡頭沒接時會無限等待，這裡改成最多重試 2 秒，避免比賽時卡在開機。'},
-  ppgun: {k:'ppgun', n:'乒乓球發射器套件 PPGUN', w:'PPGUN_INIT 預設 S0、S1、S2；與 ATARM 同車時 ATARM_INIT 要放在後面。', gun:true},
-  tcs:   {k:'tcs', n:'TCS3472 顏色感測', code:false, w:'只有想做自動分色才需要；開閘門後通常轉手動由選手判斷。'},
-  remote:{k:'remote', n:'遙控：PS3 搖桿／V7RC 藍牙', remote:true, w:'寫法對照兔比積木官方範例「夾爪機器人_ps3搖桿」「夾爪機器人_V7RC版」。兩者都用藍牙，只能擇一。'},
+/* ---------- 套件與感測器設定（與程式產生器相同） ---------- */
+const KIT_LV = {
+  energyA:{arm:['must','必備'], bno:['must','必備'], ps3:['must','遙控擇一'], v7rc:['must','遙控擇一'], ir:['rec1','強烈建議'], ultra:['rec1','建議']},
+  targetArm:{arm:['must','必備'], ps3:['must','遙控擇一'], v7rc:['must','遙控擇一'], bno:['rec1','建議'], ultra:['opt','選用'], ir:['opt','選用']},
+  targetShooter:{gun:['must','必備'], ps3:['must','遙控擇一'], v7rc:['must','遙控擇一'], bno:['rec1','建議'], ultra:['opt','選用'], gimbal:['opt','選用']},
 };
-const RECS = {
-  energyA:[['bno','must','必備'],['atarm','must','必備'],['remote','must','必備'],['ir','rec1','強烈建議'],['ultra','rec1','建議'],['sharp','opt','選用'],['husky','opt','選用'],['tcs','opt','選用']],
-  targetArm:[['atarm','must','必備'],['remote','must','必備'],['bno','rec1','建議'],['ultra','opt','選用'],['ir','opt','選用'],['sharp','opt','選用']],
-  targetShooter:[['ppgun','must','必備'],['remote','must','必備'],['bno','rec1','建議'],['husky','opt','選用'],['ultra','opt','選用']],
-  customArm:[['atarm','rec1','手臂'],['bno','rec1','建議'],['remote','opt','遙控'],['ir','opt','選用'],['ultra','opt','選用'],['sharp','opt','選用'],['husky','opt','選用'],['ppgun','opt','選用']],
-  customShooter:[['ppgun','rec1','發射'],['bno','rec1','建議'],['remote','opt','遙控'],['ultra','opt','選用'],['husky','opt','選用'],['atarm','opt','選用']],
-};
-function renderRecs(){
-  const list = RECS[S.rtype].map(([k, lv, tt]) => Object.assign({lv, t:tt}, REC[k]));
-  $('#recList').innerHTML = `<p class="hint" style="margin-top:0">依 ${ROBOTS[S.rtype].name} 的任務建議，寫法已對照兔比積木擴充原始碼。勾選後會加入產生的程式碼。</p>` +
-    list.map(r => `<div class="rec"><div class="t"><b>${r.n}</b><span class="lv ${r.lv}">${r.t}</span></div><p>${r.w.replace(/</g, '&lt;')}</p>
-      ${r.code === false ? '<p><i>需在兔比積木加入擴充後自行撰寫，不自動產生程式。</i></p>' : ''}
-      ${r.remote ? `<label class="f" style="margin-top:6px"><span>遙控方式</span><select data-bind="remote.type"><option value="none">不加入</option><option value="ps3">PS3 搖桿</option><option value="v7rc">V7RC 藍牙 (BLE)</option></select></label>
-        ${S.remote.type === 'ps3' ? '<label class="f" style="margin-top:6px"><span>手把 MAC（官方範例值）</span><input type="text" data-bind="remote.mac"></label>' : ''}
-        ${S.remote.type === 'v7rc' ? '<label class="f" style="margin-top:6px"><span>藍牙名稱（每台要不同）</span><input type="text" data-bind="remote.ble"></label>' : ''}` : ''}
-      ${!r.remote && r.code !== false ? `<label class="chk" style="margin-top:6px"><input type="checkbox" data-bind="modules.${r.k}"> 加入程式</label>` : ''}
-      ${r.pins ? `<div class="row" style="margin-top:6px"><label class="f"><span>TRIG 腳位</span><input type="number" data-bind="modules.trig"></label><label class="f"><span>ECHO 腳位</span><input type="number" data-bind="modules.echo"></label></div>` : ''}
-      ${r.sharp ? `<label class="f" style="margin-top:6px"><span>類比腳位</span><input type="number" data-bind="modules.sharpPin"></label>` : ''}
-      ${r.gun ? `<div class="row3" style="margin-top:6px"><label class="f"><span>旋轉</span><select data-bind="ppgun.pan" class="servoSel"></select></label><label class="f"><span>抬頭</span><select data-bind="ppgun.head" class="servoSel"></select></label><label class="f"><span>發射</span><select data-bind="ppgun.launch" class="servoSel"></select></label></div>` : ''}
-      </div>`).join('') +
-    (S.modules.ultra && S.modules.sharp ? `<div class="rec"><label class="f"><span>測距中斷使用</span><select data-bind="modules.stopSrc"><option value="ultra">超聲波</option><option value="sharp">夏普紅外線</option></select></label></div>` : '') +
-    `<p class="hint">腳位請依實際接線填寫；TRIG、ECHO 預設 25、26 只是範例。</p>` +
-    (S.game === 'energy' ? `<div class="rec"><div class="t"><b>機器人 B（手動）</b><span class="lv must">必備遙控</span></div><p>從比賽開始就手動搶中立物資區，不需路徑規劃；綠色風力物資 3 分最高，優先搶。</p></div>` : '');
-  fillServoSelects(); bindAll($('#recList'));
+let kitNoteMsg = '';
+function kitInit(k){
+  const K = S.kits;
+  if (k === 'arm') return `旋轉 ${K.arm.pan}、升降 ${K.arm.lift}、夾爪 ${K.arm.claw}`;
+  if (k === 'gun') return `旋轉 ${K.gun.pan}、上下 ${K.gun.head}、發射 ${K.gun.shoot}`;
+  if (k === 'ultra') return `Trig GPIO ${K.ultra.trig}、Echo GPIO ${K.ultra.echo}`;
+  if (k === 'ir') return `前${K.ir.f} 後${K.ir.b} 左前${K.ir.lf} 左後${K.ir.lb} 右前${K.ir.rf} 右後${K.ir.rb}`;
+  return GEN.KITS[k].row[3];
 }
+function keyOptions(){
+  const on = S.kits.on, o = [['btnA', '控制板 A'], ['btnB', '控制板 B']];
+  if (on.ps3) GEN.PS3_BTNS.forEach(b => o.push(['ps3:' + b[0], 'PS3 ' + b[1]]));
+  if (on.v7rc) Object.keys(GEN.V7_BTNS).forEach(n => o.push(['v7:' + n, 'V7RC ' + n + ' ' + GEN.V7_BTNS[n][0]]));
+  return o;
+}
+function mapListHtml(rk){
+  const R = S.kits[rk], rows = R.map || [];
+  if (!rows.length) return '（沒有按鍵對應）';
+  const bl = b => rk === 'ps3' ? ((GEN.PS3_BTNS.find(x => x[0] === b) || ['', b])[1]) : (b + ' ' + ((GEN.V7_BTNS[b] || [''])[0]));
+  return rows.map(m => {
+    const A = GEN.MAP_ACTS[m.act]; if (!A) return '';
+    const v = m.v !== undefined ? ' ' + m.v : '';
+    return `${m.mod ? '按住 ' + bl(m.mod) + '＋' : ''}${bl(m.btn)} → ${A.label}${v}`;
+  }).filter(Boolean).join('<br>');
+}
+function renderKits(){
+  const K = S.kits, on = K.on, lv = KIT_LV[S.rtype] || {};
+  GEN.normalizeMode({kits:K});
+  const sel = (path, opts) => `<select data-bind="${path}">${opts.map(o => `<option value="${o[0]}">${o[1]}</option>`).join('')}</select>`;
+  const servo = path => sel(path, SERVOS.map(v => [v, v]));
+  const nin = (label, path, attr = '') => `<label class="f"><span>${label}</span><input type="number" data-bind="${path}" ${attr}></label>`;
+  const tin = (label, path) => `<label class="f"><span>${label}</span><input type="text" data-bind="${path}"></label>`;
+  let h = `<p class="hint" style="margin-top:0">套件、腳位、初始化與程式寫法和課程網站 <a href="../generator.html#race" target="_blank" rel="noopener">程式產生器</a> 相同（依兔比積木擴充原始碼）。手臂與發射器、PS3 與 V7RC 只能各選一種。</p>`;
+  if (kitNoteMsg) h += `<p class="note">${kitNoteMsg}</p>`;
+  h += `<table class="kit"><thead><tr><th>使用</th><th>套件</th><th>初始化／腳位</th></tr></thead><tbody>` +
+    GEN.KIT_KEYS.map(k => `<tr><td><input type="checkbox" data-kit="${k}" ${on[k] ? 'checked' : ''} aria-label="${GEN.KITS[k].label}"></td>
+      <td>${GEN.KITS[k].label}${lv[k] ? `<br><span class="lv ${lv[k][0]}">${lv[k][1]}</span>` : ''}</td><td><small>${kitInit(k)}</small></td></tr>`).join('') + '</tbody></table>';
+  if (on.arm) h += `<div class="kbox"><h4>手臂 ATARM</h4><div class="row3"><label class="f"><span>旋轉</span>${servo('kits.arm.pan')}</label><label class="f"><span>升降</span>${servo('kits.arm.lift')}</label><label class="f"><span>夾爪</span>${servo('kits.arm.claw')}</label></div>
+    <div class="row">${nin('夾爪張開 °', 'kits.arm.open')}${nin('夾爪夾緊 °', 'kits.arm.close')}${nin('升降最低 °', 'kits.arm.down')}${nin('升降最高 °', 'kits.arm.up')}${nin('旋轉最小 °', 'kits.arm.panMin')}${nin('旋轉最大 °', 'kits.arm.panMax')}</div></div>`;
+  if (on.gun) h += `<div class="kbox"><h4>乒乓球發射器 PPGUN</h4><div class="row3"><label class="f"><span>旋轉</span>${servo('kits.gun.pan')}</label><label class="f"><span>上下</span>${servo('kits.gun.head')}</label><label class="f"><span>發射</span>${servo('kits.gun.shoot')}</label></div></div>`;
+  if (on.ultra) h += `<div class="kbox"><h4>超音波</h4><div class="row">${nin('Trig GPIO', 'kits.ultra.trig')}${nin('Echo GPIO', 'kits.ultra.echo')}</div><p class="hint">MTC V2 官方組裝說明：Trig 23、Echo 15。</p></div>`;
+  if (on.ir){
+    const pin = k => sel('kits.ir.' + k, GEN.IR_PINS.map(v => [v, v]));
+    h += `<div class="kbox"><h4>IR 靠牆校正（TuIRAlign 新版積木）</h4><div class="row3">${GEN.IR_POS.map(p => `<label class="f"><span>${p[1]} 腳位</span>${pin(p[0])}</label>`).join('')}</div>
+      <div class="row3">${GEN.IR_POS.map(p => nin(p[1] + ' 目標', 'kits.ir.t' + p[0])).join('')}</div></div>`;
+  }
+  ['ps3', 'v7rc'].forEach(rk => {
+    if (!on[rk]) return;
+    const isP = rk === 'ps3', R = K[rk];
+    h += `<div class="kbox"><h4>${isP ? 'PS3 遙控手把' : 'V7RC 手機遙控（App 選 GAME ADV）'}</h4>`;
+    if (isP) h += tin('手把 MAC（長按 PS 鈕連線）', 'kits.ps3.mac');
+    else {
+      h += `<label class="f"><span>連線方式</span>${sel('kits.v7rc.mode', [['BT', '藍牙 BLE'], ['WIFI', 'Wi-Fi']])}</label>`;
+      h += R.mode === 'WIFI' ? `<div class="row">${tin('SSID', 'kits.v7rc.ssid')}${tin('密碼', 'kits.v7rc.pass')}${nin('頻道', 'kits.v7rc.ch')}</div>` : tin('藍牙名稱（每台要不同）', 'kits.v7rc.name');
+    }
+    h += `<label class="f" style="margin-top:6px"><span>${isP ? '搖桿控制' : '左搖桿控制'}</span>${sel(`kits.${rk}.stick`, GEN.STICK_FN[rk])}</label>
+      <label class="f" style="margin-top:6px"><span>${isP ? '方向鍵控制' : '右側方向鍵控制'}</span>${sel(`kits.${rk}.dpad`, GEN.DPAD_FN[rk])}</label>
+      <div class="row" style="margin-top:6px">${nin('移動速度', `kits.${rk}.speed`)}${nin('旋轉速度', `kits.${rk}.turn`)}${nin('死區', `kits.${rk}.dead`)}${nin('瞄準速度', `kits.${rk}.aim`, 'step="0.05"')}</div>
+      <label class="f" style="margin-top:6px"><span>按鍵對應</span><select data-map="${rk}"><option value="">不使用</option><option value="arm" ${R.mapPreset === 'arm' ? 'selected' : ''}>官方手臂車配置</option><option value="gun" ${R.mapPreset === 'gun' ? 'selected' : ''}>官方發射車配置</option>${R.mapPreset === 'custom' ? '<option value="custom" selected>自訂（匯入）</option>' : ''}</select></label>
+      <div class="maplist">${mapListHtml(rk)}</div>
+      <p class="hint">需要逐鍵修改或組合鍵，請用 <a href="../generator.html#adv" target="_blank" rel="noopener">程式產生器</a> 設定後把程式碼的 remoteControl() 合併。</p></div>`;
+  });
+  const M = K.mode;
+  h += `<div class="kbox"><h4>一鍵自動／手動模式</h4><label class="chk"><input type="checkbox" data-bind="kits.mode.on"> 開啟（路徑變成「一鍵自動模式流程」）</label>`;
+  if (M.on){
+    h += `<div class="row" style="margin-top:6px"><label class="f"><span>自動鍵</span>${sel('kits.mode.autoKey', keyOptions())}</label><label class="f"><span>手動鍵</span>${sel('kits.mode.manKey', keyOptions())}</label></div>
+      <label class="f"><span>自動做完後</span>${sel('kits.mode.after', [['stay', '停在自動（AUTO OK），按手動鍵才切回（比賽用）'], ['repeat', '重複執行，直到按手動鍵'], ['back', '立刻回手動']])}</label>
+      <label class="chk" style="margin-top:6px"><input type="checkbox" data-bind="kits.mode.oled"> OLED 顯示模式（MANUAL／AUTO／AUTO OK）</label>
+      ${on.ps3 ? '<label class="chk"><input type="checkbox" data-bind="kits.mode.rumble"> 切換時手把震動</label>' : ''}
+      <p class="hint">自動途中每個步驟做完都會檢查手動鍵，按下就中止。</p>`;
+  } else h += `<p class="hint">關閉時：按控制板 A 鍵執行路徑，遙控隨時可用。</p>`;
+  h += `</div>`;
+  $('#kitPane').innerHTML = h;
+  bindAll($('#kitPane'));
+}
+$('#kitPane').addEventListener('change', e => {
+  const el = e.target;
+  if (el.dataset.kit){
+    snapshot();
+    const k = el.dataset.kit;
+    kitNoteMsg = GEN.setKit({kits:S.kits}, k, el.checked) || '';
+    const shooter = S.kits.on.gun && !S.kits.on.arm;
+    ['ps3', 'v7rc'].forEach(rk => {
+      if (S.kits.on[rk] && !(S.kits[rk].map || []).length && (S.kits.on.arm || S.kits.on.gun)){
+        S.kits[rk].map = GEN.OFFICIAL_MAP[rk === 'ps3' ? (shooter ? 'ps3gun' : 'ps3arm') : (shooter ? 'v7gun' : 'v7arm')]();
+        S.kits[rk].mapPreset = shooter ? 'gun' : 'arm';
+      }
+    });
+    // V7RC 藍牙名稱跟著套件換成官方範例名稱（使用者改過就不動）
+    const nm = S.kits.v7rc.name;
+    if (shooter && nm === 'MTC_ARM_U01') S.kits.v7rc.name = 'MTC_PPGUN_U01';
+    if (!shooter && S.kits.on.arm && nm === 'MTC_PPGUN_U01') S.kits.v7rc.name = 'MTC_ARM_U01';
+    renderKits(); renderSteps(); changed(true); e.stopPropagation(); return;
+  }
+  if (el.dataset.map){
+    snapshot();
+    const rk = el.dataset.map, v = el.value;
+    S.kits[rk].map = v === 'arm' || v === 'gun' ? GEN.OFFICIAL_MAP[(rk === 'ps3' ? 'ps3' : 'v7') + v]() : (v === 'custom' ? S.kits[rk].map : []);
+    S.kits[rk].mapPreset = v;
+    renderKits(); changed(true); e.stopPropagation(); return;
+  }
+});
 
 /* ---------- 積木對照 ---------- */
 function renderRef(){
   const rows = [
-    ['MTC 移動（完整）', 'mtc.moveSCurve(x, y, 旋轉, 最高速, 加速, -減速, 起速, 終速);'],
-    ['MTC 移動（簡易）', 'mtc.moveSCurve(x, y, 旋轉, 最高速, a, -(a), 0, 0);'],
-    ['MTC 弧線移動', 'mtc.moveCurveSCurve(x, y, 旋轉, 弧偏移, 最高速, 加速, -減速, 0, 0);'],
-    ['MTC 移動＋中斷', 'mtc.moveSCurve(..., 0, 0, 中斷函式);  // 函式回傳 bool'],
-    ['MTC 開迴路', 'mtc.driveVectorOpen(x, y, r);'],
-    ['MTC 角度移動', 'mtc.angleToXY(角度, 速度);'],
-    ['MTC 車體參數', 'mtc.setMtcParameters(輪徑, 輪寬, 車長, 車寬);'],
-    ['MTC 參數微調', 'mtc.adjustMtcConstantsAdd(dx, dy, dturn);'],
-    ['MTC 搭配 BNO', 'mtc.bnoMoveClosed(x, y, z, 目前角度);'],
-    ['編碼器／PID', 'tubit.setEncoderCPR(減速比*4*ppr);  tubit.setPIDTunings(P, I, D);'],
-    ['ATARM 初始化', 'ATARM_INIT(旋轉, 抬升, 夾爪);  // 例：S0,S7,S6'],
-    ['ATARM 夾爪', 'ATARM_ClawCtrl(true=夾緊 / false=張開, 秒數整數);'],
-    ['ATARM 抬升', 'ATARM_LiftSet(角度, 秒數整數);  ATARM_LiftAdd(增量);'],
-    ['ATARM 旋轉', 'ATARM_PanSet(角度, 秒數整數);  ATARM_PanAdd(增量);'],
-    ['ATARM 範圍', 'ATARM_SetClawRange(開, 關); ATARM_SetLiftRange(下, 上); ATARM_SetPanRange(下, 上);'],
-    ['IR 校正', 'tuirAlign().alignBlocking(主, 次);  // IR_L IR_R IR_UP IR_BACK IR_NONE'],
-    ['PPGUN', 'PPGUN_INIT(旋轉, 抬頭, 發射); PPGUN_launch(); PPGUN_PanSet(角度, 秒); PPGUN_HeadSet(角度, 秒);'],
-    ['BNO055', 'bno.start();  讀取角度：bno.yaw 等（依積木）'],
-    ['夏普紅外線', 'ESP32SharpIR sharpIR_1(ESP32SharpIR::GP2Y0A21YK0F, 腳位);  sharpIR_1.getDistanceFloat();'],
-    ['TCS3472', 'tcs.getRGB(&rgb[0], &rgb[1], &rgb[2]);'],
-    ['紅外線感測器', 'pinMode(IRPROX_腳位, INPUT);  digitalRead/analogRead(IRPROX_腳位);'],
-    ['按鈕', 'tubit.readButton(Button_A)  /  tubit.readButton(Button_B)'],
-    ['BNO 轉正（轉正.tb）', 'mtc.bnoMoveClosed(0, 0, (目標 - bno.orientationZ) * -1.65, bno.orientationZ);  tubit.stopAllMotors();'],
-    ['超聲波（Liang）', '#include <Ultrasonic.h>  Ultrasonic ultrasonic_T_E(T, E);  ultrasonic_T_E.read(CM);'],
-    ['PS3 搖桿', '#include <Ps3Controller.h>  Ps3.begin("MAC");  Ps3.isConnected();  Ps3.data.analog.stick.lx/ly/rx/ry;  Ps3.data.button.cross/circle/square/triangle/up/down/left/right/l1/r1/l2/r2'],
-    ['V7RC', '#include <V7RC_BT.h>  V7RC_BT v7rc;  v7rc.setupBLE("名稱");  v7rc.connect();  v7rc.setMode("SRT");  v7rc.readSRTdata(1~4)'],
-    ['V7RC 驅動', 'mtc.driveVectorOpen(((v7rc.readSRTdata(1)-1500)/2), ((v7rc.readSRTdata(2)-1500)/2), 左鍵*-180 + 右鍵*180);'],
-    ['HuskyLens', '#include <HUSKYLENS.h>  HUSKYLENS huskylens;  huskylens.begin(Wire);'],
-    ['IR 對牆校正 v1.0.0', 'tuirAlign().setPins(6 腳位);  setTargets(6 目標);  alignBlocking(主, 次);'],
+    ['MTC 移動', 'mtc.moveSCurve(x,y,旋轉,最高速,加速,-(減速),0,0);'],
+    ['MTC 移動＋中斷', 'mtc.moveSCurve(x,y,旋轉,最高速,加速,-(減速),0,0,stopNear_10);  // 超音波小於 10 cm 停'],
+    ['MTC 弧線移動', 'mtc.moveCurveSCurve(x,y,旋轉,弧偏移,最高速,加速,-(減速),0,0);'],
+    ['MTC 開迴路／角度', 'mtc.driveVectorOpen(x,y,r);  mtc.angleToXY(角度,速度);'],
+    ['四顆馬達', 'tubit.setMotorsPwm(M1,M2,M3,M4);  // 前進 (−,−,+,+)'],
+    ['撞牆校正', 'tubit.setMotorsPwm((-120),(-120),120,120); delay(1.5 * 1000); tubit.stopAllMotors(); tubit.resetEnc();'],
+    ['BNO 轉正', 'turnTo(角度, 誤差, 逾時ms);  // BNO 角度順時針增加，係數 -1.65'],
+    ['超音波接近', 'while (frontDistCm() > 10 && millis() - t0 < 5000) delay(20);'],
+    ['手臂 ATARM', 'ATARM_INIT(S0,S7,S6); ATARM_ClawCtrl(true=夾緊,秒); ATARM_LiftSet(角度,秒); ATARM_PanSet(角度,秒);'],
+    ['手臂範圍', 'ATARM_SetClawRange(80,150); ATARM_SetLiftRange(0,65); ATARM_SetPanRange(55,125);'],
+    ['發射器 PPGUN', 'PPGUN_INIT(S0,S1,S2); PPGUN_launch(); PPGUN_PanSet(角度,秒); PPGUN_HeadSet(角度,秒);'],
+    ['手臂＋發射器', 'ATARM.h 與 PPGUN.h 不能同時 include（redefinition of panPin），只能擇一'],
+    ['IR 靠牆校正', 'tuirAlign().alignBlocking(主,次,逾時ms,確認ms);  // 主：IR_L／IR_R／IR_NONE'],
+    ['超音波', 'Ultrasonic ultrasonic_23_15(23, 15);  ultrasonic_23_15.read(CM);'],
+    ['PS3', 'Ps3.begin("MAC");  Ps3.isConnected();  Ps3.data.analog.stick.lx;  Ps3.data.button.start'],
+    ['V7RC', 'V7RC_BT v7rc;  v7rc.setupBLE("名稱");  v7rc.connect();  v7rc.setMode("SRT");  v7rc.readSRTdata(1~4)'],
+    ['一鍵自動／手動', 'autoKey() → runAuto()（每步檢查 abortAuto()）→ AUTO OK；manualKey() → remoteControl()'],
+    ['OLED', 'Adafruit_SH1106G display(128, 64, &Wire);  display.begin(0x3C, true);'],
   ];
-  $('#refTable').innerHTML = `<p class="hint" style="margin-top:0">整理自兔比積木 TU:bit V2 擴充原始碼與官方範例 .tb（MTC V2.4、ATARM、PPGUN、BNO055、超聲波、PS3、V7RC、HuskyLens、夏普紅外線、TCS3472）。IR 對牆校正 v1.0.0 只在網站上，依你提供的範本。</p>
-    <table class="ref">${rows.map(r => `<tr><td>${r[0]}</td><td><code>${r[1].replace(/</g, '&lt;')}</code></td></tr>`).join('')}</table>
-    <p class="hint">其他擴充：OLED、HuskyLens、V7RC、PS3／PS4、ESP-NOW、WiFi、MQTT、DHT、MPU6050、APDS9960、PCA9685、PID、多工排程等。</p>`;
+  $('#refTable').innerHTML = `<p class="hint" style="margin-top:0">寫法與課程網站 <a href="../generator.html#race" target="_blank" rel="noopener">程式產生器</a> 共用同一套產生核心（依兔比積木擴充原始碼與官方 .tb 範例）。</p>
+    <table class="ref">${rows.map(r => `<tr><td>${r[0]}</td><td><code>${r[1].replace(/</g, '&lt;')}</code></td></tr>`).join('')}</table>`;
 }
 
 /* ---------- 雙向綁定 ---------- */
@@ -1808,7 +2538,7 @@ document.addEventListener('change', e => {
   else v = el.value;
   if (p === 'field.W' || p === 'field.H') v = clamp(Math.round(v) || 100, 30, 2000);
   setPath(S, p, v);
-  if (p.startsWith('modules.') || p.startsWith('remote.')) { renderSteps(); if (p === 'remote.type' || p === 'modules.ultra' || p === 'modules.sharp') renderRecs(); }
+  if (p.startsWith('kits.')) { kitNoteMsg = ''; if (el.tagName === 'SELECT' || el.type === 'checkbox' || /kits\.(arm|gun|ultra|ir)\./.test(p)) renderKits(); renderSteps(); }
   changed(true);
   if (p.startsWith('field.')) fit();
 });
@@ -1824,7 +2554,7 @@ $('#gameSel').onchange = e => {
   if (S.game === 'custom'){ $('aside.left [data-tab=paneField]').click(); toast('已建立 200×200 cm 空白場地，可在左側調整大小'); }
 };
 $('#robotSel').onchange = e => {
-  snapshot(); S.rtype = e.target.value; S.modules = defaultModules(S.rtype);
+  snapshot(); S.rtype = e.target.value; S.kits = defaultKitsFor(S.rtype); kitNoteMsg = '';
   const R = ROBOTS[S.rtype];
   if (S.robot.w > R.maxW) S.robot.w = R.maxW;
   if (S.robot.l > R.maxL) S.robot.l = R.maxL;
@@ -1850,7 +2580,7 @@ function scheduleCode(){ clearTimeout(codeT); codeT = setTimeout(() => { $('#cod
 function refreshAll(){
   $('#customSize').hidden = S.game !== 'custom';
   $('#resetField').textContent = S.game === 'custom' ? '清空場地物件' : '重設為大會場地';
-  sim = simulate(S); fillRobotSel(); renderChips(); renderObjects(); renderSteps(); renderRecs(); fillServoSelects(); bindAll(document); renderChecks(); updateStatus(); scheduleCode(); draw(); save();
+  sim = simulate(S); fillRobotSel(); renderChips(); renderObjects(); renderSteps(); renderKits(); fillServoSelects(); bindAll(document); renderChecks(); updateStatus(); scheduleCode(); draw(); save();
 }
 
 $('#copyCode').onclick = async () => {

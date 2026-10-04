@@ -351,7 +351,7 @@
         A: { on: true, acts: [mk('wall'), mk('bnoTurn', { deg: 0 })] } }) })],
       ['A：超音波接近 → 夾取 → 後退', () => ({ kits: { arm: true, ultra: true }, trig: Object.assign(emptyTrig(), {
         A: { on: true, acts: [mk('approach', { cm: 12 }), mk('grab'), mk('mtc', { y: -20 })] } }) })],
-      ['A：前進 50 cm → 轉 90° → 放置', () => ({ kits: { arm: true, bno: true }, trig: Object.assign(emptyTrig(), {
+      ['A：前進 50 cm → 右轉到 90° → 放置', () => ({ kits: { arm: true, bno: true }, trig: Object.assign(emptyTrig(), {
         A: { on: true, acts: [mk('mtc', { y: 50 }), mk('bnoTurn', { deg: 90 }), mk('place')] } }) })],
       ['A：連續發射 5 顆', () => ({ kits: { gun: true }, trig: Object.assign(emptyTrig(), { A: { on: true, acts: [mk('fireN')] } }) })],
       ['A：IR 靠牆校正 → 前進 40 cm → 再校正', () => ({ kits: { ir: true }, trig: Object.assign(emptyTrig(), {
@@ -874,7 +874,7 @@
       case 'gunHead': return inp('deg', '仰角', a.deg, ' min="0" max="180"') + secIn(a.sec);
       case 'ultraShow': return '<span class="muted">在 OLED 以大字顯示前方距離</span>';
       case 'wall': return sel('dir', '朝哪面牆推', WALL_DIRS.map(k => [k, MOVES[k].label]), a.dir) + inp('speed', '推牆速度 0–255', a.speed, ' min="0" max="255"') + inp('sec', '推牆秒數', a.sec, ' min="0" step="0.1"') + inp('backCm', '退開 cm（0＝不退）', a.backCm, ' min="0"');
-      case 'bnoTurn': return inp('deg', '目標角度 °', a.deg) + inp('tol', '容許誤差 °', a.tol, ' min="0.1" step="0.1"') + inp('timeout', '逾時秒數', a.timeout, ' min="0.5" step="0.5"');
+      case 'bnoTurn': return inp('deg', '目標角度 °（開機車頭＝0°，順時針增加：90＝右轉）', a.deg) + inp('tol', '容許誤差 °', a.tol, ' min="0.1" step="0.1"') + inp('timeout', '逾時秒數', a.timeout, ' min="0.5" step="0.5"');
       case 'approach': return inp('cm', '停在距離 cm', a.cm, ' min="1"') + inp('speed', '速度 0–255', a.speed, ' min="0" max="255"') + inp('timeout', '逾時秒數', a.timeout, ' min="0.5" step="0.5"');
       case 'grab': return inp('down', '夾取高度 °', a.down, ' min="0" max="180"') + inp('fwdCm', '前進 cm', a.fwdCm) + inp('up', '抬升到 °', a.up, ' min="0" max="180"');
       case 'place': return inp('down', '放置高度 °', a.down, ' min="0" max="180"') + inp('up', '抬升到 °', a.up, ' min="0" max="180"') + inp('backCm', '後退 cm', a.backCm, ' min="0"');
