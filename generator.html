@@ -529,7 +529,7 @@
         L.push(ind + 'display.setTextSize(2);');
         L.push(ind + 'display.setTextColor(SH110X_WHITE);');
         L.push(ind + 'display.setCursor(0, 16);');
-        L.push(ind + 'display.print(String(bno.orientationZ, 1));   // BNO055 車頭角度 0~360');
+        L.push(ind + 'display.print(bnoOK ? String(bno.orientationZ, 1) : String("NO BNO"));   // BNO055 車頭角度 0~360');
         L.push(ind + 'display.display();');
       } else if (a.type === 'mtcVec') {
         need.mtc = true;
@@ -792,7 +792,7 @@
     if (need.oled) def.push('Adafruit_SH1106G display(128, 64, &Wire);');
     if (need.zh) def.push('U8G2_FOR_ADAFRUIT_GFX u8g2;');
     if (need.ultra) def.push('Ultrasonic ' + uname + '(' + trig + ', ' + echo + ');   // Trig, Echo');
-    if (need.bno) def.push('EasyBNO055_ESP bno;');
+    if (need.bno) def.push('EasyBNO055_ESP bno;', 'bool bnoOK = false;   // 開機時有沒有找到 BNO055（沒接好就略過，不讓程式卡住）');
     if (need.servoArr) def.push('float servoDeg[8] = {90, 90, 90, 90, 90, 90, 90, 90};   // S0～S7 目前角度（累加調整用，開機假設在 90°）');
     if (need.v7rc) {
       def.push('V7RC_' + v7mode + ' v7rc;');
@@ -804,11 +804,15 @@
       helpers.push('', 'float frontDistCm() {   // 前方距離 (cm)，0 代表沒收到回波，視為很遠',
         '  unsigned int d = ' + uname + '.read(CM);', '  return d == 0 ? 999 : d;', '}');
     }
+    if (need.bno) {
+      helpers.push('', 'bool bnoFound() {   // 先確認 I2C 位址 0x28 有 BNO055；bno.start() 找不到感測器會一直等，整支程式會卡住',
+        '  Wire.begin();', '  Wire.beginTransmission(0x28);', '  return Wire.endTransmission() == 0;', '}');
+    }
     if (need.turn) {
       helpers.push('', 'double headingErr(double target) {   // 目標角與 BNO 角度差，換算到 -180~180',
         '  double e = target - bno.orientationZ;', '  while (e > 180) e -= 360;', '  while (e < -180) e += 360;', '  return e;', '}',
         '', 'void turnTo(double deg, double tol, unsigned long timeoutMs) {   // BNO 轉正（改寫自轉正.tb，係數 -1.65）',
-        '  tubit.resetEnc();', '  tubit.stopAllMotors();', '  unsigned long t0 = millis();',
+        '  if (!bnoOK) return;   // 沒有 BNO055 就不轉正', '  tubit.resetEnc();', '  tubit.stopAllMotors();', '  unsigned long t0 = millis();',
         '  while (fabs(headingErr(deg)) > tol && millis() - t0 < timeoutMs) {',
         '    mtc.bnoMoveClosed(0, 0, headingErr(deg) * -1.65, bno.orientationZ);', '    delay(5);', '  }',
         '  tubit.resetEnc();', '  tubit.stopAllMotors();', '}');
@@ -816,7 +820,7 @@
     const setups = ['  tubit.init();'];
     if (need.oled) setups.push('  display.begin(0x3C, true);');
     if (need.zh) setups.push('  u8g2.begin(display);');
-    if (need.bno) setups.push('  bno.start();');
+    if (need.bno) setups.push('  bnoOK = bnoFound();', '  if (bnoOK) bno.start();   // 找到 BNO055 才啟動', '  else Serial.println("BNO055 not found (I2C 0x28): check SDA/SCL/VIN/GND");');
     if (need.ps3) {
       const mac = String(K.ps3.mac || '').trim();
       setups.push(/^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$/.test(mac) && mac !== '00:00:00:00:00:00' ? '  Ps3.begin(' + cStr(mac) + ');   // 改成自己手把記住的 MAC' : '  Ps3.begin();');

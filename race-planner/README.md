@@ -4,9 +4,12 @@
 [兔比積木 Arduino IDE](https://tubitblock.trgreat.com/arduino-ide.html) 直接編譯燒錄的程式碼。
 內建「2026 全國 AI 智創機器人競賽（扶輪盃）」兩項賽事場地，也可自訂空白場地。
 
-目前版本：**v1.4.0**（完整更新紀錄見 [CHANGELOG.md](CHANGELOG.md)，網頁標題旁的版本號也可點開查看）
+目前版本：**v1.4.1**（完整更新紀錄見 [CHANGELOG.md](CHANGELOG.md)，網頁標題旁的版本號也可點開查看）
 
 ## 版本更新
+
+### v1.4.1（2026-10-04）
+- 修正：BNO055 沒接好時程式卡在開機（OLED 白屏、PS3 連不上）。現在開機先偵測 BNO055，找不到就略過，其他功能照常。
 
 ### v1.4.0（2026-10-04）與課程網站「程式產生器」同步
 - **程式碼寫法與程式產生器完全相同**：改用產生器的共用產生核心（`runAuto()`、`abortAuto()`、`remoteControl()`、`turnTo(角度, 誤差, 逾時)`、`frontDistCm()`）。

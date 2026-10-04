@@ -171,7 +171,7 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
 <body>
 <div class="app">
 <header>
-  <div class="brand"><h1>TU:bit V2 2026全國競賽路徑規劃器</h1><span class="ver" id="ver" title="更新紀錄">v1.4.0</span><a class="ver" href="../competition.html" title="回競賽專區">← 競賽專區</a><a class="ver" href="../generator.html#race" title="程式產生器：競賽自動化">程式產生器</a></div>
+  <div class="brand"><h1>TU:bit V2 2026全國競賽路徑規劃器</h1><span class="ver" id="ver" title="更新紀錄">v1.4.1</span><a class="ver" href="../competition.html" title="回競賽專區">← 競賽專區</a><a class="ver" href="../generator.html#race" title="程式產生器：競賽自動化">程式產生器</a></div>
   <div class="hgroup">
     <select id="gameSel" aria-label="競賽項目">
       <option value="energy">物資能源爭霸戰 300×300</option>
@@ -405,6 +405,7 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
 </dialog>
 <dialog id="logDlg">
   <h3 style="margin-top:0">更新紀錄</h3>
+  <p><b>v1.4.1</b>（2026-10-04）修正：勾選 BNO055 但感測器沒接好時，<code>bno.start()</code> 會一直等待，整支程式卡在開機（OLED 白屏、PS3 連不上）。現在開機先偵測 I2C 0x28，找不到就略過 BNO055（轉正改為跳過），其他功能照常；賽規檢查會提醒「有勾 BNO055 但路徑沒用到」。</p>
   <p><b>v1.4.0</b>（2026-10-04）與課程網站「程式產生器」同步：程式碼改用產生器的共用核心產生（寫法完全相同）；「感測元件」改為「套件與感測器設定」（與產生器相同的 8 種套件、腳位與初始化，手臂／發射器擇一、PS3／V7RC 擇一）；新增遙控設定（搖桿／方向鍵功能、速度、死區、官方按鍵配置）與一鍵自動／手動模式（START／SELECT、AUTO OK 等裁判確認、OLED、震動）；新增撞牆校正、超音波接近、連續發射、砲台旋轉／仰角與快速範本，撞牆與接近會在畫布上模擬；IR 校正改用新版積木寫法（逾時、確認時間）。移除夏普紅外線與 HuskyLens（產生器未收錄）。</p>
   <p><b>v1.3.3</b>（2026-10-03）更名為「TU:bit V2 2026全國競賽路徑規劃器」，移到課程網站競賽專區（race-planner/）；原 planner/ 網址改為程式產生器。</p>
   <p><b>v1.3.2</b>（2026-10-03）超音波預設腳位改為 MTC V2 官方組裝說明的 Trig 23、Echo 15；收錄於 TU:bit V2 課程網站 planner/，標題旁新增「回課程網站」連結。</p>
@@ -420,7 +421,7 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
 <script>
 'use strict';
 /* ================= 基本工具 ================= */
-const VERSION = 'v1.4.0';
+const VERSION = 'v1.4.1';
 const STORE_KEY = 'tubit-planner-v1';
 const uid = () => Math.random().toString(36).slice(2, 9);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -889,7 +890,7 @@ const GEN = (function () {
         L.push(ind + 'display.setTextSize(2);');
         L.push(ind + 'display.setTextColor(SH110X_WHITE);');
         L.push(ind + 'display.setCursor(0, 16);');
-        L.push(ind + 'display.print(String(bno.orientationZ, 1));   // BNO055 車頭角度 0~360');
+        L.push(ind + 'display.print(bnoOK ? String(bno.orientationZ, 1) : String("NO BNO"));   // BNO055 車頭角度 0~360');
         L.push(ind + 'display.display();');
       } else if (a.type === 'mtcVec') {
         need.mtc = true;
@@ -1160,7 +1161,7 @@ const GEN = (function () {
     if (need.oled) def.push('Adafruit_SH1106G display(128, 64, &Wire);');
     if (need.zh) def.push('U8G2_FOR_ADAFRUIT_GFX u8g2;');
     if (need.ultra) def.push('Ultrasonic ' + uname + '(' + trig + ', ' + echo + ');   // Trig, Echo');
-    if (need.bno) def.push('EasyBNO055_ESP bno;');
+    if (need.bno) def.push('EasyBNO055_ESP bno;', 'bool bnoOK = false;   // 開機時有沒有找到 BNO055（沒接好就略過，不讓程式卡住）');
     if (need.servoArr) def.push('float servoDeg[8] = {90, 90, 90, 90, 90, 90, 90, 90};   // S0～S7 目前角度（累加調整用，開機假設在 90°）');
     if (need.v7rc) {
       def.push('V7RC_' + v7mode + ' v7rc;');
@@ -1173,11 +1174,15 @@ const GEN = (function () {
         '  unsigned int d = ' + uname + '.read(CM);', '  return d == 0 ? 999 : d;', '}');
     }
     if (need.stops) [...need.stops].sort((a, b) => a - b).forEach(cm => helpers.push('', 'bool stopNear_' + String(cm).replace('.', '_') + '() {   // 前方距離小於 ' + plain(cm) + ' cm 就中斷移動（moveSCurve 中斷用）', '  return frontDistCm() < ' + plain(cm) + ';', '}'));
+    if (need.bno) {
+      helpers.push('', 'bool bnoFound() {   // 先確認 I2C 位址 0x28 有 BNO055；bno.start() 找不到感測器會一直等，整支程式會卡住',
+        '  Wire.begin();', '  Wire.beginTransmission(0x28);', '  return Wire.endTransmission() == 0;', '}');
+    }
     if (need.turn) {
       helpers.push('', 'double headingErr(double target) {   // 目標角與 BNO 角度差，換算到 -180~180',
         '  double e = target - bno.orientationZ;', '  while (e > 180) e -= 360;', '  while (e < -180) e += 360;', '  return e;', '}',
         '', 'void turnTo(double deg, double tol, unsigned long timeoutMs) {   // BNO 轉正（改寫自轉正.tb，係數 -1.65）',
-        '  tubit.resetEnc();', '  tubit.stopAllMotors();', '  unsigned long t0 = millis();',
+        '  if (!bnoOK) return;   // 沒有 BNO055 就不轉正', '  tubit.resetEnc();', '  tubit.stopAllMotors();', '  unsigned long t0 = millis();',
         '  while (fabs(headingErr(deg)) > tol && millis() - t0 < timeoutMs) {',
         '    mtc.bnoMoveClosed(0, 0, headingErr(deg) * -1.65, bno.orientationZ);', '    delay(5);', '  }',
         '  tubit.resetEnc();', '  tubit.stopAllMotors();', '}');
@@ -1185,7 +1190,7 @@ const GEN = (function () {
     const setups = ['  tubit.init();'];
     if (need.oled) setups.push('  display.begin(0x3C, true);');
     if (need.zh) setups.push('  u8g2.begin(display);');
-    if (need.bno) setups.push('  bno.start();');
+    if (need.bno) setups.push('  bnoOK = bnoFound();', '  if (bnoOK) bno.start();   // 找到 BNO055 才啟動', '  else Serial.println("BNO055 not found (I2C 0x28): check SDA/SCL/VIN/GND");');
     if (need.ps3) {
       const mac = String(K.ps3.mac || '').trim();
       setups.push(/^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$/.test(mac) && mac !== '00:00:00:00:00:00' ? '  Ps3.begin(' + cStr(mac) + ');   // 改成自己手把記住的 MAC' : '  Ps3.begin();');
@@ -1670,6 +1675,9 @@ function ruleChecks(S, sim){
     if (s.type === 'move' && s.fix && !on.bno) skipped.push(LB[i] + ' 轉正（BNO055）');
     if (s.type === 'move' && num(s.stopCm) > 0 && !on.ultra) skipped.push(LB[i] + ' 測距中斷（超音波）');
   });
+  const usesBno = S.steps.some(s => s.type === 'turn' || (s.type === 'move' && s.fix));
+  if (on.bno && !usesBno) push('warn', '有勾選 BNO055，但路徑沒有用到轉正：建議取消勾選。BNO055 沒接好時開機會略過它，但少一個元件就少一個出錯點');
+  if (on.bno) push('ok', '開機會先偵測 BNO055（I2C 0x28），找不到就略過，不會卡住整支程式');
   if (skipped.length) push('warn', `需要的套件沒有勾選，程式中已略過（改成註解）：${skipped.join('、')}`);
   if ((on.ps3 || on.v7rc) && K.mode.on && K.mode.oled) push('ok', 'OLED 會顯示 MANUAL／AUTO／AUTO OK；遙控＋OLED 程式約占 90% 空間');
   return out;

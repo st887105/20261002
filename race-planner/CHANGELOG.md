@@ -1,5 +1,9 @@
 # 更新紀錄
 
+## v1.4.1（2026-10-04）
+- 修正：勾選 BNO055 但感測器沒接好（序列埠一直出現 `EasyBNO055 error, resetting`）時，`bno.start()` 會無限等待，程式卡在開機：OLED 白屏、PS3 連不上、按鍵沒反應。現在開機先用 `bnoFound()` 偵測 I2C 位址 0x28，找到才 `bno.start()`；找不到時 `turnTo()` 直接跳過，其他功能照常。
+- 賽規檢查新增：勾選 BNO055 但路徑沒有轉正步驟時，建議取消勾選。
+
 ## v1.4.0（2026-10-04）
 - 與課程網站「程式產生器」同步：程式碼改用產生器的共用產生核心，寫法完全相同（`runAuto()`、`abortAuto()`、`remoteControl()`、`turnTo(角度, 誤差, 逾時)`、`frontDistCm()`）。
 - 「感測元件」改為「套件與感測器設定」：水平雲台、手臂 ATARM、發射器 PPGUN、超音波、BNO055、PS3、V7RC、IR 靠牆校正，腳位與初始化和產生器相同；手臂與發射器擇一（ATARM.h、PPGUN.h 同時 include 會編譯失敗）、PS3 與 V7RC 擇一。
