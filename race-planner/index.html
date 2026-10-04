@@ -43,7 +43,8 @@ body{height:100%;margin:0;background:var(--bg);color:var(--ink);
 *,*::before,*::after{box-sizing:border-box}
 button,input,select,textarea{font:inherit;color:inherit}
 :focus-visible{outline:2px solid var(--gear);outline-offset:2px}
-.app{display:grid;grid-template-rows:auto 1fr;height:100%}
+.app{display:grid;grid-template-rows:auto 1fr auto;height:100%}
+.credit{padding:5px 12px;text-align:center;font-size:12px;color:var(--mute);border-top:1px solid var(--line);background:var(--panel);letter-spacing:.02em}
 header{display:flex;align-items:center;gap:14px;padding:10px 16px;background:var(--panel);border-bottom:1px solid var(--line);flex-wrap:wrap}
 .brand{display:flex;align-items:baseline;gap:10px}
 .brand h1{font-size:18px;margin:0;font-weight:700;letter-spacing:.02em}
@@ -112,6 +113,9 @@ label.chk{display:flex;gap:6px;align-items:center;font-size:13px;cursor:pointer}
 #wpBar .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
 #wpBar .grid .btn{padding:4px 2px;font-size:12px}
 #wpBar .main{grid-column:span 4;display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:2px}
+#wpWarn{border:1px solid var(--bad);background:color-mix(in srgb, var(--bad) 10%, var(--card));border-radius:8px;padding:6px 8px;margin-bottom:6px;font-size:12px}
+#wpWarn b{color:var(--bad)}
+#wpWarn .fx{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}
 #wpBar .acts{font-size:12px;color:var(--mute);margin-top:6px;max-height:210px;overflow:auto}
 #wpBar{width:300px}
 #wpBar .hrow{display:flex;flex-wrap:wrap;align-items:center;gap:3px;margin-top:6px;font-size:12px}
@@ -171,7 +175,7 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
 <body>
 <div class="app">
 <header>
-  <div class="brand"><h1>TU:bit V2 2026全國競賽路徑規劃器</h1><span class="ver" id="ver" title="更新紀錄">v1.5.0</span><a class="ver" href="../competition.html" title="回競賽專區">← 競賽專區</a><a class="ver" href="../generator.html#race" title="程式產生器：競賽自動化">程式產生器</a></div>
+  <div class="brand"><h1>TU:bit V2 2026全國競賽路徑規劃器</h1><span class="ver" id="ver" title="更新紀錄">v1.6.1</span><a class="ver" href="../competition.html" title="回競賽專區">← 競賽專區</a><a class="ver" href="../generator.html#race" title="程式產生器：競賽自動化">程式產生器</a></div>
   <div class="hgroup">
     <select id="gameSel" aria-label="競賽項目">
       <option value="energy">物資能源爭霸戰 300×300</option>
@@ -324,12 +328,13 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
     <div id="wrap"><canvas id="cv"></canvas>
       <div id="wpBar" hidden>
         <div class="tt"><b id="wpTitle">P1 到點動作</b><button class="btn small" id="wpClose" aria-label="關閉">✕</button></div>
+        <div id="wpWarn" hidden></div>
         <div class="grid">
           <div class="main"><button class="btn primary" data-wp="grab">在這裡夾取</button><button class="btn primary" data-wp="place">在這裡放置</button></div>
           <button class="btn" data-wp="clawClose">夾爪夾緊</button><button class="btn" data-wp="clawOpen">夾爪張開</button><button class="btn" data-wp="lift">抬升</button><button class="btn" data-wp="lower">下降</button>
           <button class="btn" data-wp="pan">旋轉夾爪</button><button class="btn" data-wp="turn">BNO 轉正</button><button class="btn" data-wp="align">IR 校正</button><button class="btn" data-wp="wall">撞牆校正</button>
           <button class="btn" data-wp="approach">超音波接近</button><button class="btn" data-wp="fire">發射</button><button class="btn" data-wp="fireN">連續發射</button><button class="btn" data-wp="wait">等待</button>
-          <button class="btn" data-wp="gunPan">砲台旋轉</button><button class="btn" data-wp="gunHead">砲管仰角</button><button class="btn danger" data-wp="del" style="grid-column:span 2">刪除此點</button>
+          <button class="btn" data-wp="gunPan">砲台旋轉</button><button class="btn" data-wp="gunHead">砲管仰角</button><button class="btn" data-wp="gimbal">雲台轉到</button><button class="btn danger" data-wp="del">刪除此點</button>
         </div>
         <div class="hrow"><span>車頭</span><input type="number" step="15" id="wpH" aria-label="車頭角度">
           <button class="btn small" data-hd="-15">-15</button><button class="btn small" data-hd="15">+15</button>
@@ -373,6 +378,7 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
         <button class="btn small" data-add="wait">等待</button>
         <button class="btn small" data-add="fire">發射</button>
         <button class="btn small" data-add="fireN">連續發射</button>
+        <button class="btn small" data-add="gimbal">雲台轉到</button>
         <button class="btn small" data-add="gunPan">砲台旋轉</button>
         <button class="btn small" data-add="gunHead">砲管仰角</button>
         <button class="btn small" data-add="code">自訂程式</button>
@@ -392,6 +398,7 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
     </div>
   </aside>
 </main>
+<footer class="credit">車城國小資訊老師徐吉德整理製作@2026</footer>
 </div>
 
 <dialog id="ioDlg">
@@ -408,6 +415,8 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
 </dialog>
 <dialog id="logDlg">
   <h3 style="margin-top:0">更新紀錄</h3>
+  <p><b>v1.6.1</b>（2026-10-04）頁面下方加上「車城國小資訊老師徐吉德整理製作@2026」。</p>
+  <p><b>v1.6.0</b>（2026-10-04）水平雲台可微調：勾選後可設定腳位、回正角度、微調（±45°）與可轉範圍，新增「雲台轉到」動作；畫路徑時若車身預計會碰到障礙物，到點動作工具列會顯示碰撞提示，可一鍵「加繞行點」或「移到最近可通過位置」；碰撞檢查只計算路段附近的障礙物，速度更快。</p>
   <p><b>v1.5.0</b>（2026-10-04）新增「自動移動速度 %」：規劃好路線後，在上方工具列或「套件與感測器」改一個數字（或按 80%／100%／120%），所有路徑移動一起變快或變慢；程式碼產生 <code>AUTO_SPEED</code> 常數與 <code>autoV()</code>，燒錄前也能直接改；模擬時間同步換算。程式產生器的競賽自動化同步加入相同設定。</p>
   <p><b>v1.4.2</b>（2026-10-04）程式碼開頭的說明會依「自動做完後」的設定顯示（停在 AUTO OK／重複執行／立刻回手動），不再一律寫「停在 AUTO OK」。</p>
   <p><b>v1.4.1</b>（2026-10-04）修正：勾選 BNO055 但感測器沒接好時，<code>bno.start()</code> 會一直等待，整支程式卡在開機（OLED 白屏、PS3 連不上）。現在開機先偵測 I2C 0x28，找不到就略過 BNO055（轉正改為跳過），其他功能照常；賽規檢查會提醒「有勾 BNO055 但路徑沒用到」。</p>
@@ -426,7 +435,7 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
 <script>
 'use strict';
 /* ================= 基本工具 ================= */
-const VERSION = 'v1.5.0';
+const VERSION = 'v1.6.1';
 const STORE_KEY = 'tubit-planner-v1';
 const uid = () => Math.random().toString(36).slice(2, 9);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -736,6 +745,7 @@ const GEN = (function () {
     v7rc: { mode: 'BT', name: 'MTC_ARM_U01', ssid: 'V7RC_AP', pass: '12345678', ch: '1', stick: 'move', dpad: 'turn', speed: 250, turn: 180, dead: 20, aim: 0.45, map: [] },
     mode: { on: false, autoKey: 'ps3:start', manKey: 'ps3:select', after: 'stay', oled: true, rumble: true },
     auto: { speed: 100 },   // 自動移動速度 %（AUTO_SPEED）
+    gimbal: { pin: 'S0', center: 90, trim: 0, min: 0, max: 180 },   // 水平雲台：腳位、回正角度、微調、可轉範圍
     ir: { f: '33', b: '32', lf: '35', lb: '34', rf: '39', rb: '36', tf: 25, tb: 25, tlf: 25, tlb: 25, trf: 25, trb: 25 }
   });
   // ATARM.h 與 PPGUN.h 都定義了 panPin、panDeg，同一支程式同時 include 會編譯失敗，所以兩者互斥
@@ -776,6 +786,16 @@ const GEN = (function () {
 
   /* ---------- 程式碼產生 ---------- */
   function motorLine(move, sp) { return 'tubit.setMotorsPwm(' + MOVES[move].v.map(k => fmt(k * sp === 0 ? 0 : k * sp)).join(',') + ');'; }
+  function gimbalCfg() {   // 水平雲台設定（補預設值並限制範圍）
+    const g = Object.assign({ pin: 'S0', center: 90, trim: 0, min: 0, max: 180 }, state.kits.gimbal || {});
+    const pins = ['S0', 'S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7'];
+    const lo = clampInt(g.min, 0, 180, 0), hi = clampInt(g.max, 0, 180, 180);
+    return { pin: pins.includes(g.pin) ? g.pin : 'S0', center: clampInt(g.center, 0, 180, 90), trim: clampInt(g.trim, -45, 45, 0), min: Math.min(lo, hi), max: Math.max(lo, hi) };
+  }
+  function gimbalClash(need) {   // 雲台腳位是否已被手臂／發射器使用
+    const K = state.kits, p = gimbalCfg().pin;
+    return (need.arm && [K.arm.pan, K.arm.lift, K.arm.claw].includes(p)) || (need.gun && [K.gun.pan, K.gun.head, K.gun.shoot].includes(p));
+  }
   let speedHit = false;   // 有 MTC 自動移動時，產生 AUTO_SPEED 整體速度調整
   function mtcLine(x, y, r, vm, a) {
     const ac = Math.abs(num(a, 800));
@@ -827,7 +847,7 @@ const GEN = (function () {
         L.push(ind + 'tubit.stopAllMotors();');
       } else if (a.type === 'gimbal') {
         need.gimbal = true;
-        L.push(ind + 'tubit.setServoAngle(S0, ' + clampInt(a.deg, 0, 180, 90) + ');   // 水平雲台');
+        L.push(ind + 'gimbalTo(' + clampInt(a.deg, 0, 180, 90) + ');   // 水平雲台轉到（含微調）');
       } else if (a.type === 'armClaw') {
         need.arm = true;
         L.push(ind + 'ATARM_ClawCtrl(' + (a.close === 'true') + ',' + secInt(a.sec) + ');   // 夾爪' + (a.close === 'true' ? '夾緊' : '張開'));
@@ -1178,6 +1198,16 @@ const GEN = (function () {
     }
     if (need.ir) def.push('extern TuBitCore tubit;', 'TuMTC& tuirRobot() {', '    return mtc;', '}', 'TuIRAlign<TuMTC>& tuirAlign() {', '    static TuIRAlign<TuMTC> align(tubit, tuirRobot());', '    return align;', '}');
     const helpers = [];
+    if (need.gimbal) {
+      const G = gimbalCfg();
+      helpers.push('', '// ===== 水平雲台（可微調） =====',
+        'const int GIMBAL_CENTER = ' + G.center + ';   // 回正角度（正前方）',
+        'const int GIMBAL_TRIM = ' + G.trim + ';   // 微調：雲台裝歪時用 ± 度數修正（例如偏右 3° 就填 -3）',
+        'const int GIMBAL_MIN = ' + G.min + ';   // 可轉範圍：最小角度',
+        'const int GIMBAL_MAX = ' + G.max + ';   // 可轉範圍：最大角度',
+        'void gimbalTo(int deg) {   // 水平雲台轉到指定角度（自動加上微調並限制在範圍內）',
+        '  tubit.setServoAngle(' + G.pin + ', constrain(deg + GIMBAL_TRIM, GIMBAL_MIN, GIMBAL_MAX));', '}');
+    }
     if (speedHit || need.speed) {
       const sp = clampInt((K.auto || {}).speed, 10, 200, 100);
       helpers.push('', '// ===== 自動移動速度：規劃好路線後，改這個數字就能讓所有自動移動一起變快或變慢 =====',
@@ -1225,8 +1255,8 @@ const GEN = (function () {
       setups.push('  ATARM_SetLiftRange(' + clampInt(K.arm.down, 0, 180, 0) + ',' + clampInt(K.arm.up, 0, 180, 65) + ');   // 最低, 最高');
       setups.push('  ATARM_SetPanRange(' + clampInt(K.arm.panMin, 0, 180, 55) + ',' + clampInt(K.arm.panMax, 0, 180, 125) + ');   // 旋轉範圍');
     }
-    if (need.gimbal && !need.arm && !need.gun) setups.push('  tubit.setServoAngle(S0, 90);   // 水平雲台回正');
-    if (need.servoPins) [...need.servoPins].filter(pn => !((need.arm || need.gun) && pn === 'S0') && !(need.gimbal && pn === 'S0')).forEach(pn => setups.push('  tubit.setServoAngle(' + pn + ', 90);   // 累加調整的起點'));
+    if (need.gimbal && !gimbalClash(need)) setups.push('  gimbalTo(GIMBAL_CENTER);   // 水平雲台回正（含微調）');
+    if (need.servoPins) [...need.servoPins].filter(pn => !((need.arm || need.gun) && pn === 'S0') && !(need.gimbal && pn === gimbalCfg().pin)).forEach(pn => setups.push('  tubit.setServoAngle(' + pn + ', 90);   // 累加調整的起點'));
 
     const head = ['// generated by OpenBlock'];
     if (conflict) head.push('// ⚠ 同時用了手臂與發射器動作：ATARM.h 與 PPGUN.h 不能放在同一支程式，請刪除其中一種動作');
@@ -1388,7 +1418,10 @@ function buildSeg(S, from, s){
   seg.time = D > 0.01 ? trapTime(D, vm*cpd*kf, ac*cpd*kf, ad*cpd*kf) * 1.12 + 0.1 : 0;
   // 碰撞取樣
   const nS = Math.max(2, Math.ceil(len / 2), Math.ceil(Math.abs(dh) / 5));
-  const solids = S.objects.filter(o => o.solid);
+  const pad = Math.hypot(S.robot.w, S.robot.l) / 2 + 1;
+  const xs = [from.x, to.x].concat(seg.curve ? [seg.ctrl.x] : []), ys = [from.y, to.y].concat(seg.curve ? [seg.ctrl.y] : []);
+  const bx0 = Math.min(...xs) - pad, bx1 = Math.max(...xs) + pad, by0 = Math.min(...ys) - pad, by1 = Math.max(...ys) + pad;
+  const solids = S.objects.filter(o => o.solid && o.x <= bx1 && o.x + o.w >= bx0 && o.y <= by1 && o.y + o.h >= by0);
   seg.hits = []; seg.hitIds = new Set(); seg.oob = false;
   for (let i = 0; i <= nS; i++){
     const p = segPoint(seg, i / nS), poly = robotPoly(S, p.x, p.y, p.h);
@@ -1400,6 +1433,91 @@ function buildSeg(S, from, s){
   return seg;
 }
 function autoFactor(S){ return clamp(num(S.kits && S.kits.auto ? S.kits.auto.speed : 100, 100), 10, 200) / 100; }
+/* ---------- 碰撞修正建議 ---------- */
+function moveCtx(S, id){
+  const sim0 = simulate(S), i = S.steps.findIndex(x => x.id === id);
+  if (i < 0 || !sim0.pose[i]) return null;
+  let j = i + 1; while (j < S.steps.length && S.steps[j].type !== 'move') j++;
+  const between = S.steps.slice(i + 1, j);
+  const moved = between.some(x => ['wall', 'approach', 'turn'].includes(x.type) || (x.type === 'align' && x.reset));
+  return {i, before:sim0.pose[i].before, next: j < S.steps.length && !moved ? S.steps[j] : null};
+}
+function segClear(S, from, s){ return buildSeg(S, from, s).hits.length === 0; }
+function pointOk(S, ctx, s, x, y){
+  const t = Object.assign({}, s, {x, y});
+  if (!segClear(S, ctx.before, t)) return false;
+  if (ctx.next && !segClear(S, {x, y, h:num(s.h)}, ctx.next)) return false;
+  return true;
+}
+function nearestFree(S, s){   // 找離原位置最近、進出這個點都不會碰撞的位置
+  const ctx = moveCtx(S, s.id); if (!ctx) return null;
+  const x0 = num(s.x), y0 = num(s.y), c = [];
+  for (let dx = -80; dx <= 80; dx += 2) for (let dy = -80; dy <= 80; dy += 2){
+    const x = x0 + dx, y = y0 + dy;
+    if (x < 0 || y < 0 || x > S.field.W || y > S.field.H || (dx === 0 && dy === 0)) continue;
+    c.push({x, y, d:dx * dx + dy * dy});
+  }
+  c.sort((a, b) => a.d - b.d);
+  for (let k = 0; k < c.length && k < 4000; k++) if (pointOk(S, ctx, s, c[k].x, c[k].y)) return {x:c[k].x, y:c[k].y};
+  return null;
+}
+function poseClear(S, x, y, h){
+  const poly = robotPoly(S, x, y, h);
+  if (poly.some(c => c.x < 0 || c.y < 0 || c.x > S.field.W || c.y > S.field.H)) return false;
+  const r = Math.hypot(S.robot.w, S.robot.l) / 2 + 1;
+  return !S.objects.some(o => o.solid && o.x <= x + r && o.x + o.w >= x - r && o.y <= y + r && o.y + o.h >= y - r && polysHit(poly, rectPoly(o)));
+}
+function detourVia(S, s){   // 用格點 A* 找繞行路線，再精簡成最少的繞行點；回傳繞行點陣列（找不到回傳 null）
+  const ctx = moveCtx(S, s.id); if (!ctx) return null;
+  const a = ctx.before, b = {x:num(s.x), y:num(s.y), h:num(s.h)}, h = a.h, G = 5;
+  const mk = (x, y) => ({id:'via', type:'move', x, y, h, curve:false, bulge:0, vm:s.vm, a:s.a, ad:s.ad, stopCm:0});
+  const clearTo = (p, q, last) => segClear(S, {x:p.x, y:p.y, h}, last ? s : mk(q.x, q.y));
+  if (!poseClear(S, b.x, b.y, b.h)) return null;   // 目標點本身就會碰到
+  const nx = Math.floor(S.field.W / G), ny = Math.floor(S.field.H / G);
+  const key = (i, j) => i * 1000 + j, fc = new Map();
+  const free = (i, j) => { const k = key(i, j); if (!fc.has(k)) fc.set(k, i >= 0 && j >= 0 && i <= nx && j <= ny && poseClear(S, i * G, j * G, h)); return fc.get(k); };
+  const hd = (i, j) => Math.hypot(i * G - b.x, j * G - b.y);
+  const open = [], came = new Map(), gs = new Map();
+  const si = Math.round(a.x / G), sj = Math.round(a.y / G);
+  for (let di = -2; di <= 2; di++) for (let dj = -2; dj <= 2; dj++){
+    const i = si + di, j = sj + dj; if (!free(i, j)) continue;
+    const q = {x:i * G, y:j * G}; if (!clearTo(a, q)) continue;
+    const g0 = Math.hypot(q.x - a.x, q.y - a.y); gs.set(key(i, j), g0); came.set(key(i, j), null); open.push({i, j, f:g0 + hd(i, j)});
+  }
+  let goal = null, n = 0;
+  while (open.length && n < 8000){
+    n++;
+    let bi = 0; for (let k = 1; k < open.length; k++) if (open[k].f < open[bi].f) bi = k;
+    const c = open.splice(bi, 1)[0], ck = key(c.i, c.j), cg = gs.get(ck);
+    const cp = {x:c.i * G, y:c.j * G};
+    if (hd(c.i, c.j) <= 12 && clearTo(cp, b, true)){ goal = ck; break; }
+    for (let di = -1; di <= 1; di++) for (let dj = -1; dj <= 1; dj++){
+      if (!di && !dj) continue;
+      const i = c.i + di, j = c.j + dj; if (!free(i, j)) continue;
+      if (di && dj && (!free(c.i + di, c.j) || !free(c.i, c.j + dj))) continue;   // 斜走不切牆角
+      const k = key(i, j), g = cg + G * Math.hypot(di, dj);
+      if (gs.has(k) && gs.get(k) <= g) continue;
+      gs.set(k, g); came.set(k, ck); open.push({i, j, f:g + hd(i, j)});
+    }
+  }
+  if (goal === null) return null;
+  const pts = []; for (let k = goal; k !== null && k !== undefined; k = came.get(k)) pts.unshift({x:Math.floor(k / 1000) * G, y:(k % 1000) * G});
+  // 拉直：從目前點往後找最遠、可直線到達的點
+  const path = [a, ...pts, b], vias = [];
+  let cur = 0;
+  while (cur < path.length - 1){
+    let nxt = cur + 1;
+    for (let k = path.length - 1; k > cur + 1; k--){ if (clearTo(path[cur], path[k], k === path.length - 1)){ nxt = k; break; } }
+    if (nxt !== path.length - 1) vias.push({x:path[nxt].x, y:path[nxt].y, h});
+    cur = nxt;
+  }
+  return vias.length ? vias : null;
+}
+function hitNames(S, seg){
+  const names = [...new Set([...seg.hitIds].map(id => (S.objects.find(o => o.id === id) || {}).label || '障礙物'))];
+  if (seg.oob) names.push('場地邊界');
+  return names;
+}
 function clawPoint(S, p){ const F = fwdVec(p.h); return {x:p.x + F.x * S.robot.clawOff, y:p.y + F.y * S.robot.clawOff}; }
 
 /* ================= 模擬 ================= */
@@ -1496,6 +1614,7 @@ function simulate(S){
           holding = []; clawClosed = false;
         }
       } else if (['lift','pan','gunPan','gunHead'].includes(s.type)){ dur = sec + 0.15; }
+      else if (s.type === 'gimbal'){ dur = 0.4; }
       else if (s.type === 'align'){ dur = 1.5 + num(s.confirm, 1); if (s.reset) p = {x:num(s.rx), y:num(s.ry), h:num(s.rh)}; }
       else if (s.type === 'turn'){ const dh = Math.abs(normDeg(num(s.h) - p.h)); dur = 0.3 + dh / 120; p = {x:p.x, y:p.y, h:num(s.h)}; }
       else if (s.type === 'wait'){ dur = num(s.ms) / 1000; }
@@ -1528,7 +1647,7 @@ function mapAxes(S, from, to){
   return {X:a, Y:b, Z:z};
 }
 const TYPE_NAMES_CORE = {turn:'BNO 轉正', move:'移動', claw:'夾爪', lift:'抬升', pan:'旋轉夾爪', align:'IR 校正', wait:'等待', fire:'發射乒乓球',
-  code:'自訂程式', wall:'撞牆校正', approach:'超音波接近', fireN:'連續發射', gunPan:'砲台旋轉', gunHead:'砲管仰角'};
+  code:'自訂程式', gimbal:'水平雲台', wall:'撞牆校正', approach:'超音波接近', fireN:'連續發射', gunPan:'砲台旋轉', gunHead:'砲管仰角'};
 function liftName(S, s){ return num(s.deg) <= num(S.arm.liftDown, 0) ? '下降' : '抬升'; }
 function stepName(S, s){ return s.type === 'lift' ? liftName(S, s) : TYPE_NAMES_CORE[s.type]; }
 function stepLabels(S){
@@ -1540,7 +1659,7 @@ function stepLabels(S){
   return out;
 }
 function bnoTarget(S, h){ let v = ((num(S.robot.start.h) - num(h)) % 360 + 360) % 360; return Math.round(v * 10) / 10; }
-const STEP_KIT = {claw:'arm', lift:'arm', pan:'arm', fire:'gun', fireN:'gun', gunPan:'gun', gunHead:'gun', align:'ir', approach:'ultra', turn:'bno'};
+const STEP_KIT = {gimbal:'gimbal', claw:'arm', lift:'arm', pan:'arm', fire:'gun', fireN:'gun', gunPan:'gun', gunHead:'gun', align:'ir', approach:'ultra', turn:'bno'};
 const KIT_NAME = {arm:'手臂 ATARM', gun:'乒乓球發射器 PPGUN', ir:'IR 靠牆校正', ultra:'超音波', bno:'BNO055', gimbal:'水平雲台', ps3:'PS3 遙控手把', v7rc:'V7RC 手機遙控'};
 const DIR_NAMES = {fwd:'前', back:'後', left:'左', right:'右'};
 const g1 = v => { const r = Math.round(num(v) * 10) / 10; const z = Object.is(r, -0) ? 0 : r; return z < 0 ? '(' + z + ')' : String(z); };
@@ -1555,6 +1674,7 @@ function stepDesc(S, s){
     case 'approach': return '超音波接近到 ' + fmt(num(s.cm)) + ' cm';
     case 'fireN': return '連續發射 ' + Math.round(num(s.n, 5)) + ' 顆';
     case 'gunPan': return '砲台旋轉到 ' + fmt(num(s.deg)) + '°';
+    case 'gimbal': return '水平雲台轉到 ' + fmt(num(s.deg)) + '°';
     case 'gunHead': return '砲管仰角到 ' + fmt(num(s.deg)) + '°';
     case 'wait': return '等待 ' + fmt(num(s.ms) / 1000) + ' 秒';
     default: return TYPE_NAMES_CORE[s.type] || s.type;
@@ -1575,6 +1695,7 @@ function stepToActs(S, s, p){
     case 'fire': return [{type:'gunFire'}];
     case 'fireN': return [{type:'fireN', n:num(s.n, 5), gap:num(s.gap, 0.5)}];
     case 'gunPan': return [{type:'gunPan', deg:num(s.deg), sec}];
+    case 'gimbal': return [{type:'gimbal', deg:num(s.deg, 90)}];
     case 'gunHead': return [{type:'gunHead', deg:num(s.deg), sec}];
     case 'wall': return [{type:'wall', dir:s.dir || 'fwd', speed:num(s.speed, 120), sec:num(s.sec, 1.5), backCm:num(s.backCm, 5)}];
     case 'approach': return [{type:'approach', cm:num(s.cm, 10), speed:num(s.speed, 120), timeout:num(s.timeout, 5)}];
@@ -1887,7 +2008,7 @@ function drawPath(){
   drawRobot(S.robot.start, {stroke:gear, lw:2, dash:[5, 3], fill:gear, alpha:sel && sel.kind === 'start' ? .25 : .08});
   // 路徑點
   let idx = 0;
-  const SHORT = {claw:null, lift:null, pan:'轉爪', turn:'轉正', align:'IR', wait:'等', fire:'射', code:'碼', wall:'撞牆', approach:'接近', fireN:'連射', gunPan:'砲台', gunHead:'仰角'};
+  const SHORT = {claw:null, lift:null, pan:'轉爪', turn:'轉正', align:'IR', wait:'等', fire:'射', code:'碼', wall:'撞牆', approach:'接近', fireN:'連射', gunPan:'砲台', gunHead:'仰角', gimbal:'雲台'};
   S.steps.forEach((s, i) => {
     const ps = sim.pose[i]; if (!ps) return;
     if (s.type === 'move'){
@@ -1937,11 +2058,30 @@ function poseAtTime(t){
 }
 
 /* ---------- 到點動作工具列 ---------- */
+function hitNotice(){   // 新增或拖曳路徑點後，若會碰撞就提示
+  const s = selMove(); if (!s) return;
+  const g = sim.segs.find(x => x.stepId === s.id);
+  if (g && g.hits.length) toast(`${stepLabels(S)[S.steps.indexOf(s)]} 車身會碰到「${hitNames(S, g).join('、')}」，旁邊工具列可「加繞行點」或「移到最近可通過位置」`);
+}
 function selMove(){ if (!sel || sel.kind !== 'step') return null; const s = S.steps.find(x => x.id === sel.id); return s && s.type === 'move' ? s : null; }
 let wpDirty = true;
+const keptHits = new Set();   // 使用者選擇「保留不改」的碰撞
 function renderWpBar(s){
   const i = S.steps.indexOf(s), LB = stepLabels(S);
   $('#wpTitle').textContent = `${LB[i]} 到點動作（${fmt(s.x)}, ${fmt(s.y)}）`;
+  const segIn = sim.segs.find(g => g.stepId === s.id);
+  let jn = i + 1; while (jn < S.steps.length && S.steps[jn].type !== 'move') jn++;
+  const segOut = jn < S.steps.length ? sim.segs.find(g => g.stepId === S.steps[jn].id) : null;
+  const key = s.id + '@' + s.x + ',' + s.y;
+  const warn = $('#wpWarn');
+  if (((segIn && segIn.hits.length) || (segOut && segOut.hits.length)) && !keptHits.has(key)){
+    const parts = [];
+    if (segIn && segIn.hits.length) parts.push(`移動到 ${LB[i]} 時車身會碰到「${hitNames(S, segIn).join('、')}」`);
+    if (segOut && segOut.hits.length) parts.push(`從 ${LB[i]} 到 ${LB[jn]} 會碰到「${hitNames(S, segOut).join('、')}」`);
+    warn.innerHTML = `<b>⚠ 預計碰撞</b>：${parts.join('；')}（畫布紅色車框）。要修改路線嗎？
+      <div class="fx">${segIn && segIn.hits.length ? '<button class="btn small" data-fix="detour">加繞行點</button>' : ''}<button class="btn small" data-fix="nearest">移到最近可通過位置</button><button class="btn small" data-fix="keep">保留不改</button></div>`;
+    warn.hidden = false;
+  } else { warn.hidden = true; warn.innerHTML = ''; }
   if (document.activeElement !== $('#wpH')) $('#wpH').value = fmt(num(s.h));
   const rows = [];
   for (let j = i + 1; j < S.steps.length && S.steps[j].type !== 'move'; j++){
@@ -1952,11 +2092,12 @@ function renderWpBar(s){
     else if (a.type === 'turn') ed = `<input type="number" data-af="h" value="${num(a.h)}" step="15" title="車頭角度">`;
     else if (a.type === 'wait') ed = `<input type="number" data-af="ms" value="${num(a.ms)}" step="100" title="毫秒">`;
     else if (a.type === 'align') ed = `<select data-af="main">${GEN.IR_MAIN.map(d => `<option value="${d[0]}" ${a.main === d[0] ? 'selected' : ''}>主${d[1]}</option>`).join('')}</select>`;
+    else if (a.type === 'gimbal') ed = `<input type="number" data-af="deg" value="${num(a.deg, 90)}" min="0" max="180" title="雲台角度">`;
     else if (a.type === 'gunPan' || a.type === 'gunHead') ed = `<input type="number" data-af="deg" value="${num(a.deg)}" title="角度">`;
     else if (a.type === 'fireN') ed = `<input type="number" data-af="n" value="${num(a.n, 5)}" min="1" max="5" title="顆數">`;
     else if (a.type === 'approach') ed = `<input type="number" data-af="cm" value="${num(a.cm, 10)}" min="1" title="停止距離 cm">`;
     else if (a.type === 'wall') ed = `<select data-af="dir">${['fwd','back','left','right'].map(d => `<option value="${d}" ${a.dir === d ? 'selected' : ''}>往${DIR_NAMES[d]}</option>`).join('')}</select>`;
-    const unit = {lift:'°', pan:'°', turn:'°', wait:'ms', gunPan:'°', gunHead:'°', fireN:'顆', approach:'cm'}[a.type] || '';
+    const unit = {gimbal:'°', lift:'°', pan:'°', turn:'°', wait:'ms', gunPan:'°', gunHead:'°', fireN:'顆', approach:'cm'}[a.type] || '';
     rows.push(`<div class="ar" data-aid="${a.id}"><span class="k">${j - i}</span><span>${stepName(S, a)}</span><span>${ed}${unit ? ' ' + unit : ''}</span><button class="x" data-adel title="刪除這個動作" aria-label="刪除">✕</button></div>`);
   }
   $('#wpActs').innerHTML = rows.length ? rows.join('') : '到這個點後還沒有動作，按上方按鈕加入。';
@@ -1995,6 +2136,25 @@ $('#wpClose').onclick = () => { sel = null; renderSteps(); draw(); };
 $('#wpBar').addEventListener('pointerdown', e => e.stopPropagation());
 $('#wpBar').addEventListener('click', e => {
   const mv0 = selMove(); if (!mv0) return;
+  const fx = e.target.closest('[data-fix]');
+  if (fx){
+    const k = fx.dataset.fix, LB = stepLabels(S), lb = LB[S.steps.indexOf(mv0)];
+    if (k === 'keep'){ keptHits.add(mv0.id + '@' + mv0.x + ',' + mv0.y); wpDirty = true; placeWpBar(); return; }
+    toast('計算中…');
+    setTimeout(() => {
+      if (k === 'nearest'){
+        const q = nearestFree(S, mv0);
+        if (!q) return toast('附近 80 cm 內找不到可通過的位置，請手動調整或加繞行點');
+        snapshot(); mv0.x = q.x; mv0.y = q.y; changed(true); toast(`${lb} 已移到 (${q.x}, ${q.y})，進出這個點都不會碰撞`);
+      } else {
+        const vs = detourVia(S, mv0);
+        if (!vs) return toast('找不到可以繞過去的路線：目標點可能太靠近障礙物，請先「移到最近可通過位置」或手動調整');
+        snapshot(); const i = S.steps.indexOf(mv0); S.steps.splice(i, 0, ...vs.map(v => newMove(v.x, v.y, v.h))); sel = {kind:'step', id:mv0.id};
+        changed(true); toast(`已在 ${stepLabels(S)[S.steps.indexOf(mv0)]} 前面加入 ${vs.length} 個繞行點：` + vs.map(v => `(${v.x}, ${v.y})`).join(' → '));
+      }
+    }, 30);
+    return;
+  }
   if (e.target.closest('[data-adel]')){
     const id = e.target.closest('[data-aid]').dataset.aid;
     snapshot(); S.steps = S.steps.filter(x => x.id !== id); sel = {kind:'step', id:mv0.id}; changed(true); toast('已刪除這個動作'); return;
@@ -2110,7 +2270,7 @@ cv.addEventListener('pointerdown', e => {
     if (o && o.type === 'item') return addGrab(o);
     if (o && (o.type === 'drop' || o.type === 'trigger')) return addPlace(o);
     const L = endPose();
-    snapshot(); insertSteps([newMove(sp.x, sp.y, L.h)], S.steps.length); changed(true); return;
+    snapshot(); insertSteps([newMove(sp.x, sp.y, L.h)], S.steps.length); changed(true); hitNotice(); return;
   }
   if (mode === 'wall'){ drag = {kind:'newwall', a:sp, cur:sp}; return; }
   if (mode === 'item'){
@@ -2141,7 +2301,7 @@ cv.addEventListener('pointerup', () => {
   }
   const moved = drag.moved, kind = drag.kind;
   drag = null;
-  if (kind !== 'pan'){ if (!moved) history.pop(); changed(true); }
+  if (kind !== 'pan'){ if (!moved) history.pop(); changed(true); if (moved && kind === 'wp') hitNotice(); }
 });
 cv.addEventListener('pointerleave', () => { hover = null; $('#stCur').textContent = '–'; draw(); });
 cv.addEventListener('wheel', e => {
@@ -2231,6 +2391,7 @@ function newStep(t, L){
     case 'fire': return {id, type:'fire'};
     case 'fireN': return {id, type:'fireN', n:5, gap:0.5};
     case 'gunPan': return {id, type:'gunPan', deg:90, sec};
+    case 'gimbal': return {id, type:'gimbal', deg:num((S.kits.gimbal || {}).center, 90)};
     case 'gunHead': return {id, type:'gunHead', deg:30, sec};
     case 'code': return {id, type:'code', text:''};
   }
@@ -2254,6 +2415,7 @@ function stepFields(s){
     case 'claw': return `<div class="sb"><label class="f" style="grid-column:span 2"><span>動作</span><select data-f="close"><option value="0" ${!s.close ? 'selected' : ''}>張開（false）</option><option value="1" ${s.close ? 'selected' : ''}>夾緊（true）</option></select></label>${f('秒數(整數)', 'sec', 'step="1" min="0"')}${need('arm')}</div>`;
     case 'lift': return `<div class="sb">${f(`角度 ${S.kits.arm.down}–${S.kits.arm.up}（小＝下降）`, 'deg', 'step="1"')}${f('秒數(整數)', 'sec', 'step="1" min="0"')}${need('arm')}</div>`;
     case 'pan': return `<div class="sb">${f(`角度 ${S.kits.arm.panMin}–${S.kits.arm.panMax}`, 'deg', 'step="1"')}${f('秒數(整數)', 'sec', 'step="1" min="0"')}${need('arm')}</div>`;
+    case 'gimbal': return `<div class="sb">${f('角度（回正 ' + num((S.kits.gimbal || {}).center, 90) + '）', 'deg', 'step="1" min="0" max="180"')}<p class="hint" style="grid-column:span 3">會自動加上微調 ${num((S.kits.gimbal || {}).trim, 0)}°</p>${need('gimbal')}</div>`;
     case 'gunPan': return `<div class="sb">${f('砲台角度', 'deg', 'step="1"')}${f('秒數(整數)', 'sec', 'step="1" min="0"')}${need('gun')}</div>`;
     case 'gunHead': return `<div class="sb">${f('仰角', 'deg', 'step="1"')}${f('秒數(整數)', 'sec', 'step="1" min="0"')}${need('gun')}</div>`;
     case 'align': return `<div class="sb"><label class="f" style="grid-column:span 2"><span>主校正</span>${selIR('main', GEN.IR_MAIN)}</label><label class="f" style="grid-column:span 2"><span>次校正</span>${selIR('sub', GEN.IR_SEC)}</label>
@@ -2425,6 +2587,7 @@ const KIT_LV = {
 let kitNoteMsg = '';
 function kitInit(k){
   const K = S.kits;
+  if (k === 'gimbal'){ const G = K.gimbal || {}; return `${G.pin || 'S0'}、回正 ${num(G.center, 90)}°、微調 ${num(G.trim, 0) > 0 ? '+' : ''}${num(G.trim, 0)}°`; }
   if (k === 'arm') return `旋轉 ${K.arm.pan}、升降 ${K.arm.lift}、夾爪 ${K.arm.claw}`;
   if (k === 'gun') return `旋轉 ${K.gun.pan}、上下 ${K.gun.head}、發射 ${K.gun.shoot}`;
   if (k === 'ultra') return `Trig GPIO ${K.ultra.trig}、Echo GPIO ${K.ultra.echo}`;
@@ -2459,6 +2622,14 @@ function renderKits(){
   h += `<table class="kit"><thead><tr><th>使用</th><th>套件</th><th>初始化／腳位</th></tr></thead><tbody>` +
     GEN.KIT_KEYS.map(k => `<tr><td><input type="checkbox" data-kit="${k}" ${on[k] ? 'checked' : ''} aria-label="${GEN.KITS[k].label}"></td>
       <td>${GEN.KITS[k].label}${lv[k] ? `<br><span class="lv ${lv[k][0]}">${lv[k][1]}</span>` : ''}</td><td><small>${kitInit(k)}</small></td></tr>`).join('') + '</tbody></table>';
+  if (on.gimbal){
+    const G = K.gimbal || {}, clash = (on.arm && [K.arm.pan, K.arm.lift, K.arm.claw].includes(G.pin)) || (on.gun && [K.gun.pan, K.gun.head, K.gun.shoot].includes(G.pin));
+    h += `<div class="kbox"><h4>水平雲台（底盤）微調</h4><div class="row"><label class="f"><span>腳位</span>${servo('kits.gimbal.pin')}</label>${nin('回正角度 °', 'kits.gimbal.center', 'min="0" max="180"')}</div>
+      <label class="f"><span>微調 °（±45，雲台偏右 3° 就填 -3）</span><input type="range" min="-45" max="45" step="1" data-bind="kits.gimbal.trim" oninput="this.nextElementSibling.textContent=(this.value>0?'+':'')+this.value+'°'"><b>${num(G.trim, 0) > 0 ? '+' : ''}${num(G.trim, 0)}°</b></label>
+      <div class="row">${nin('最小角度 °', 'kits.gimbal.min', 'min="0" max="180"')}${nin('最大角度 °', 'kits.gimbal.max', 'min="0" max="180"')}</div>
+      ${clash ? `<p class="note">腳位 ${G.pin} 已被手臂／發射器使用，開機不另外回正；要獨立控制雲台請改用其他腳位。</p>` : ''}
+      <p class="hint">開機回正與「雲台轉到」動作都會加上微調並限制在範圍內（程式碼 <code>GIMBAL_TRIM</code>、<code>gimbalTo()</code>）。</p></div>`;
+  }
   if (on.arm) h += `<div class="kbox"><h4>手臂 ATARM</h4><div class="row3"><label class="f"><span>旋轉</span>${servo('kits.arm.pan')}</label><label class="f"><span>升降</span>${servo('kits.arm.lift')}</label><label class="f"><span>夾爪</span>${servo('kits.arm.claw')}</label></div>
     <div class="row">${nin('夾爪張開 °', 'kits.arm.open')}${nin('夾爪夾緊 °', 'kits.arm.close')}${nin('升降最低 °', 'kits.arm.down')}${nin('升降最高 °', 'kits.arm.up')}${nin('旋轉最小 °', 'kits.arm.panMin')}${nin('旋轉最大 °', 'kits.arm.panMax')}</div></div>`;
   if (on.gun) h += `<div class="kbox"><h4>乒乓球發射器 PPGUN</h4><div class="row3"><label class="f"><span>旋轉</span>${servo('kits.gun.pan')}</label><label class="f"><span>上下</span>${servo('kits.gun.head')}</label><label class="f"><span>發射</span>${servo('kits.gun.shoot')}</label></div></div>`;

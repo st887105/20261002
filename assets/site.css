@@ -154,6 +154,7 @@ td.c,th.c{text-align:center}
 .mt0{margin-top:0}
 .footer{border-top:1px solid var(--line);color:var(--mute);font-size:.86rem}
 .footer-in{max-width:1120px;margin:0 auto;padding:18px 16px 28px;display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:space-between}
+.footer .credit{width:100%;text-align:center;color:var(--ink);font-weight:500;letter-spacing:.02em}
 .env{font-size:.82rem;color:var(--ok)}
 dialog{border:1px solid var(--line);border-radius:14px;background:var(--card);color:var(--ink);max-width:560px;width:calc(100% - 32px);padding:20px}
 dialog::backdrop{background:rgba(10,15,25,.55)}

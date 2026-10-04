@@ -1,8 +1,10 @@
 'use strict';
 /* TU:bit V2 機器人課程網站｜共用頁首、頁尾、版本紀錄
    改版時只改 APP_VERSION 與 CHANGELOG 兩個常數。 */
-const APP_VERSION = 'v1.6.3';
+const APP_VERSION = 'v1.6.5';
 const CHANGELOG = [
+  { version: 'v1.6.5', date: '2026-10-04', desc: '每頁頁尾與路徑規劃器下方加上「車城國小資訊老師徐吉德整理製作@2026」。' },
+  { version: 'v1.6.4', date: '2026-10-04', desc: '水平雲台可微調：程式產生器與路徑規劃器勾選後可設定腳位、回正角度、微調（±45°）與可轉範圍，程式碼產生 GIMBAL_TRIM 與 gimbalTo()。路徑規劃器 v1.6.0：畫路徑時預計碰撞會提示，可一鍵加繞行點（自動找繞過障礙的最少轉折點）或移到最近可通過位置。' },
   { version: 'v1.6.3', date: '2026-10-04', desc: '程式產生器（競賽自動化）與路徑規劃器 v1.5.0 新增「自動移動速度 %」：規劃好路線後改一個數字，所有 MTC 自動移動一起變快或變慢；程式碼產生 AUTO_SPEED 常數與 autoV()，燒錄前也能直接改。' },
   { version: 'v1.6.2', date: '2026-10-04', desc: '修正：程式產生器與路徑規劃器勾選 BNO055 但感測器沒接好時，bno.start() 會讓程式卡在開機（OLED 白屏、PS3 連不上）。現在開機先偵測 I2C 0x28，找不到就略過 BNO055，轉正改為跳過，其他功能照常。路徑規劃器更新到 v1.4.1。' },
   { version: 'v1.6.1', date: '2026-10-04', desc: '2026全國競賽路徑規劃器更新到 v1.4.0：程式碼改用程式產生器的共用核心產生，套件與感測器、遙控、一鍵自動／手動模式設定與程式產生器相同；新增撞牆校正、超音波接近、連續發射與快速範本。程式產生器競賽自動化 7 個範本全部重新編譯檢查，BNO 轉正欄位補上「順時針增加」說明。' },
@@ -70,6 +72,7 @@ function renderChrome() {
         '<span>TU:bit V2 機器人課程 ' + esc(APP_VERSION) + '｜車城國小資訊教育　教學與競賽練習用</span>' +
         '<span class="env">' + (onPages ? '✅ 目前運行於 GitHub Pages 正式環境（' + esc(APP_VERSION) + '）' : '本機預覽（' + esc(APP_VERSION) + '）') + '</span>' +
         '<span>官方資源：<a href="https://trgreat.com/" target="_blank" rel="noopener">東業創新 × 鴻兔科技</a></span>' +
+        '<span class="credit">車城國小資訊老師徐吉德整理製作@2026</span>' +
       '</div>';
   }
   const dlg = document.createElement('dialog');
