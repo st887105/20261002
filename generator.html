@@ -317,6 +317,7 @@
     ps3: { mac: '20:00:00:00:63:93', stick: 'move', dpad: 'none', speed: 128, turn: 128, dead: 8, aim: 0.3, map: [] },
     v7rc: { mode: 'BT', name: 'MTC_ARM_U01', ssid: 'V7RC_AP', pass: '12345678', ch: '1', stick: 'move', dpad: 'turn', speed: 250, turn: 180, dead: 20, aim: 0.45, map: [] },
     mode: { on: false, autoKey: 'ps3:start', manKey: 'ps3:select', after: 'stay', oled: true, rumble: true },
+    auto: { speed: 100 },   // 自動移動速度 %（AUTO_SPEED）
     ir: { f: '33', b: '32', lf: '35', lb: '34', rf: '39', rb: '36', tf: 25, tb: 25, tlf: 25, tlb: 25, trf: 25, trb: 25 }
   });
   const PRESETS = {
@@ -409,9 +410,11 @@
 
   /* ---------- 程式碼產生 ---------- */
   function motorLine(move, sp) { return 'tubit.setMotorsPwm(' + MOVES[move].v.map(k => fmt(k * sp === 0 ? 0 : k * sp)).join(',') + ');'; }
+  let speedHit = false;   // 有 MTC 自動移動時，產生 AUTO_SPEED 整體速度調整
   function mtcLine(x, y, r, vm, a) {
     const ac = Math.abs(num(a, 800));
-    return 'mtc.moveSCurve(' + [fmtNum(x), fmtNum(y), fmtNum(r), plain(Math.abs(num(vm, 600))), plain(ac)].join(',') + ',-(' + plain(ac) + '),0,0);';
+    speedHit = true;
+    return 'mtc.moveSCurve(' + [fmtNum(x), fmtNum(y), fmtNum(r), 'autoV(' + plain(Math.abs(num(vm, 600))) + ')', 'autoV(' + plain(ac) + ')'].join(',') + ',-(autoV(' + plain(ac) + ')),0,0);';
   }
   function genActions(acts, ind, need) {
     const L = [];
@@ -611,6 +614,7 @@
 
   function generate() {
     normalizeMode();
+    speedHit = false;
     const need = {};
     const K = state.kits;
     const setupBody = state.trig.setup.on ? genActions(state.trig.setup.acts, '  ', need) : [];
@@ -800,6 +804,13 @@
     }
     if (need.ir) def.push('extern TuBitCore tubit;', 'TuMTC& tuirRobot() {', '    return mtc;', '}', 'TuIRAlign<TuMTC>& tuirAlign() {', '    static TuIRAlign<TuMTC> align(tubit, tuirRobot());', '    return align;', '}');
     const helpers = [];
+    if (speedHit || need.speed) {
+      const sp = clampInt((K.auto || {}).speed, 10, 200, 100);
+      helpers.push('', '// ===== 自動移動速度：規劃好路線後，改這個數字就能讓所有自動移動一起變快或變慢 =====',
+        'const int AUTO_SPEED = ' + sp + ';   // 100＝原規劃速度；80＝慢一點、停得比較準；120＝快一點（範圍 10～200）',
+        'double autoV(double v) {   // 依 AUTO_SPEED 換算 MTC 移動的最高速度與加減速度',
+        '  return v * AUTO_SPEED / 100.0;', '}');
+    }
     if (need.ultra) {
       helpers.push('', 'float frontDistCm() {   // 前方距離 (cm)，0 代表沒收到回波，視為很遠',
         '  unsigned int d = ' + uname + '.read(CM);', '  return d == 0 ? 999 : d;', '}');
@@ -984,6 +995,9 @@
       });
       if (!(R.map || []).length) h += '<span class="muted" style="width:100%">還沒有按鍵對應：可套用官方配置，或按「＋ 新增按鍵」。</span>';
     }
+    // ----- 自動移動速度 -----
+    h += '<b style="width:100%">自動移動速度（規劃後可直接調）</b>' + f('auto', 'speed', '速度 %（10～200，100＝原規劃速度）', (K.auto || {}).speed === undefined ? 100 : K.auto.speed) +
+      '<span class="muted" style="width:100%">所有「MTC 移動」與撞牆後退、夾取前進都會乘上這個比例，程式碼裡是 <code>AUTO_SPEED</code>，燒錄前也可以直接改數字。撞牆校正、超音波接近的馬達 PWM 不受影響。</span>';
     // ----- 一鍵自動／手動 -----
     const keyOpts = [['btnA', '控制板按鈕 A'], ['btnB', '控制板按鈕 B']]
       .concat(K.on.ps3 ? PS3_BTNS.map(b => ['ps3:' + b[0], 'PS3 ' + b[1]]) : [])

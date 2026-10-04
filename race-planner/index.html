@@ -171,7 +171,7 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
 <body>
 <div class="app">
 <header>
-  <div class="brand"><h1>TU:bit V2 2026全國競賽路徑規劃器</h1><span class="ver" id="ver" title="更新紀錄">v1.4.1</span><a class="ver" href="../competition.html" title="回競賽專區">← 競賽專區</a><a class="ver" href="../generator.html#race" title="程式產生器：競賽自動化">程式產生器</a></div>
+  <div class="brand"><h1>TU:bit V2 2026全國競賽路徑規劃器</h1><span class="ver" id="ver" title="更新紀錄">v1.5.0</span><a class="ver" href="../competition.html" title="回競賽專區">← 競賽專區</a><a class="ver" href="../generator.html#race" title="程式產生器：競賽自動化">程式產生器</a></div>
   <div class="hgroup">
     <select id="gameSel" aria-label="競賽項目">
       <option value="energy">物資能源爭霸戰 300×300</option>
@@ -317,6 +317,9 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
       <span class="sep"></span>
       <button class="btn primary" id="playBtn">模擬執行</button>
       <select id="speedSel" aria-label="模擬倍速"><option value="1">1×</option><option value="2" selected>2×</option><option value="4">4×</option></select>
+      <span class="sep"></span>
+      <label class="chk" title="規劃後整體調整自動移動速度；程式碼中的 AUTO_SPEED">自動速度 <input type="number" min="10" max="200" step="10" data-bind="kits.auto.speed" style="width:64px" aria-label="自動移動速度百分比"> %</label>
+      <button class="btn small" data-spd="80">80%</button><button class="btn small" data-spd="100">100%</button><button class="btn small" data-spd="120">120%</button>
     </div>
     <div id="wrap"><canvas id="cv"></canvas>
       <div id="wpBar" hidden>
@@ -405,6 +408,8 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
 </dialog>
 <dialog id="logDlg">
   <h3 style="margin-top:0">更新紀錄</h3>
+  <p><b>v1.5.0</b>（2026-10-04）新增「自動移動速度 %」：規劃好路線後，在上方工具列或「套件與感測器」改一個數字（或按 80%／100%／120%），所有路徑移動一起變快或變慢；程式碼產生 <code>AUTO_SPEED</code> 常數與 <code>autoV()</code>，燒錄前也能直接改；模擬時間同步換算。程式產生器的競賽自動化同步加入相同設定。</p>
+  <p><b>v1.4.2</b>（2026-10-04）程式碼開頭的說明會依「自動做完後」的設定顯示（停在 AUTO OK／重複執行／立刻回手動），不再一律寫「停在 AUTO OK」。</p>
   <p><b>v1.4.1</b>（2026-10-04）修正：勾選 BNO055 但感測器沒接好時，<code>bno.start()</code> 會一直等待，整支程式卡在開機（OLED 白屏、PS3 連不上）。現在開機先偵測 I2C 0x28，找不到就略過 BNO055（轉正改為跳過），其他功能照常；賽規檢查會提醒「有勾 BNO055 但路徑沒用到」。</p>
   <p><b>v1.4.0</b>（2026-10-04）與課程網站「程式產生器」同步：程式碼改用產生器的共用核心產生（寫法完全相同）；「感測元件」改為「套件與感測器設定」（與產生器相同的 8 種套件、腳位與初始化，手臂／發射器擇一、PS3／V7RC 擇一）；新增遙控設定（搖桿／方向鍵功能、速度、死區、官方按鍵配置）與一鍵自動／手動模式（START／SELECT、AUTO OK 等裁判確認、OLED、震動）；新增撞牆校正、超音波接近、連續發射、砲台旋轉／仰角與快速範本，撞牆與接近會在畫布上模擬；IR 校正改用新版積木寫法（逾時、確認時間）。移除夏普紅外線與 HuskyLens（產生器未收錄）。</p>
   <p><b>v1.3.3</b>（2026-10-03）更名為「TU:bit V2 2026全國競賽路徑規劃器」，移到課程網站競賽專區（race-planner/）；原 planner/ 網址改為程式產生器。</p>
@@ -421,7 +426,7 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
 <script>
 'use strict';
 /* ================= 基本工具 ================= */
-const VERSION = 'v1.4.1';
+const VERSION = 'v1.5.0';
 const STORE_KEY = 'tubit-planner-v1';
 const uid = () => Math.random().toString(36).slice(2, 9);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -730,6 +735,7 @@ const GEN = (function () {
     ps3: { mac: '20:00:00:00:63:93', stick: 'move', dpad: 'none', speed: 128, turn: 128, dead: 8, aim: 0.3, map: [] },
     v7rc: { mode: 'BT', name: 'MTC_ARM_U01', ssid: 'V7RC_AP', pass: '12345678', ch: '1', stick: 'move', dpad: 'turn', speed: 250, turn: 180, dead: 20, aim: 0.45, map: [] },
     mode: { on: false, autoKey: 'ps3:start', manKey: 'ps3:select', after: 'stay', oled: true, rumble: true },
+    auto: { speed: 100 },   // 自動移動速度 %（AUTO_SPEED）
     ir: { f: '33', b: '32', lf: '35', lb: '34', rf: '39', rb: '36', tf: 25, tb: 25, tlf: 25, tlb: 25, trf: 25, trb: 25 }
   });
   // ATARM.h 與 PPGUN.h 都定義了 panPin、panDeg，同一支程式同時 include 會編譯失敗，所以兩者互斥
@@ -770,9 +776,11 @@ const GEN = (function () {
 
   /* ---------- 程式碼產生 ---------- */
   function motorLine(move, sp) { return 'tubit.setMotorsPwm(' + MOVES[move].v.map(k => fmt(k * sp === 0 ? 0 : k * sp)).join(',') + ');'; }
+  let speedHit = false;   // 有 MTC 自動移動時，產生 AUTO_SPEED 整體速度調整
   function mtcLine(x, y, r, vm, a) {
     const ac = Math.abs(num(a, 800));
-    return 'mtc.moveSCurve(' + [fmtNum(x), fmtNum(y), fmtNum(r), plain(Math.abs(num(vm, 600))), plain(ac)].join(',') + ',-(' + plain(ac) + '),0,0);';
+    speedHit = true;
+    return 'mtc.moveSCurve(' + [fmtNum(x), fmtNum(y), fmtNum(r), 'autoV(' + plain(Math.abs(num(vm, 600))) + ')', 'autoV(' + plain(ac) + ')'].join(',') + ',-(autoV(' + plain(ac) + ')),0,0);';
   }
   function genActions(acts, ind, need) {
     const L = [];
@@ -979,6 +987,7 @@ const GEN = (function () {
 
   function generate() {
     normalizeMode();
+    speedHit = false;
     const need = {};
     const K = state.kits;
     const setupBody = state.trig.setup.on ? genActions(state.trig.setup.acts, '  ', need) : [];
@@ -1169,6 +1178,13 @@ const GEN = (function () {
     }
     if (need.ir) def.push('extern TuBitCore tubit;', 'TuMTC& tuirRobot() {', '    return mtc;', '}', 'TuIRAlign<TuMTC>& tuirAlign() {', '    static TuIRAlign<TuMTC> align(tubit, tuirRobot());', '    return align;', '}');
     const helpers = [];
+    if (speedHit || need.speed) {
+      const sp = clampInt((K.auto || {}).speed, 10, 200, 100);
+      helpers.push('', '// ===== 自動移動速度：規劃好路線後，改這個數字就能讓所有自動移動一起變快或變慢 =====',
+        'const int AUTO_SPEED = ' + sp + ';   // 100＝原規劃速度；80＝慢一點、停得比較準；120＝快一點（範圍 10～200）',
+        'double autoV(double v) {   // 依 AUTO_SPEED 換算 MTC 移動的最高速度與加減速度',
+        '  return v * AUTO_SPEED / 100.0;', '}');
+    }
     if (need.ultra) {
       helpers.push('', 'float frontDistCm() {   // 前方距離 (cm)，0 代表沒收到回波，視為很遠',
         '  unsigned int d = ' + uname + '.read(CM);', '  return d == 0 ? 999 : d;', '}');
@@ -1368,7 +1384,8 @@ function buildSeg(S, from, s){
   const cpd = Math.PI * S.motion.wheelD / 360;
   const k = (S.robot.w + S.robot.l) / 4;
   const D = len + k * Math.abs(rad(dh));
-  seg.time = D > 0.01 ? trapTime(D, vm*cpd, ac*cpd, ad*cpd) * 1.12 + 0.1 : 0;
+  const kf = autoFactor(S);   // 自動移動速度 %
+  seg.time = D > 0.01 ? trapTime(D, vm*cpd*kf, ac*cpd*kf, ad*cpd*kf) * 1.12 + 0.1 : 0;
   // 碰撞取樣
   const nS = Math.max(2, Math.ceil(len / 2), Math.ceil(Math.abs(dh) / 5));
   const solids = S.objects.filter(o => o.solid);
@@ -1382,6 +1399,7 @@ function buildSeg(S, from, s){
   }
   return seg;
 }
+function autoFactor(S){ return clamp(num(S.kits && S.kits.auto ? S.kits.auto.speed : 100, 100), 10, 200) / 100; }
 function clawPoint(S, p){ const F = fwdVec(p.h); return {x:p.x + F.x * S.robot.clawOff, y:p.y + F.y * S.robot.clawOff}; }
 
 /* ================= 模擬 ================= */
@@ -1578,9 +1596,9 @@ function planActs(S){
       const useStop = cm > 0 && S.kits.on.ultra;
       const cb = useStop ? ',stopNear_' + String(cm).replace('.', '_') : '';
       const line = s.curve && Math.abs(num(s.bulge)) > 0.01
-        ? `mtc.moveCurveSCurve(${g1(m.X)},${g1(m.Y)},${g1(m.Z)},${g1((S.axes.invBulge ? -1 : 1) * num(s.bulge))},${vm},${a},-(${ad}),0,0${cb});`
-        : `mtc.moveSCurve(${g1(m.X)},${g1(m.Y)},${g1(m.Z)},${vm},${a},-(${ad}),0,0${cb});`;
-      acts.push({type:'raw', need:{mtc:true}, stop:useStop ? cm : undefined, lines:[line + (useStop ? '   // 前方小於 ' + cm + ' cm 中斷' : '')]});
+        ? `mtc.moveCurveSCurve(${g1(m.X)},${g1(m.Y)},${g1(m.Z)},${g1((S.axes.invBulge ? -1 : 1) * num(s.bulge))},autoV(${vm}),autoV(${a}),-(autoV(${ad})),0,0${cb});`
+        : `mtc.moveSCurve(${g1(m.X)},${g1(m.Y)},${g1(m.Z)},autoV(${vm}),autoV(${a}),-(autoV(${ad})),0,0${cb});`;
+      acts.push({type:'raw', need:{mtc:true, speed:true}, stop:useStop ? cm : undefined, lines:[line + (useStop ? '   // 前方小於 ' + cm + ' cm 中斷' : '')]});
       if (cm > 0 && !S.kits.on.ultra) acts.push({type:'raw', lines:['// 測距中斷略過：未勾選「超音波」']});
       if (s.fix) acts.push(...(S.kits.on.bno ? [{type:'bnoTurn', deg:bnoTarget(S, to.h), tol:num(S.turn.tol, 1), timeout:num(S.turn.timeout, 3)}] : [{type:'raw', lines:['// 轉正略過：未勾選「BNO055」']}]));
       out.push({type:'group', label:`===== ${LB[i]} 移動到 (${fmt(to.x)}, ${fmt(to.y)}) 車頭 ${fmt(to.h)}° =====`, acts});
@@ -1602,7 +1620,7 @@ function genCode(S, sim){
   const gname = {energy:'物資能源爭霸戰', target:'標靶爭奪賽', custom:`自訂場地 ${S.field.W}×${S.field.H} cm`}[S.game];
   const info = [`// TU:bit V2 2026全國競賽路徑規劃器 ${VERSION}（程式寫法與課程網站「程式產生器」相同）`,
     `// 賽事：${gname}｜${ROBOTS[S.rtype].name}｜起點 (${fmt(S.robot.start.x)}, ${fmt(S.robot.start.y)}) 車頭 ${fmt(S.robot.start.h)}°｜估算 ${sim.total.toFixed(1)} 秒`,
-    S.kits.mode.on ? '// 一鍵自動流程在 runAuto()；按自動鍵執行，做完停在 AUTO OK，經裁判確認後按手動鍵切回遙控' : '// 按控制板 A 鍵執行路徑'];
+    S.kits.mode.on ? '// 一鍵自動流程在 runAuto()；按自動鍵執行，' + ({stay:'做完停在 AUTO OK，經裁判確認後按手動鍵切回遙控', repeat:'會重複執行直到按手動鍵', back:'做完立刻回手動遙控（比賽建議改成「停在自動」）'}[S.kits.mode.after] || '做完停在 AUTO OK') : '// 按控制板 A 鍵執行路徑'];
   const lines = r.code.split('\n');
   lines.splice(1, 0, ...info);
   return lines.join('\n');
@@ -1676,6 +1694,8 @@ function ruleChecks(S, sim){
     if (s.type === 'move' && num(s.stopCm) > 0 && !on.ultra) skipped.push(LB[i] + ' 測距中斷（超音波）');
   });
   const usesBno = S.steps.some(s => s.type === 'turn' || (s.type === 'move' && s.fix));
+  const spd = Math.round(autoFactor(S) * 100);
+  if (spd !== 100) push(spd > 130 ? 'warn' : 'ok', `自動移動速度 ${spd}%（AUTO_SPEED）${spd > 130 ? '：速度高時煞車距離變長、輪子容易打滑，路徑點位置可能偏移，請實車測試' : ''}`);
   if (on.bno && !usesBno) push('warn', '有勾選 BNO055，但路徑沒有用到轉正：建議取消勾選。BNO055 沒接好時開機會略過它，但少一個元件就少一個出錯點');
   if (on.bno) push('ok', '開機會先偵測 BNO055（I2C 0x28），找不到就略過，不會卡住整支程式');
   if (skipped.length) push('warn', `需要的套件沒有勾選，程式中已略過（改成註解）：${skipped.join('、')}`);
@@ -2137,6 +2157,10 @@ function zoomAt(sx, sy, f){
 $('#zoomIn').onclick = () => { const r = $('#wrap').getBoundingClientRect(); zoomAt(r.width / 2, r.height / 2, 1.3); };
 $('#zoomOut').onclick = () => { const r = $('#wrap').getBoundingClientRect(); zoomAt(r.width / 2, r.height / 2, 1 / 1.3); };
 $('#zoomFit').onclick = fit;
+$$('[data-spd]').forEach(b => b.onclick = () => {
+  snapshot(); S.kits.auto = S.kits.auto || {}; S.kits.auto.speed = num(b.dataset.spd, 100); changed(true);
+  toast('自動移動速度 ' + S.kits.auto.speed + '%，程式碼的 AUTO_SPEED 已同步');
+});
 
 function setMode(m){
   mode = m; $$('[data-mode]').forEach(b => b.classList.toggle('on', b.dataset.mode === m));
@@ -2461,6 +2485,8 @@ function renderKits(){
       <p class="hint">需要逐鍵修改或組合鍵，請用 <a href="../generator.html#adv" target="_blank" rel="noopener">程式產生器</a> 設定後把程式碼的 remoteControl() 合併。</p></div>`;
   });
   const M = K.mode;
+  h += `<div class="kbox"><h4>自動移動速度</h4><label class="f"><span>速度 %（10～200，100＝原規劃速度）</span><input type="number" min="10" max="200" step="10" data-bind="kits.auto.speed"></label>
+    <p class="hint">規劃好路線後整體調快或調慢：所有路徑移動（含弧線、測距中斷）都乘上這個比例；程式碼裡是 <code>AUTO_SPEED</code>，燒錄前也能直接改。撞牆校正與超音波接近的 PWM 不受影響。上方工具列也可以快速切換。</p></div>`;
   h += `<div class="kbox"><h4>一鍵自動／手動模式</h4><label class="chk"><input type="checkbox" data-bind="kits.mode.on"> 開啟（路徑變成「一鍵自動模式流程」）</label>`;
   if (M.on){
     h += `<div class="row" style="margin-top:6px"><label class="f"><span>自動鍵</span>${sel('kits.mode.autoKey', keyOptions())}</label><label class="f"><span>手動鍵</span>${sel('kits.mode.manKey', keyOptions())}</label></div>
@@ -2545,6 +2571,7 @@ document.addEventListener('change', e => {
   else if (el.type === 'number') v = num(el.value);
   else v = el.value;
   if (p === 'field.W' || p === 'field.H') v = clamp(Math.round(v) || 100, 30, 2000);
+  if (p === 'kits.auto.speed'){ v = clamp(Math.round(v) || 100, 10, 200); el.value = v; }
   setPath(S, p, v);
   if (p.startsWith('kits.')) { kitNoteMsg = ''; if (el.tagName === 'SELECT' || el.type === 'checkbox' || /kits\.(arm|gun|ultra|ir)\./.test(p)) renderKits(); renderSteps(); }
   changed(true);
