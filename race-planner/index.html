@@ -177,7 +177,7 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
 <body>
 <div class="app">
 <header>
-  <div class="brand"><h1>TU:bit V2 2026全國競賽路徑規劃器</h1><span class="ver" id="ver" title="更新紀錄">v1.6.2</span><a class="ver" href="../competition.html" title="回競賽專區">← 競賽專區</a><a class="ver" href="../generator.html#race" title="程式產生器：競賽自動化">程式產生器</a></div>
+  <div class="brand"><h1>TU:bit V2 2026全國競賽路徑規劃器</h1><span class="ver" id="ver" title="更新紀錄">v1.7.0</span><a class="ver" href="../competition.html" title="回競賽專區">← 競賽專區</a><a class="ver" href="../generator.html#race" title="程式產生器：競賽自動化">程式產生器</a></div>
   <div class="hgroup">
     <select id="gameSel" aria-label="競賽項目">
       <option value="energy">物資能源爭霸戰 300×300</option>
@@ -262,6 +262,8 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
           <label class="f"><span>減速度</span><input type="number" step="10" data-bind="motion.ad"></label>
         </div>
         <p class="hint">減速度輸入正值，程式會自動輸出為負值，與積木產生的 <code>-(a)</code> 一致。</p>
+        <label class="chk" style="margin-top:6px"><input type="checkbox" data-bind="motion.bnoGoto"> BNO 精準定點（建議）</label>
+        <p class="hint">勾選且「套件與感測器」有勾 BNO055 時，每個路徑點改用「前往定點」<code>goTo()</code>：以起點為原點換算座標，新版 MTC V3 用陀螺儀鎖定場地方向修正航向，到點更準。需在兔比積木線上 Arduino IDE 編譯（離線版舊函式庫沒有 <code>moveSCurveBno</code>）。弧線與測距中斷仍用一般移動，之後自動同步座標。</p>
       </div>
       <div class="sec"><h3>座標換算（請先燒錄軸向測試程式確認）</h3>
         <label class="f"><span>輸出座標系</span>
@@ -335,7 +337,7 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
           <div class="main"><button class="btn primary" data-wp="grab">在這裡夾取</button><button class="btn primary" data-wp="place">在這裡放置</button></div>
           <button class="btn" data-wp="clawClose">夾爪夾緊</button><button class="btn" data-wp="clawOpen">夾爪張開</button><button class="btn" data-wp="lift">抬升</button><button class="btn" data-wp="lower">下降</button>
           <button class="btn" data-wp="pan">旋轉夾爪</button><button class="btn" data-wp="turn">BNO 轉正</button><button class="btn" data-wp="align">IR 校正</button><button class="btn" data-wp="wall">撞牆校正</button>
-          <button class="btn" data-wp="approach">超音波接近</button><button class="btn" data-wp="fire">發射</button><button class="btn" data-wp="fireN">連續發射</button><button class="btn" data-wp="wait">等待</button>
+          <button class="btn" data-wp="approach">超音波接近</button><button class="btn" data-wp="distMove">測距移動</button><button class="btn" data-wp="fire">發射</button><button class="btn" data-wp="fireN">連續發射</button><button class="btn" data-wp="wait">等待</button>
           <button class="btn" data-wp="gunPan">砲台旋轉</button><button class="btn" data-wp="gunHead">砲管仰角</button><button class="btn" data-wp="gimbal">雲台轉到</button><button class="btn danger" data-wp="del">刪除此點</button>
         </div>
         <div class="hrow"><span>車頭</span><input type="number" step="15" id="wpH" aria-label="車頭角度">
@@ -361,6 +363,8 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
     <div class="pane on" id="paneSteps" style="padding:0">
       <div class="addbar">
         <select id="tplSel" aria-label="快速範本" style="flex:1 1 100%"><option value="">快速範本（加在選取的路徑點後面）…</option>
+          <option value="demo">範例路線：出發 → 夾取齒輪（物資能源，加在最後）</option>
+          <option value="distGrab">感測距離移動到 15 cm → 夾取</option>
           <option value="wallTurn">撞牆校正 → BNO 轉正</option>
           <option value="approachGrab">超音波接近 → 夾取 → 後退 20 cm</option>
           <option value="placeBack">放置 → 後退</option>
@@ -377,6 +381,7 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
         <button class="btn small" data-add="align">IR 校正</button>
         <button class="btn small" data-add="wall">撞牆校正</button>
         <button class="btn small" data-add="approach">超音波接近</button>
+        <button class="btn small" data-add="distMove">感測距離移動</button>
         <button class="btn small" data-add="wait">等待</button>
         <button class="btn small" data-add="fire">發射</button>
         <button class="btn small" data-add="fireN">連續發射</button>
@@ -417,6 +422,8 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
 </dialog>
 <dialog id="logDlg">
   <h3 style="margin-top:0">更新紀錄</h3>
+  <p><b>v1.7.0</b>（2026-10-05）自動化定點移動：新增「BNO 精準定點」（預設開啟，需勾 BNO055）——每個路徑點改用 <code>goTo()</code> 以起點為原點的座標前往，新版 MTC V3 用陀螺儀鎖定方向，到點更準；校正、撞牆、超音波等改變位置的步驟後自動 <code>setPos()</code> 同步座標。新增「感測距離移動」步驟（太遠前進、太近後退，停在目標距離）。預設動作為零：新方案沒有步驟，範例路線改放在「快速範本」。與程式產生器的「設定原點、前往定點＋到點動作、指定距離、感測距離移動」共用同一套寫法。</p>
+  <p><b>v1.6.3</b>（2026-10-05）物資能源爭霸戰場地依新版規則「場地規格圖」重新布置：出發區含膠帶外框 75×40、迷宮隔板（出發區下方 x35、L 形距上 60、左牆隔板距上 100、T 形距左 80 與 12.5 偏移）、齒輪物資（迷宮參考點）距左 78／距上 128、倉儲牆 5 cm 與閘門 x60～95、觸發閘門裝置緊貼倉儲上緣；藍方為 180° 對稱。舊的官方場地開啟時自動換新，自己改過的場地不動。PS3 預設配置更正：手臂車為方向鍵 ↑↓ 手臂升降、←→ 雲台轉動、△ 開爪、○ 合爪；發射車為方向鍵 ↑↓ 砲管升降、←→ 雲台轉動、△ 發射；START 自動、SELECT 手動。舊配置（12 鍵版、△／○ 組合鍵版）開啟時自動換新。</p>
   <p><b>v1.6.2</b>（2026-10-05）PS3 預設配置簡化：手臂車為按住 △＋←→ 轉雲台、按住 ○＋↑↓ 手臂升降、□ 開爪、✕ 合爪；發射車為按住 △＋←→ 轉雲台、按住 ○＋↑↓ 砲管升降、□ 發射；START 自動、SELECT 手動。其他按鍵與搖桿、速度設定收進「更多手把設定」。水平雲台與手臂／發射器的旋轉是同一顆伺服（S0），兩者改為擇一；舊版 12 鍵官方配置會自動換成新配置。</p>
   <p><b>v1.6.1</b>（2026-10-04）頁面下方加上「車城國小資訊老師徐吉德整理製作@2026」。</p>
   <p><b>v1.6.0</b>（2026-10-04）水平雲台可微調：勾選後可設定腳位、回正角度、微調（±45°）與可轉範圍，新增「雲台轉到」動作；畫路徑時若車身預計會碰到障礙物，到點動作工具列會顯示碰撞提示，可一鍵「加繞行點」或「移到最近可通過位置」；碰撞檢查只計算路段附近的障礙物，速度更快。</p>
@@ -438,7 +445,7 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
 <script>
 'use strict';
 /* ================= 基本工具 ================= */
-const VERSION = 'v1.6.2';
+const VERSION = 'v1.7.0';
 const STORE_KEY = 'tubit-planner-v1';
 const uid = () => Math.random().toString(36).slice(2, 9);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -477,26 +484,29 @@ function rot180(o, W, H){ return Object.assign({}, o, {x:W - o.x - o.w, y:H - o.
 function flipY(o, H){ return Object.assign({}, o, {y:H - o.y - o.h}); }
 
 function presetEnergy(){
+  // 依「物資能源爭霸戰競賽場地規格圖」（實施計畫附件五之一，p.17）換算：原點左下角，單位 cm；藍方為紅方 180° 旋轉
   const W = 300, H = 300, out = [];
   const red = [
-    {type:'zone', kind:'start', x:0, y:265, w:70, h:35, color:'red', label:'紅方出發區'},
+    {type:'zone', kind:'start', x:0, y:260, w:75, h:40, color:'red', label:'紅方出發區（70×35）'},
     {type:'zone', kind:'store', x:0, y:0, w:100, h:95, color:'red', label:'紅方自動化倉儲區'},
-    {type:'wall', x:0, y:93, w:60, h:2, solid:true, label:'紅方倉儲牆（上）'},
-    {type:'gate', x:60, y:93, w:40, h:2, solid:true, color:'red', label:'紅方倉儲閘門'},
-    {type:'wall', x:98, y:0, w:2, h:93, solid:true, label:'紅方倉儲牆（右）'},
-    {type:'trigger', x:0, y:96, w:14, h:14, solid:true, color:'red', label:'紅方觸發閘門裝置'},
+    {type:'wall', x:0, y:90, w:60, h:5, solid:true, label:'紅方倉儲牆（上）'},
+    {type:'gate', x:60, y:90, w:35, h:5, solid:true, color:'red', label:'紅方倉儲閘門'},
+    {type:'wall', x:95, y:0, w:5, h:95, solid:true, label:'紅方倉儲牆（右）'},
+    {type:'wall', x:0, y:0, w:5, h:90, solid:true, label:'紅方倉儲牆（左）'},
+    {type:'wall', x:5, y:0, w:90, h:5, solid:true, label:'紅方倉儲牆（下）'},
+    {type:'trigger', x:0, y:95, w:14, h:14, solid:true, color:'red', label:'紅方觸發閘門裝置'},
     {type:'drop', x:120, y:0, w:20, h:20, solid:true, color:'red', label:'紅方放置區・紅'},
     {type:'drop', x:140, y:0, w:20, h:20, solid:true, color:'green', label:'紅方放置區・綠'},
     {type:'drop', x:160, y:0, w:20, h:20, solid:true, color:'black', label:'紅方放置區・黑'},
-    {type:'wall', x:37, y:233, w:5, h:30, solid:true, label:'迷宮隔板'},
-    {type:'wall', x:80, y:230, w:30, h:5, solid:true, label:'迷宮隔板'},
-    {type:'wall', x:106, y:200, w:5, h:30, solid:true, label:'迷宮隔板'},
-    {type:'wall', x:0, y:186, w:30, h:5, solid:true, label:'迷宮隔板'},
-    {type:'wall', x:39, y:145, w:30, h:5, solid:true, label:'迷宮隔板'},
-    {type:'wall', x:69, y:133, w:5, h:30, solid:true, label:'迷宮隔板'},
-    {type:'item', shape:'circle', x:72.5, y:172.5, w:5, h:5, color:'gear', label:'紅方齒輪物資'},
+    {type:'wall', x:35, y:230, w:5, h:30, solid:true, label:'迷宮隔板（出發區下方）'},
+    {type:'wall', x:80, y:235, w:30, h:5, solid:true, label:'迷宮隔板（L 形橫）'},
+    {type:'wall', x:105, y:205, w:5, h:35, solid:true, label:'迷宮隔板（L 形直）'},
+    {type:'wall', x:0, y:195, w:30, h:5, solid:true, label:'迷宮隔板（左牆）'},
+    {type:'wall', x:45, y:147.5, w:30, h:5, solid:true, label:'迷宮隔板（T 形橫）'},
+    {type:'wall', x:75, y:135, w:5, h:30, solid:true, label:'迷宮隔板（T 形直）'},
+    {type:'item', shape:'circle', x:75.5, y:169.5, w:5, h:5, color:'gear', label:'紅方齒輪物資（迷宮參考點）'},
   ];
-  [31, 52, 72].forEach(cx => [28, 48, 68].forEach(cy =>
+  [30, 50, 70].forEach(cx => [30, 50, 70].forEach(cy =>
     red.push({type:'item', shape:'circle', x:cx - 2.5, y:cy - 2.5, w:5, h:5, color:'red', label:'太陽能物資'})));
   red.forEach(o => {
     out.push(mk(Object.assign({team:'red'}, o)));
@@ -620,15 +630,15 @@ const GEN = (function () {
     return [mapRow('left', pan, { mod, v: st, pin: 'S0' }), mapRow('right', pan, { mod, v: -st, pin: 'S0' }),
       mapRow('up', tilt, { mod, v: st, pin: 'S1' }), mapRow('down', tilt, { mod, v: -st, pin: 'S1' })];
   };
-  // PS3 預設配置（課程簡化版）：按住 △＋←→ 轉雲台、按住 ○＋↑↓ 升降，□／✕ 單鍵；START 自動、SELECT 手動在「一鍵自動／手動」設定
+  // PS3 預設配置（課程版）：方向鍵 ↑↓ 手臂升降／砲管升降、←→ 雲台轉動；△ 開爪（發射車：發射）、○ 合爪；START 自動、SELECT 手動在「一鍵自動／手動」設定
   // V7RC 配置依官方範例（01.MTC_手臂／發射器機器人_V7RC_(藍牙)BLE.tb）
   const OFFICIAL_MAP = {
-    ps3arm: () => [mapRow('left', 'panAdd', { mod: 'triangle', v: 0.1 }), mapRow('right', 'panAdd', { mod: 'triangle', v: -0.1 }),
-      mapRow('up', 'liftAdd', { mod: 'circle', v: 0.1 }), mapRow('down', 'liftAdd', { mod: 'circle', v: -0.1 }),
-      mapRow('square', 'clawOpen'), mapRow('cross', 'clawClose')],
-    ps3gun: () => [mapRow('left', 'gPanAdd', { mod: 'triangle', v: 0.1 }), mapRow('right', 'gPanAdd', { mod: 'triangle', v: -0.1 }),
-      mapRow('up', 'headAdd', { mod: 'circle', v: 0.05 }), mapRow('down', 'headAdd', { mod: 'circle', v: -0.05 }),
-      mapRow('square', 'fire')],
+    ps3arm: () => [mapRow('up', 'liftAdd', { v: 0.1 }), mapRow('down', 'liftAdd', { v: -0.1 }),
+      mapRow('left', 'panAdd', { v: 0.1 }), mapRow('right', 'panAdd', { v: -0.1 }),
+      mapRow('triangle', 'clawOpen'), mapRow('circle', 'clawClose')],
+    ps3gun: () => [mapRow('up', 'headAdd', { v: 0.05 }), mapRow('down', 'headAdd', { v: -0.05 }),
+      mapRow('left', 'gPanAdd', { v: 0.1 }), mapRow('right', 'gPanAdd', { v: -0.1 }),
+      mapRow('triangle', 'fire')],
     v7arm: () => [mapRow('1', 'liftAdd', { v: 0.45 }), mapRow('2', 'liftAdd', { v: -0.45 }), mapRow('8', 'panAdd', { v: -0.45 }), mapRow('6', 'panAdd', { v: 0.45 }),
       mapRow('7', 'clawOpen'), mapRow('5', 'clawClose')],
     v7gun: () => [mapRow('1', 'headAdd', { v: 0.45 }), mapRow('2', 'headAdd', { v: -0.45 }), mapRow('8', 'gPanAdd', { v: -0.45 }), mapRow('6', 'gPanAdd', { v: 0.45 }), mapRow('7', 'fire')]
@@ -639,7 +649,7 @@ const GEN = (function () {
     v7rc: [['move', '移動車子：左搖桿前後左右（官方）'], ['aim', '調整瞄準'], ['none', '不使用']]
   };
   const DPAD_FN = {
-    ps3: [['none', '不使用（交給按鍵對應：預設配置用 △／○＋方向鍵）'], ['move', '移動車子：↑↓ 前後、←→ 平移、L1／R1 旋轉'], ['aim', '調整瞄準：←→ 旋轉、↑↓ 升降／仰角']],
+    ps3: [['none', '不使用（交給按鍵對應：預設配置用方向鍵調手臂升降與雲台）'], ['move', '移動車子：↑↓ 前後、←→ 平移、L1／R1 旋轉'], ['aim', '調整瞄準：←→ 旋轉、↑↓ 升降／仰角']],
     v7rc: [['turn', '← → 原地旋轉（官方）'], ['move', '移動車子：↑↓ 前後、←→ 平移、↖ ↗ 旋轉'], ['aim', '調整瞄準：←→ 旋轉、↑↓ 升降／仰角'], ['none', '不使用（交給按鍵對應）']]
   };
   const aimTarget = on => on.arm ? { pan: '手臂旋轉', tilt: '手臂升降' } : on.gun ? { pan: '砲台旋轉', tilt: '砲管仰角' } : { pan: '雲台 S0 旋轉', tilt: 'S1 仰角' };
@@ -681,6 +691,10 @@ const GEN = (function () {
     irAlign: { label: 'IR 靠牆校正', level: 'adv', kit: 'ir' },
     irSingle: { label: 'IR 次校正（單一方向）', level: 'adv', kit: 'ir' },
     irShow: { label: 'OLED 顯示 IR 數值', level: 'adv', kit: 'ir' },
+    origin: { label: '設定定點原點（這裡＝0,0）', level: 'race' },
+    goXY: { label: '前往定點（座標）＋到點動作', level: 'race' },
+    goDist: { label: '前進／後退指定距離', level: 'race' },
+    distMove: { label: '感測距離移動（超音波）', level: 'race', kit: 'ultra' },
     wall: { label: '撞牆校正', level: 'race' },
     approach: { label: '超音波接近', level: 'race', kit: 'ultra' },
     grab: { label: '夾取組合', level: 'race', kit: 'arm' },
@@ -725,6 +739,10 @@ const GEN = (function () {
     irAlign: { main: 'IR_L', sec: 'IR_UP', timeout: 8, confirm: 1 },
     irSingle: { dir: 'IR_UP', timeout: 8, confirm: 1 },
     irShow: {},
+    origin: {},
+    goXY: { x: 0, y: 0, r: 0, vm: 600, a: 800, then: 'none', deg: 0 },
+    goDist: { dir: 'fwd', cm: 0, vm: 600, a: 800 },
+    distMove: { cm: 0, tol: 1, speed: 150, timeout: 5 },
     wall: { dir: 'fwd', speed: 120, sec: 1.5, backCm: 5 },
     bnoTurn: { deg: 0, tol: 1, timeout: 3 },
     approach: { cm: 10, speed: 120, timeout: 5 },
@@ -893,6 +911,46 @@ const GEN = (function () {
       } else if (a.type === 'bnoTurn') {
         need.mtc = true; need.bno = true; need.turn = true;
         L.push(ind + 'turnTo(' + plain(a.deg) + ', ' + plain(Math.max(0.1, num(a.tol, 1))) + ', ' + Math.round(Math.max(0.5, num(a.timeout, 3)) * 1000) + ');   // BNO 轉正到 ' + plain(a.deg) + '°');
+      } else if (a.type === 'origin') {
+        need.goto = true; need.mtc = true;
+        L.push(ind + 'setOrigin();   // 這裡設為定點原點 (0, 0)：車頭方向＝Y＋、右邊＝X＋');
+      } else if (a.type === 'goXY') {
+        need.goto = true; need.mtc = true; speedHit = true;
+        const vm = Math.abs(num(a.vm, 600)), ac = Math.abs(num(a.a, 800));
+        L.push(ind + 'goTo(' + fmtNum(a.x) + ', ' + fmtNum(a.y) + ', ' + fmtNum(a.r) + ', autoV(' + plain(vm) + '), autoV(' + plain(ac) + '));   // 前往定點 (' + plain(a.x) + ', ' + plain(a.y) + ')' + (num(a.r, 0) ? '，到點車頭' + (num(a.r) > 0 ? '右' : '左') + '轉 ' + plain(Math.abs(num(a.r))) + '°' : ''));
+        const AK = state.kits.arm || {}, dn = clampInt(AK.down, 0, 180, 0), up = clampInt(AK.up, 0, 180, 65);
+        const deg = clampInt(a.deg, 0, 180, 0);
+        const T = {
+          grab: ['ATARM_ClawCtrl(false,1);   // 到點：張開', 'ATARM_LiftSet(' + dn + ',1);   // 下降', 'ATARM_ClawCtrl(true,1);   // 合爪夾取', 'ATARM_LiftSet(' + up + ',1);   // 抬升'],
+          place: ['ATARM_LiftSet(' + (deg || dn) + ',1);   // 到點：下降到放置高度', 'ATARM_ClawCtrl(false,1);   // 張開放下', 'ATARM_LiftSet(' + up + ',1);   // 抬升'],
+          open: ['ATARM_ClawCtrl(false,1);   // 到點：開爪'],
+          close: ['ATARM_ClawCtrl(true,1);   // 到點：合爪'],
+          lift: ['ATARM_LiftSet(' + deg + ',1);   // 到點：手臂升降到 ' + deg + '°']
+        }[a.then];
+        if (T) { need.arm = true; T.forEach(l => L.push(ind + l)); }
+      } else if (a.type === 'goDist') {
+        need.goto = true; need.mtc = true; speedHit = true;
+        const cm = Math.abs(num(a.cm, 0)), vm = Math.abs(num(a.vm, 600)), ac = Math.abs(num(a.a, 800));
+        const v = { fwd: [0, cm, '前進'], back: [0, -cm, '後退'], left: [-cm, 0, '左移'], right: [cm, 0, '右移'] }[a.dir] || [0, cm, '前進'];
+        L.push(ind + 'goDist(' + fmtNum(v[0]) + ', ' + fmtNum(v[1]) + ', autoV(' + plain(vm) + '), autoV(' + plain(ac) + '));   // ' + v[2] + ' ' + plain(cm) + ' cm');
+      } else if (a.type === 'distMove') {
+        need.ultra = true;
+        const T = Math.max(0, num(a.cm, 0)), tol = Math.max(0.5, num(a.tol, 1)), sp = clampInt(a.speed, 40, 255, 150);
+        const mv = (k, s) => 'tubit.setMotorsPwm(' + MOVES[k].v.map(q => q === 0 ? '0' : (q > 0 ? s : '-' + s)).join(',') + ');';
+        L.push(ind + '// 感測距離移動：前後移動到前方距離 ' + plain(T) + ' cm（±' + plain(tol) + '），越接近越慢，超過會倒退修正');
+        L.push(ind + '{');
+        L.push(ind + '  unsigned long t0 = millis();');
+        L.push(ind + '  while (millis() - t0 < ' + Math.round(Math.max(0.5, num(a.timeout, 5)) * 1000) + ') {');
+        L.push(ind + '    float d = frontDistCm();');
+        L.push(ind + '    float e = d - ' + plain(T) + ';');
+        L.push(ind + '    if (fabs(e) <= ' + plain(tol) + ') break;');
+        L.push(ind + '    int sp = constrain((int)(fabs(e) * 12), 60, ' + sp + ');');
+        L.push(ind + '    if (e > 0) ' + mv('fwd', 'sp') + '   // 太遠：前進');
+        L.push(ind + '    else ' + mv('back', 'sp') + '   // 太近：後退');
+        L.push(ind + '    delay(20);');
+        L.push(ind + '  }');
+        L.push(ind + '}');
+        L.push(ind + 'tubit.stopAllMotors();');
       } else if (a.type === 'approach') {
         need.ultra = true;
         const sp = clampInt(a.speed, 0, 255, 120);
@@ -1217,6 +1275,41 @@ const GEN = (function () {
         'void gimbalTo(int deg) {   // 水平雲台轉到指定角度（自動加上微調並限制在範圍內）',
         '  tubit.setServoAngle(' + G.pin + ', constrain(deg + GIMBAL_TRIM, GIMBAL_MIN, GIMBAL_MAX));', '}');
     }
+    if (need.goto) {
+      const useBno = !!need.bno;
+      if (useBno) helpers.push('', '// ===== 新版 MTC V3：讓 MTC 讀 BNO055 角度（與兔比積木「BNO 移動」積木相同） =====',
+        'struct TuMtcBnoReadyCompat {', ' template <typename SensorT>', ' static auto read(SensorT &sensor, int) -> decltype(sensor.isReady(), bool()) {', ' return sensor.isReady();', ' }',
+        ' template <typename SensorT>', ' static bool read(SensorT &, long) {', ' return true;', ' }', '};',
+        'double readTuMtcBnoOrientationZ() {', ' return TuMtcBnoReadyCompat::read(bno, 0) ? bno.orientationZ : NAN;', '}');
+      helpers.push('', '// ===== 定點移動：以「設定定點原點」的位置為 (0,0)，當時車頭方向為 Y＋、右邊為 X＋ =====',
+        'double posX = 0, posY = 0;   // 目前位置（cm）',
+        'double headDeg = 0;   // 相對原點的車頭角度（右轉＋）',
+        'bool originSet = false;',
+        'void setOrigin() {   // 把這裡設為原點',
+        '  posX = 0; posY = 0; headDeg = 0; originSet = true;');
+      if (useBno) helpers.push('  if (bnoOK) mtc.captureBnoStartFrame();   // BNO：固定場地 X／Y 方向');
+      helpers.push('}',
+        'void setPos(double x, double y, double h) {   // 校正後重設目前位置與車頭角度',
+        '  posX = x; posY = y; headDeg = h;',
+        '}',
+        'void goTo(double x, double y, double rot, double vm, double a) {   // 前往定點 (x, y)，途中車頭轉 rot 度（右轉＋）',
+        '  if (!originSet) setOrigin();',
+        '  double dx = x - posX, dy = y - posY;');
+      if (useBno) helpers.push('  if (bnoOK) {',
+        '    mtc.moveSCurveBno(dx, dy, rot, vm, a, -a, 0, 0);   // BNO 精準移動：X／Y 依原點方向固定，陀螺儀修正航向',
+        '  } else {');
+      const ind2 = useBno ? '    ' : '  ';
+      helpers.push(ind2 + 'double h = headDeg * PI / 180.0;   // 換算成目前車身方向',
+        ind2 + 'mtc.moveSCurve(dx * cos(h) - dy * sin(h), dx * sin(h) + dy * cos(h), -rot, vm, a, -a, 0, 0);');
+      if (useBno) helpers.push('  }');
+      helpers.push('  posX = x; posY = y; headDeg += rot;', '}',
+        'void goDist(double bx, double by, double vm, double a) {   // 依目前車頭方向移動（右＋、前＋），並更新位置',
+        '  mtc.moveSCurve(bx, by, 0, vm, a, -a, 0, 0);',
+        '  double h = headDeg * PI / 180.0;',
+        '  posX += bx * cos(h) + by * sin(h);',
+        '  posY += -bx * sin(h) + by * cos(h);',
+        '}');
+    }
     if (speedHit || need.speed) {
       const sp = clampInt((K.auto || {}).speed, 10, 200, 100);
       helpers.push('', '// ===== 自動移動速度：規劃好路線後，改這個數字就能讓所有自動移動一起變快或變慢 =====',
@@ -1246,6 +1339,11 @@ const GEN = (function () {
     if (need.oled) setups.push('  display.begin(0x3C, true);');
     if (need.zh) setups.push('  u8g2.begin(display);');
     if (need.bno) setups.push('  bnoOK = bnoFound();', '  if (bnoOK) bno.start();   // 找到 BNO055 才啟動', '  else Serial.println("BNO055 not found (I2C 0x28): check SDA/SCL/VIN/GND");');
+    if (need.bno && need.goto) setups.push('  if (bnoOK) {   // 新版 MTC V3：定點移動用 BNO 修正航向',
+      '    unsigned long tuMtcBnoWaitStart = millis();',
+      '    while (!TuMtcBnoReadyCompat::read(bno, 0) && millis() - tuMtcBnoWaitStart < 5000UL) delay(20);',
+      '    mtc.setYawReader(readTuMtcBnoOrientationZ);', '    mtc.setYawDirection(1);',
+      '    mtc.setHeadingPid(3.0, 0.0, 0.03, 120.0, 60.0);', '    mtc.setHeadingSettle(1.0, 100, 1500);', '  }');
     if (need.ps3) {
       const mac = String(K.ps3.mac || '').trim();
       setups.push(/^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$/.test(mac) && mac !== '00:00:00:00:00:00' ? '  Ps3.begin(' + cStr(mac) + ');   // 改成自己手把記住的 MAC' : '  Ps3.begin();');
@@ -1303,12 +1401,12 @@ function defaultKitsFor(robot){
 function demoSteps(){
   const mv = (x, y, h) => ({id:uid(), type:'move', x, y, h, curve:false, bulge:0, vm:'', a:'', ad:'', stopCm:0});
   return [
-    {id:uid(), type:'align', main:'IR_R', sub:'IR_BACK', timeout:8, confirm:1, reset:true, rx:20, ry:282, rh:180},
-    mv(20, 215, 180),
-    mv(55, 205, 180),
+    {id:uid(), type:'align', main:'IR_R', sub:'IR_BACK', timeout:8, confirm:1, reset:true, rx:20, ry:280, rh:180},
+    mv(60, 280, 180),
+    mv(60, 215, 180),
     {id:uid(), type:'claw', close:false, sec:1},
     {id:uid(), type:'lift', deg:0, sec:1},
-    mv(75, 195, 180),
+    mv(78, 192, 180),
     {id:uid(), type:'claw', close:true, sec:1},
     {id:uid(), type:'lift', deg:65, sec:1},
   ];
@@ -1320,14 +1418,14 @@ function newState(game, robot, W, H){
   const f = game === 'energy' ? presetEnergy() : game === 'target' ? presetTarget() : presetCustom(W || 200, H || 200);
   const st = {
     v:1, kv:2, game, rtype:robot, field:{W:f.W, H:f.H}, objects:f.objects,
-    robot: {w:28, l:28, clawOff:20, start: game === 'energy' ? {x:35, y:282, h:180} : {x:Math.round(f.W / 2), y:30, h:0}},
-    motion:{vm:600, a:800, ad:800, wheelD:6},
+    robot: {w:28, l:28, clawOff:20, start: game === 'energy' ? {x:37, y:280, h:180} : {x:Math.round(f.W / 2), y:30, h:0}},
+    motion:{vm:600, a:800, ad:800, wheelD:6, bnoGoto:true},
     axes:{frame:'body', map:'xr_yf', invX:false, invY:false, zCW:false, invBulge:false},
     arm:{liftDown:0, liftUp:65, liftPlace:20, sec:1},
     turn:{tol:1, timeout:3},
     kits: defaultKitsFor(robot),
     ui:{grid1:true, ghosts:true, sweep:true, snap:'1', snap90:true, backoff:10, color: game === 'energy' ? 'green' : 'yellow'},
-    steps: game === 'energy' && robot === 'energyA' ? demoSteps() : [],
+    steps: [],   // 預設動作為零：範例路線在「快速範本」
   };
   if (/Shooter/.test(robot)){ st.robot.w = 24; st.robot.l = 24; }
   return st;
@@ -1363,8 +1461,10 @@ function upgradeState(o){
   // 預設套件結構補齊（產生器新增欄位時）
   const fill = (a, b) => { for (const k in b){ if (a[k] === undefined) a[k] = clone(b[k]); else if (b[k] && typeof b[k] === 'object' && !Array.isArray(b[k]) && a[k] && typeof a[k] === 'object') fill(a[k], b[k]); } };
   ['robot','motion','axes','arm','turn','kits','ui'].forEach(k => { if (!o[k]) o[k] = clone(d[k]); else fill(o[k], d[k]); });
-  // 舊版 PS3 官方配置（12 個按鍵）自動換成新版簡化配置；自己改過的配置不動
-  (function () { const P = o.kits.ps3; const m = P && P.map; if (Array.isArray(m) && m.length === 12 && m.some(r => r.btn === 'l2' && r.act === 'angle')) P.map = m.some(r => r.act === 'fire') ? GEN.OFFICIAL_MAP.ps3gun() : GEN.OFFICIAL_MAP.ps3arm(); })();
+  // 舊版物資能源場地（v1.6.2 以前的座標）自動換成依規格圖重新布置的場地；自己改過的場地不動
+  if (o.game === 'energy' && (o.objects || []).some(ob => ob.type === 'wall' && ob.x === 37 && ob.y === 233 && ob.w === 5)) o.objects = presetEnergy().objects;
+  // 舊版 PS3 預設配置（12 鍵官方版、△／○ 組合鍵版）自動換成目前的預設配置；自己改過的配置不動
+  (function () { const P = o.kits.ps3; const m = P && P.map; if (Array.isArray(m) && ((m.length === 12 && m.some(r => r.btn === 'l2' && r.act === 'angle')) || (m.length <= 6 && m.some(r => r.mod === 'triangle' && r.btn === 'left')))) P.map = m.some(r => r.act === 'fire') ? GEN.OFFICIAL_MAP.ps3gun() : GEN.OFFICIAL_MAP.ps3arm(); })();
   o.v = 1; return o;
 }
 
@@ -1581,6 +1681,17 @@ function simulate(S){
         }
       }
       p = Object.assign({}, seg.to);
+    } else if (s.type === 'distMove'){
+      const from = Object.assign({}, p), cm = Math.max(0, num(s.cm, 0));
+      const so = S.objects.filter(o => o.solid);
+      const blockedAt = q => frontBlocked(S, q, so, cm);
+      let r;
+      if (blockedAt(p)) r = pushPose(S, p, 'back', (q, sol) => hitsAny(S, q, sol) || !blockedAt(q), 250);   // 太近：後退到剛好不擋
+      else r = pushPose(S, p, 'fwd', (q, sol) => hitsAny(S, q, sol) || blockedAt(q), 250);   // 太遠：前進到距離
+      if (!r.found) res.noTarget.push(s.id);
+      const to = r.pose; const sg = straightSeg(from, to); res.pseudo.push(sg);
+      dur = 0.3 + Math.hypot(to.x - from.x, to.y - from.y) / Math.max(5, num(s.speed, 150) / 5);
+      res.timeline.push({kind:'move', seg:sg, t0:res.total, dur}); p = to;
     } else if (s.type === 'wall' || s.type === 'approach'){
       const from = Object.assign({}, p);
       let r;
@@ -1658,7 +1769,7 @@ function mapAxes(S, from, to){
   return {X:a, Y:b, Z:z};
 }
 const TYPE_NAMES_CORE = {turn:'BNO 轉正', move:'移動', claw:'夾爪', lift:'抬升', pan:'旋轉夾爪', align:'IR 校正', wait:'等待', fire:'發射乒乓球',
-  code:'自訂程式', gimbal:'水平雲台', wall:'撞牆校正', approach:'超音波接近', fireN:'連續發射', gunPan:'砲台旋轉', gunHead:'砲管仰角'};
+  code:'自訂程式', gimbal:'水平雲台', distMove:'感測距離移動', wall:'撞牆校正', approach:'超音波接近', fireN:'連續發射', gunPan:'砲台旋轉', gunHead:'砲管仰角'};
 function liftName(S, s){ return num(s.deg) <= num(S.arm.liftDown, 0) ? '下降' : '抬升'; }
 function stepName(S, s){ return s.type === 'lift' ? liftName(S, s) : TYPE_NAMES_CORE[s.type]; }
 function stepLabels(S){
@@ -1670,7 +1781,7 @@ function stepLabels(S){
   return out;
 }
 function bnoTarget(S, h){ let v = ((num(S.robot.start.h) - num(h)) % 360 + 360) % 360; return Math.round(v * 10) / 10; }
-const STEP_KIT = {gimbal:'gimbal', claw:'arm', lift:'arm', pan:'arm', fire:'gun', fireN:'gun', gunPan:'gun', gunHead:'gun', align:'ir', approach:'ultra', turn:'bno'};
+const STEP_KIT = {distMove:'ultra', gimbal:'gimbal', claw:'arm', lift:'arm', pan:'arm', fire:'gun', fireN:'gun', gunPan:'gun', gunHead:'gun', align:'ir', approach:'ultra', turn:'bno'};
 const KIT_NAME = {arm:'手臂 ATARM', gun:'乒乓球發射器 PPGUN', ir:'IR 靠牆校正', ultra:'超音波', bno:'BNO055', gimbal:'水平雲台', ps3:'PS3 遙控手把', v7rc:'V7RC 手機遙控'};
 const DIR_NAMES = {fwd:'前', back:'後', left:'左', right:'右'};
 const g1 = v => { const r = Math.round(num(v) * 10) / 10; const z = Object.is(r, -0) ? 0 : r; return z < 0 ? '(' + z + ')' : String(z); };
@@ -1683,6 +1794,7 @@ function stepDesc(S, s){
     case 'align': return 'IR 靠牆校正' + (s.reset ? `，校正後位置 (${fmt(num(s.rx))}, ${fmt(num(s.ry))}) ${fmt(num(s.rh))}°` : '');
     case 'wall': return '撞牆校正：往' + (DIR_NAMES[s.dir] || '前') + '推牆';
     case 'approach': return '超音波接近到 ' + fmt(num(s.cm)) + ' cm';
+    case 'distMove': return '感測距離移動到 ' + fmt(num(s.cm)) + ' cm（±' + fmt(num(s.tol, 1)) + '）';
     case 'fireN': return '連續發射 ' + Math.round(num(s.n, 5)) + ' 顆';
     case 'gunPan': return '砲台旋轉到 ' + fmt(num(s.deg)) + '°';
     case 'gimbal': return '水平雲台轉到 ' + fmt(num(s.deg)) + '°';
@@ -1710,15 +1822,33 @@ function stepToActs(S, s, p){
     case 'gunHead': return [{type:'gunHead', deg:num(s.deg), sec}];
     case 'wall': return [{type:'wall', dir:s.dir || 'fwd', speed:num(s.speed, 120), sec:num(s.sec, 1.5), backCm:num(s.backCm, 5)}];
     case 'approach': return [{type:'approach', cm:num(s.cm, 10), speed:num(s.speed, 120), timeout:num(s.timeout, 5)}];
+    case 'distMove': return [{type:'distMove', cm:num(s.cm, 0), tol:num(s.tol, 1), speed:num(s.speed, 150), timeout:num(s.timeout, 5)}];
     case 'code': return [{type:'raw', lines:String(s.text || '').split('\n')}];
   }
   return [];
+}
+function useGoto(S){ return !!(S.motion.bnoGoto && S.kits.on.bno); }
+function startFrame(S, p){   // 畫布座標 → 以起點為原點的定點座標（起點車頭＝Y＋、右邊＝X＋；車頭右轉＋）
+  const s0 = S.robot.start, h0 = rad(num(s0.h));
+  const dx = p.x - num(s0.x), dy = p.y - num(s0.y);
+  return {x:dx * Math.cos(h0) + dy * Math.sin(h0), y:-dx * Math.sin(h0) + dy * Math.cos(h0), h:normDeg(num(s0.h) - num(p.h))};
 }
 function planActs(S){
   const LB = stepLabels(S), out = [];
   let p = Object.assign({}, S.robot.start);
   const sim0 = simulate(S);
+  const G = useGoto(S);
+  if (G && S.steps.some(s => s.type === 'move')) out.push({type:'group', label:'起點設為定點原點（BNO 精準定點：之後每個路徑點都用座標前往）', acts:[{type:'raw', need:{goto:true, mtc:true}, lines:['setOrigin();']}]});
   S.steps.forEach((s, i) => {
+    if (s.type === 'move' && G && !(s.curve && Math.abs(num(s.bulge)) > 0.01) && !(num(s.stopCm) > 0 && S.kits.on.ultra)){
+      const to = {x:num(s.x), y:num(s.y), h:num(s.h)};
+      const q = startFrame(S, to), rot = normDeg(-(to.h - p.h));
+      const vm = Math.abs(num(s.vm, S.motion.vm) || S.motion.vm), a = Math.abs(num(s.a, S.motion.a) || S.motion.a);
+      const acts = [{type:'raw', need:{goto:true, mtc:true, speed:true}, lines:[`goTo(${g1(q.x)}, ${g1(q.y)}, ${g1(rot)}, autoV(${vm}), autoV(${a}));   // 定點座標 (${fmt(q.x)}, ${fmt(q.y)})${rot ? '，車頭' + (rot > 0 ? '右' : '左') + '轉 ' + fmt(Math.abs(rot)) + '°' : ''}`]}];
+      if (s.fix) acts.push(...(S.kits.on.bno ? [{type:'bnoTurn', deg:bnoTarget(S, to.h), tol:num(S.turn.tol, 1), timeout:num(S.turn.timeout, 3)}] : []));
+      out.push({type:'group', label:`===== ${LB[i]} 前往 (${fmt(to.x)}, ${fmt(to.y)}) 車頭 ${fmt(to.h)}° =====`, acts});
+      p = to; return;
+    }
     if (s.type === 'move'){
       const to = {x:num(s.x), y:num(s.y), h:num(s.h)};
       const m = mapAxes(S, p, to);
@@ -1733,12 +1863,20 @@ function planActs(S){
       acts.push({type:'raw', need:{mtc:true, speed:true}, stop:useStop ? cm : undefined, lines:[line + (useStop ? '   // 前方小於 ' + cm + ' cm 中斷' : '')]});
       if (cm > 0 && !S.kits.on.ultra) acts.push({type:'raw', lines:['// 測距中斷略過：未勾選「超音波」']});
       if (s.fix) acts.push(...(S.kits.on.bno ? [{type:'bnoTurn', deg:bnoTarget(S, to.h), tol:num(S.turn.tol, 1), timeout:num(S.turn.timeout, 3)}] : [{type:'raw', lines:['// 轉正略過：未勾選「BNO055」']}]));
+      if (G){ const q = startFrame(S, to); acts.push({type:'raw', need:{goto:true}, lines:[`setPos(${g1(q.x)}, ${g1(q.y)}, ${g1(q.h)});   // 弧線／測距中斷用一般移動，之後同步定點座標`]}); }
       out.push({type:'group', label:`===== ${LB[i]} 移動到 (${fmt(to.x)}, ${fmt(to.y)}) 車頭 ${fmt(to.h)}° =====`, acts});
       p = to;
     } else {
-      out.push({type:'group', label:`${LB[i]} ${stepDesc(S, s)}`, acts:stepToActs(S, s, p)});
-      const ps = sim0.pose[i]; if (ps) p = Object.assign({}, ps.after);
+      const acts = stepToActs(S, s, p);
+      const ps = sim0.pose[i];
+      const before = Object.assign({}, p);
+      if (ps) p = Object.assign({}, ps.after);
       if (s.type === 'align' && s.reset) p = {x:num(s.rx), y:num(s.ry), h:num(s.rh)};
+      const moved = Math.hypot(p.x - before.x, p.y - before.y) > 0.05 || Math.abs(normDeg(p.h - before.h)) > 0.05;
+      if (G && moved && S.steps.slice(0, i).some(x => x.type === 'move') || (G && moved && S.steps.some(x => x.type === 'move'))){
+        const q = startFrame(S, p); acts.push({type:'raw', need:{goto:true}, lines:[`setPos(${g1(q.x)}, ${g1(q.y)}, ${g1(q.h)});   // 位置已改變，同步定點座標`]});
+      }
+      out.push({type:'group', label:`${LB[i]} ${stepDesc(S, s)}`, acts});
     }
   });
   return out;
@@ -1826,6 +1964,7 @@ function ruleChecks(S, sim){
     if (s.type === 'move' && num(s.stopCm) > 0 && !on.ultra) skipped.push(LB[i] + ' 測距中斷（超音波）');
   });
   const usesBno = S.steps.some(s => s.type === 'turn' || (s.type === 'move' && s.fix));
+  if (S.steps.some(s => s.type === 'move')) push('ok', useGoto(S) ? '移動方式：BNO 精準定點（goTo，起點為原點；需在兔比積木線上 Arduino IDE 編譯）' : (S.motion.bnoGoto ? '移動方式：一般 MTC 移動（要用 BNO 精準定點請在「套件與感測器」勾 BNO055）' : '移動方式：一般 MTC 移動'));
   const spd = Math.round(autoFactor(S) * 100);
   if (spd !== 100) push(spd > 130 ? 'warn' : 'ok', `自動移動速度 ${spd}%（AUTO_SPEED）${spd > 130 ? '：速度高時煞車距離變長、輪子容易打滑，路徑點位置可能偏移，請實車測試' : ''}`);
   if (on.bno && !usesBno) push('warn', '有勾選 BNO055，但路徑沒有用到轉正：建議取消勾選。BNO055 沒接好時開機會略過它，但少一個元件就少一個出錯點');
@@ -2019,7 +2158,7 @@ function drawPath(){
   drawRobot(S.robot.start, {stroke:gear, lw:2, dash:[5, 3], fill:gear, alpha:sel && sel.kind === 'start' ? .25 : .08});
   // 路徑點
   let idx = 0;
-  const SHORT = {claw:null, lift:null, pan:'轉爪', turn:'轉正', align:'IR', wait:'等', fire:'射', code:'碼', wall:'撞牆', approach:'接近', fireN:'連射', gunPan:'砲台', gunHead:'仰角', gimbal:'雲台'};
+  const SHORT = {claw:null, lift:null, pan:'轉爪', turn:'轉正', align:'IR', wait:'等', fire:'射', code:'碼', wall:'撞牆', approach:'接近', fireN:'連射', gunPan:'砲台', gunHead:'仰角', gimbal:'雲台', distMove:'測距'};
   S.steps.forEach((s, i) => {
     const ps = sim.pose[i]; if (!ps) return;
     if (s.type === 'move'){
@@ -2106,9 +2245,10 @@ function renderWpBar(s){
     else if (a.type === 'gimbal') ed = `<input type="number" data-af="deg" value="${num(a.deg, 90)}" min="0" max="180" title="雲台角度">`;
     else if (a.type === 'gunPan' || a.type === 'gunHead') ed = `<input type="number" data-af="deg" value="${num(a.deg)}" title="角度">`;
     else if (a.type === 'fireN') ed = `<input type="number" data-af="n" value="${num(a.n, 5)}" min="1" max="5" title="顆數">`;
+    else if (a.type === 'distMove') ed = `<input type="number" data-af="cm" value="${num(a.cm, 0)}" min="0" title="目標距離 cm">`;
     else if (a.type === 'approach') ed = `<input type="number" data-af="cm" value="${num(a.cm, 10)}" min="1" title="停止距離 cm">`;
     else if (a.type === 'wall') ed = `<select data-af="dir">${['fwd','back','left','right'].map(d => `<option value="${d}" ${a.dir === d ? 'selected' : ''}>往${DIR_NAMES[d]}</option>`).join('')}</select>`;
-    const unit = {gimbal:'°', lift:'°', pan:'°', turn:'°', wait:'ms', gunPan:'°', gunHead:'°', fireN:'顆', approach:'cm'}[a.type] || '';
+    const unit = {distMove:'cm', gimbal:'°', lift:'°', pan:'°', turn:'°', wait:'ms', gunPan:'°', gunHead:'°', fireN:'顆', approach:'cm'}[a.type] || '';
     rows.push(`<div class="ar" data-aid="${a.id}"><span class="k">${j - i}</span><span>${stepName(S, a)}</span><span>${ed}${unit ? ' ' + unit : ''}</span><button class="x" data-adel title="刪除這個動作" aria-label="刪除">✕</button></div>`);
   }
   $('#wpActs').innerHTML = rows.length ? rows.join('') : '到這個點後還沒有動作，按上方按鈕加入。';
@@ -2398,6 +2538,7 @@ function newStep(t, L){
     case 'align': return {id, type:'align', main:'IR_L', sub:'IR_UP', timeout:8, confirm:1, reset:false, rx:Math.round(L.x), ry:Math.round(L.y), rh:L.h};
     case 'wall': return {id, type:'wall', dir:'fwd', speed:120, sec:1.5, backCm:5};
     case 'approach': return {id, type:'approach', cm:10, speed:120, timeout:5};
+    case 'distMove': return {id, type:'distMove', cm:0, tol:1, speed:150, timeout:5};
     case 'wait': return {id, type:'wait', ms:500};
     case 'fire': return {id, type:'fire'};
     case 'fireN': return {id, type:'fireN', n:5, gap:0.5};
@@ -2436,6 +2577,7 @@ function stepFields(s){
     case 'wall': return `<div class="sb"><label class="f"><span>推牆方向</span><select data-f="dir">${['fwd','back','left','right'].map(d => `<option value="${d}" ${s.dir === d ? 'selected' : ''}>${DIR_NAMES[d]}</option>`).join('')}</select></label>
       ${f('PWM 0–255', 'speed', 'step="10" min="0" max="255"')}${f('推牆 秒', 'sec', 'step="0.5" min="0"')}${f('退開 cm', 'backCm', 'step="1" min="0"')}
       <p class="hint wide">低速推牆讓車身貼齊牆面，畫布會模擬推到牆並把車頭對齊 90° 倍數。</p></div>`;
+    case 'distMove': return `<div class="sb">${f('目標距離 cm', 'cm', 'step="1" min="0"')}${f('誤差 ± cm', 'tol', 'step="0.5" min="0.5"')}${f('最高 PWM', 'speed', 'step="10" min="40" max="255"')}${f('逾時 秒', 'timeout', 'step="0.5" min="0.5"')}<p class="hint wide">太遠前進、太近後退，越接近越慢，停在目標距離（模擬依前方障礙物推算）。</p>${need('ultra')}</div>`;
     case 'approach': return `<div class="sb">${f('停在 cm', 'cm', 'step="1" min="1"')}${f('PWM 0–255', 'speed', 'step="10" min="0" max="255"')}${f('逾時 秒', 'timeout', 'step="0.5" min="0.5"')}${need('ultra')}</div>`;
     case 'fireN': return `<div class="sb">${f('顆數 1–5', 'n', 'step="1" min="1" max="5"')}${f('間隔 秒', 'gap', 'step="0.1" min="0"')}${need('gun')}</div>`;
     case 'wait': return `<div class="sb">${f('毫秒', 'ms', 'step="100" min="0"')}</div>`;
@@ -2508,11 +2650,13 @@ $$('[data-add]').forEach(b => b.onclick = () => {
 $('#tplSel').onchange = e => {
   const k = e.target.value; e.target.value = ''; if (!k) return;
   const mv = selMove();
-  let at = mv ? groupEnd(mv.id) + 1 : S.steps.length;
+  let at = mv && k !== 'demo' ? groupEnd(mv.id) + 1 : S.steps.length;
   const L = mv ? {x:num(mv.x), y:num(mv.y), h:num(mv.h)} : endPose();
   const F = fwdVec(L.h);
   const back = cm => newMove(L.x - F.x * cm, L.y - F.y * cm, L.h);
   const arr = {
+    demo: () => demoSteps(),
+    distGrab: () => [newStep('clawOpen', L), newStep('lower', L), Object.assign(newStep('distMove', L), {cm:15}), newStep('clawClose', L), newStep('lift', L)],
     wallTurn: () => [newStep('wall', L), newStep('turn', L)],
     approachGrab: () => [newStep('clawOpen', L), newStep('lower', L), newStep('approach', L), newStep('clawClose', L), newStep('lift', L), back(20)],
     placeBack: () => [newStep('place', L), newStep('clawOpen', L), newStep('lift', L), back(num(S.ui.backoff, 10))],

@@ -103,7 +103,7 @@
         <tr><td>BNO055</td><td><code>#include &lt;EasyBNO055_ESP.h&gt;</code>、<code>EasyBNO055_ESP bno;</code>、<code>bno.start();</code>、<code>mtc.bnoMoveClosed(0,0,誤差×係數,bno.orientationZ);</code></td></tr>
         <tr><td>OLED 文字</td><td><code>Adafruit_SH1106G display(128, 64, &amp;Wire);</code>、<code>display.print(...)</code></td></tr>
         <tr><td>MTC Robot</td><td><code>mtc.driveVectorOpen(X,Y,R);</code>、<code>mtc.angleToXY(角度,速度);</code>、<code>mtc.moveCurveSCurve(X,Y,旋轉,弧度,最高速,加速,-(加速),0,0);</code>、<code>mtc.setMtcParameters(6,3,20,20);</code></td></tr>
-        <tr><td>遙控移動與按鍵對應</td><td>自動產生 <code>remoteControl()</code>。「搖桿控制」與「方向鍵控制」各自選功能：移動車子、調整瞄準（手臂／砲台／雲台，產生 <code>aimPan()</code>、<code>aimTilt()</code>）或不使用，兩者可同時移動車子（數值相加後限制在 ±255）；速度、旋轉速度、瞄準速度、死區寫成 <code>DRIVE_SPEED</code>、<code>TURN_SPEED</code>、<code>AIM_SPEED</code>、<code>DEADZONE</code> 常數；V7RC 右側 8 方向鍵用 <code>v7Key(n)</code> 判斷；按鍵對應可一鍵套用手臂車／發射車配置：PS3 為課程簡化版（按住 △＋←→ 轉雲台、按住 ○＋↑↓ 手臂升降／砲管仰角、□ 開爪或發射、✕ 合爪，START 自動、SELECT 手動），V7RC 依官方 .tb 範例；其他按鍵在「更多手把設定」新增</td></tr>
+        <tr><td>遙控移動與按鍵對應</td><td>自動產生 <code>remoteControl()</code>。「搖桿控制」與「方向鍵控制」各自選功能：移動車子、調整瞄準（手臂／砲台／雲台，產生 <code>aimPan()</code>、<code>aimTilt()</code>）或不使用，兩者可同時移動車子（數值相加後限制在 ±255）；速度、旋轉速度、瞄準速度、死區寫成 <code>DRIVE_SPEED</code>、<code>TURN_SPEED</code>、<code>AIM_SPEED</code>、<code>DEADZONE</code> 常數；V7RC 右側 8 方向鍵用 <code>v7Key(n)</code> 判斷；按鍵對應可一鍵套用手臂車／發射車配置：PS3 為課程版（方向鍵 ↑↓ 手臂升降／砲管升降、←→ 雲台轉動，△ 開爪或發射、○ 合爪，START 自動、SELECT 手動），V7RC 依官方 .tb 範例；其他按鍵在「更多手把設定」新增</td></tr>
         <tr><td>PS3 組合鍵</td><td>按鍵對應每一列可設「按住」某鍵（例如按住 ○ 時，方向鍵改調雲台／砲台／手臂），產生 <code>shiftHeld</code> 判斷；沒有組合鍵的列在按住時不會動作。伺服累加用 <code>servoDeg[]</code> 記住目前角度。「PS3 按鍵被按下時」也能設組合鍵，且會等放開按鍵才結束，避免一直重複觸發</td></tr>
         <tr><td>PS3 手把</td><td><code>#include &lt;Ps3Controller.h&gt;</code>、<code>Ps3.begin("MAC");</code>、<code>Ps3.isConnected()</code>、<code>Ps3.data.analog.stick.lx</code>、<code>Ps3.data.button.cross</code>、<code>Ps3.setRumble(強度,毫秒);</code></td></tr>
         <tr><td>V7RC</td><td><code>#include &lt;V7RC_BT.h&gt;</code>、<code>V7RC_BT v7rc;</code>、<code>v7rc.setupBLE("名稱");</code>、<code>v7rc.connect()</code>、<code>v7rc.setMode("SRT")</code>、<code>v7rc.readSRTdata(1~4)</code>（Wi-Fi 版為 <code>V7RC_WIFI</code>、<code>v7rc.setupWIFI(ssid, password, channel);</code>）</td></tr>
@@ -122,7 +122,7 @@
   const LEVELS = {
     basic: { label: '基礎篇', desc: '只用控制板本身：按鈕、四顆馬達、MTC 精準移動、伺服馬達、OLED、等待。' },
     adv: { label: '進階篇', desc: '加上套件與感測器：水平雲台、手臂 ATARM、發射器 PPGUN、超音波、BNO055、PS3 手把、V7RC 手機遙控、MTC Robot 移動、IR 靠牆校正。先在「套件與感測器設定」勾選要用的項目。' },
-    race: { label: '競賽自動化', desc: '比賽常用的自動化組合：撞牆校正、BNO 轉正、超音波接近、夾取／放置組合、連續發射。' }
+    race: { label: '競賽自動化', desc: '比賽常用的自動化組合：設定原點、前往定點（座標）＋到點升降／開爪／合爪、前進或後退指定距離、感測距離移動、撞牆校正、BNO 轉正、超音波接近、夾取／放置組合、連續發射。' }
   };
   const TRIGGERS = [
     { key: 'A', label: '按下按鈕 A 時', cond: 'tubit.readButton(Button_A)' },
@@ -190,15 +190,15 @@
     return [mapRow('left', pan, { mod, v: st, pin: 'S0' }), mapRow('right', pan, { mod, v: -st, pin: 'S0' }),
       mapRow('up', tilt, { mod, v: st, pin: 'S1' }), mapRow('down', tilt, { mod, v: -st, pin: 'S1' })];
   };
-  // PS3 預設配置（課程簡化版）：按住 △＋←→ 轉雲台、按住 ○＋↑↓ 升降，□／✕ 單鍵；START 自動、SELECT 手動在「一鍵自動／手動」設定
+  // PS3 預設配置（課程版）：方向鍵 ↑↓ 手臂升降／砲管升降、←→ 雲台轉動；△ 開爪（發射車：發射）、○ 合爪；START 自動、SELECT 手動在「一鍵自動／手動」設定
   // V7RC 配置依官方範例（01.MTC_手臂／發射器機器人_V7RC_(藍牙)BLE.tb）
   const OFFICIAL_MAP = {
-    ps3arm: () => [mapRow('left', 'panAdd', { mod: 'triangle', v: 0.1 }), mapRow('right', 'panAdd', { mod: 'triangle', v: -0.1 }),
-      mapRow('up', 'liftAdd', { mod: 'circle', v: 0.1 }), mapRow('down', 'liftAdd', { mod: 'circle', v: -0.1 }),
-      mapRow('square', 'clawOpen'), mapRow('cross', 'clawClose')],
-    ps3gun: () => [mapRow('left', 'gPanAdd', { mod: 'triangle', v: 0.1 }), mapRow('right', 'gPanAdd', { mod: 'triangle', v: -0.1 }),
-      mapRow('up', 'headAdd', { mod: 'circle', v: 0.05 }), mapRow('down', 'headAdd', { mod: 'circle', v: -0.05 }),
-      mapRow('square', 'fire')],
+    ps3arm: () => [mapRow('up', 'liftAdd', { v: 0.1 }), mapRow('down', 'liftAdd', { v: -0.1 }),
+      mapRow('left', 'panAdd', { v: 0.1 }), mapRow('right', 'panAdd', { v: -0.1 }),
+      mapRow('triangle', 'clawOpen'), mapRow('circle', 'clawClose')],
+    ps3gun: () => [mapRow('up', 'headAdd', { v: 0.05 }), mapRow('down', 'headAdd', { v: -0.05 }),
+      mapRow('left', 'gPanAdd', { v: 0.1 }), mapRow('right', 'gPanAdd', { v: -0.1 }),
+      mapRow('triangle', 'fire')],
     v7arm: () => [mapRow('1', 'liftAdd', { v: 0.45 }), mapRow('2', 'liftAdd', { v: -0.45 }), mapRow('8', 'panAdd', { v: -0.45 }), mapRow('6', 'panAdd', { v: 0.45 }),
       mapRow('7', 'clawOpen'), mapRow('5', 'clawClose')],
     v7gun: () => [mapRow('1', 'headAdd', { v: 0.45 }), mapRow('2', 'headAdd', { v: -0.45 }), mapRow('8', 'gPanAdd', { v: -0.45 }), mapRow('6', 'gPanAdd', { v: 0.45 }), mapRow('7', 'fire')]
@@ -209,7 +209,7 @@
     v7rc: [['move', '移動車子：左搖桿前後左右（官方）'], ['aim', '調整瞄準'], ['none', '不使用']]
   };
   const DPAD_FN = {
-    ps3: [['none', '不使用（交給按鍵對應：預設配置用 △／○＋方向鍵）'], ['move', '移動車子：↑↓ 前後、←→ 平移、L1／R1 旋轉'], ['aim', '調整瞄準：←→ 旋轉、↑↓ 升降／仰角']],
+    ps3: [['none', '不使用（交給按鍵對應：預設配置用方向鍵調手臂升降與雲台）'], ['move', '移動車子：↑↓ 前後、←→ 平移、L1／R1 旋轉'], ['aim', '調整瞄準：←→ 旋轉、↑↓ 升降／仰角']],
     v7rc: [['turn', '← → 原地旋轉（官方）'], ['move', '移動車子：↑↓ 前後、←→ 平移、↖ ↗ 旋轉'], ['aim', '調整瞄準：←→ 旋轉、↑↓ 升降／仰角'], ['none', '不使用（交給按鍵對應）']]
   };
   const aimTarget = on => on.arm ? { pan: '手臂旋轉', tilt: '手臂升降' } : on.gun ? { pan: '砲台旋轉', tilt: '砲管仰角' } : { pan: '雲台 S0 旋轉', tilt: 'S1 仰角' };
@@ -251,6 +251,10 @@
     irAlign: { label: 'IR 靠牆校正', level: 'adv', kit: 'ir' },
     irSingle: { label: 'IR 次校正（單一方向）', level: 'adv', kit: 'ir' },
     irShow: { label: 'OLED 顯示 IR 數值', level: 'adv', kit: 'ir' },
+    origin: { label: '設定定點原點（這裡＝0,0）', level: 'race' },
+    goXY: { label: '前往定點（座標）＋到點動作', level: 'race' },
+    goDist: { label: '前進／後退指定距離', level: 'race' },
+    distMove: { label: '感測距離移動（超音波）', level: 'race', kit: 'ultra' },
     wall: { label: '撞牆校正', level: 'race' },
     approach: { label: '超音波接近', level: 'race', kit: 'ultra' },
     grab: { label: '夾取組合', level: 'race', kit: 'arm' },
@@ -295,6 +299,10 @@
     irAlign: { main: 'IR_L', sec: 'IR_UP', timeout: 8, confirm: 1 },
     irSingle: { dir: 'IR_UP', timeout: 8, confirm: 1 },
     irShow: {},
+    origin: {},
+    goXY: { x: 0, y: 0, r: 0, vm: 600, a: 800, then: 'none', deg: 0 },
+    goDist: { dir: 'fwd', cm: 0, vm: 600, a: 800 },
+    distMove: { cm: 0, tol: 1, speed: 150, timeout: 5 },
     wall: { dir: 'fwd', speed: 120, sec: 1.5, backCm: 5 },
     bnoTurn: { deg: 0, tol: 1, timeout: 3 },
     approach: { cm: 10, speed: 120, timeout: 5 },
@@ -350,6 +358,10 @@
         A: { on: true, acts: [mk('irAlign')] }, loop: { on: true, acts: [mk('irShow'), mk('wait', { sec: 0.1 })] } }) })]
     ],
     race: [
+      ['A：設定原點 → 前往定點夾取 → 回原點放置', () => ({ kits: { arm: true, bno: true }, trig: Object.assign(emptyTrig(), {
+        A: { on: true, acts: [mk('origin'), mk('goXY', { x: 0, y: 50, then: 'grab' }), mk('goXY', { x: 40, y: 50, r: 90 }), mk('goDist', { dir: 'fwd', cm: 20 }), mk('goXY', { x: 0, y: 0, r: -90, then: 'place' })] } }) })],
+      ['A：感測距離移動到 15 cm → 夾取', () => ({ kits: { arm: true, ultra: true }, trig: Object.assign(emptyTrig(), {
+        A: { on: true, acts: [mk('armClaw', { close: 'false' }), mk('armLift', { deg: 0 }), mk('distMove', { cm: 15 }), mk('armClaw', { close: 'true' }), mk('armLift', { deg: 65 })] } }) })],
       ['A：撞牆校正 → 轉正 0°', () => ({ kits: { bno: true }, trig: Object.assign(emptyTrig(), {
         A: { on: true, acts: [mk('wall'), mk('bnoTurn', { deg: 0 })] } }) })],
       ['A：超音波接近 → 夾取 → 後退', () => ({ kits: { arm: true, ultra: true }, trig: Object.assign(emptyTrig(), {
@@ -399,11 +411,11 @@
   }
   function load() { try { const t = localStorage.getItem(STORE); return t ? JSON.parse(t) : null; } catch (e) { return null; } }
   function save() { try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {} }
-  let state = load() || { level: 'basic', kits: defaultKits(), trig: PRESETS.basic[0][1]().trig };
+  let state = load() || { level: 'basic', kits: defaultKits(), trig: emptyTrig() };   // 預設動作為零：一開始沒有任何動作，按「快速範本」或「＋」加入
   state.kits = (function (dk, sk) { sk = sk || {}; Object.keys(dk).forEach(g => { dk[g] = Object.assign(dk[g], sk[g] || {}); }); return dk; })(defaultKits(), state.kits);
   state.trig = Object.assign(emptyTrig(), state.trig || {});
-  // 舊版 PS3 官方配置（12 個按鍵）自動換成新版簡化配置；自己改過的配置不動
-  (function () { const P = state.kits.ps3; const m = P && P.map; if (Array.isArray(m) && m.length === 12 && m.some(r => r.btn === 'l2' && r.act === 'angle')) P.map = m.some(r => r.act === 'fire') ? OFFICIAL_MAP.ps3gun() : OFFICIAL_MAP.ps3arm(); })();
+  // 舊版 PS3 預設配置（12 鍵官方版、△／○ 組合鍵版）自動換成目前的預設配置；自己改過的配置不動
+  (function () { const P = state.kits.ps3; const m = P && P.map; if (Array.isArray(m) && ((m.length === 12 && m.some(r => r.btn === 'l2' && r.act === 'angle')) || (m.length <= 6 && m.some(r => r.mod === 'triangle' && r.btn === 'left')))) P.map = m.some(r => r.act === 'fire') ? OFFICIAL_MAP.ps3gun() : OFFICIAL_MAP.ps3arm(); })();
   const hash = (location.hash || '').slice(1);
   if (hash === 'race' || hash === 'adv' || hash === 'basic') state.level = hash;
 
@@ -519,6 +531,46 @@
       } else if (a.type === 'bnoTurn') {
         need.mtc = true; need.bno = true; need.turn = true;
         L.push(ind + 'turnTo(' + plain(a.deg) + ', ' + plain(Math.max(0.1, num(a.tol, 1))) + ', ' + Math.round(Math.max(0.5, num(a.timeout, 3)) * 1000) + ');   // BNO 轉正到 ' + plain(a.deg) + '°');
+      } else if (a.type === 'origin') {
+        need.goto = true; need.mtc = true;
+        L.push(ind + 'setOrigin();   // 這裡設為定點原點 (0, 0)：車頭方向＝Y＋、右邊＝X＋');
+      } else if (a.type === 'goXY') {
+        need.goto = true; need.mtc = true; speedHit = true;
+        const vm = Math.abs(num(a.vm, 600)), ac = Math.abs(num(a.a, 800));
+        L.push(ind + 'goTo(' + fmtNum(a.x) + ', ' + fmtNum(a.y) + ', ' + fmtNum(a.r) + ', autoV(' + plain(vm) + '), autoV(' + plain(ac) + '));   // 前往定點 (' + plain(a.x) + ', ' + plain(a.y) + ')' + (num(a.r, 0) ? '，到點車頭' + (num(a.r) > 0 ? '右' : '左') + '轉 ' + plain(Math.abs(num(a.r))) + '°' : ''));
+        const AK = state.kits.arm || {}, dn = clampInt(AK.down, 0, 180, 0), up = clampInt(AK.up, 0, 180, 65);
+        const deg = clampInt(a.deg, 0, 180, 0);
+        const T = {
+          grab: ['ATARM_ClawCtrl(false,1);   // 到點：張開', 'ATARM_LiftSet(' + dn + ',1);   // 下降', 'ATARM_ClawCtrl(true,1);   // 合爪夾取', 'ATARM_LiftSet(' + up + ',1);   // 抬升'],
+          place: ['ATARM_LiftSet(' + (deg || dn) + ',1);   // 到點：下降到放置高度', 'ATARM_ClawCtrl(false,1);   // 張開放下', 'ATARM_LiftSet(' + up + ',1);   // 抬升'],
+          open: ['ATARM_ClawCtrl(false,1);   // 到點：開爪'],
+          close: ['ATARM_ClawCtrl(true,1);   // 到點：合爪'],
+          lift: ['ATARM_LiftSet(' + deg + ',1);   // 到點：手臂升降到 ' + deg + '°']
+        }[a.then];
+        if (T) { need.arm = true; T.forEach(l => L.push(ind + l)); }
+      } else if (a.type === 'goDist') {
+        need.goto = true; need.mtc = true; speedHit = true;
+        const cm = Math.abs(num(a.cm, 0)), vm = Math.abs(num(a.vm, 600)), ac = Math.abs(num(a.a, 800));
+        const v = { fwd: [0, cm, '前進'], back: [0, -cm, '後退'], left: [-cm, 0, '左移'], right: [cm, 0, '右移'] }[a.dir] || [0, cm, '前進'];
+        L.push(ind + 'goDist(' + fmtNum(v[0]) + ', ' + fmtNum(v[1]) + ', autoV(' + plain(vm) + '), autoV(' + plain(ac) + '));   // ' + v[2] + ' ' + plain(cm) + ' cm');
+      } else if (a.type === 'distMove') {
+        need.ultra = true;
+        const T = Math.max(0, num(a.cm, 0)), tol = Math.max(0.5, num(a.tol, 1)), sp = clampInt(a.speed, 40, 255, 150);
+        const mv = (k, s) => 'tubit.setMotorsPwm(' + MOVES[k].v.map(q => q === 0 ? '0' : (q > 0 ? s : '-' + s)).join(',') + ');';
+        L.push(ind + '// 感測距離移動：前後移動到前方距離 ' + plain(T) + ' cm（±' + plain(tol) + '），越接近越慢，超過會倒退修正');
+        L.push(ind + '{');
+        L.push(ind + '  unsigned long t0 = millis();');
+        L.push(ind + '  while (millis() - t0 < ' + Math.round(Math.max(0.5, num(a.timeout, 5)) * 1000) + ') {');
+        L.push(ind + '    float d = frontDistCm();');
+        L.push(ind + '    float e = d - ' + plain(T) + ';');
+        L.push(ind + '    if (fabs(e) <= ' + plain(tol) + ') break;');
+        L.push(ind + '    int sp = constrain((int)(fabs(e) * 12), 60, ' + sp + ');');
+        L.push(ind + '    if (e > 0) ' + mv('fwd', 'sp') + '   // 太遠：前進');
+        L.push(ind + '    else ' + mv('back', 'sp') + '   // 太近：後退');
+        L.push(ind + '    delay(20);');
+        L.push(ind + '  }');
+        L.push(ind + '}');
+        L.push(ind + 'tubit.stopAllMotors();');
       } else if (a.type === 'approach') {
         need.ultra = true;
         const sp = clampInt(a.speed, 0, 255, 120);
@@ -835,6 +887,41 @@
         'void gimbalTo(int deg) {   // 水平雲台轉到指定角度（自動加上微調並限制在範圍內）',
         '  tubit.setServoAngle(' + G.pin + ', constrain(deg + GIMBAL_TRIM, GIMBAL_MIN, GIMBAL_MAX));', '}');
     }
+    if (need.goto) {
+      const useBno = !!need.bno;
+      if (useBno) helpers.push('', '// ===== 新版 MTC V3：讓 MTC 讀 BNO055 角度（與兔比積木「BNO 移動」積木相同） =====',
+        'struct TuMtcBnoReadyCompat {', ' template <typename SensorT>', ' static auto read(SensorT &sensor, int) -> decltype(sensor.isReady(), bool()) {', ' return sensor.isReady();', ' }',
+        ' template <typename SensorT>', ' static bool read(SensorT &, long) {', ' return true;', ' }', '};',
+        'double readTuMtcBnoOrientationZ() {', ' return TuMtcBnoReadyCompat::read(bno, 0) ? bno.orientationZ : NAN;', '}');
+      helpers.push('', '// ===== 定點移動：以「設定定點原點」的位置為 (0,0)，當時車頭方向為 Y＋、右邊為 X＋ =====',
+        'double posX = 0, posY = 0;   // 目前位置（cm）',
+        'double headDeg = 0;   // 相對原點的車頭角度（右轉＋）',
+        'bool originSet = false;',
+        'void setOrigin() {   // 把這裡設為原點',
+        '  posX = 0; posY = 0; headDeg = 0; originSet = true;');
+      if (useBno) helpers.push('  if (bnoOK) mtc.captureBnoStartFrame();   // BNO：固定場地 X／Y 方向');
+      helpers.push('}',
+        'void setPos(double x, double y, double h) {   // 校正後重設目前位置與車頭角度',
+        '  posX = x; posY = y; headDeg = h;',
+        '}',
+        'void goTo(double x, double y, double rot, double vm, double a) {   // 前往定點 (x, y)，途中車頭轉 rot 度（右轉＋）',
+        '  if (!originSet) setOrigin();',
+        '  double dx = x - posX, dy = y - posY;');
+      if (useBno) helpers.push('  if (bnoOK) {',
+        '    mtc.moveSCurveBno(dx, dy, rot, vm, a, -a, 0, 0);   // BNO 精準移動：X／Y 依原點方向固定，陀螺儀修正航向',
+        '  } else {');
+      const ind2 = useBno ? '    ' : '  ';
+      helpers.push(ind2 + 'double h = headDeg * PI / 180.0;   // 換算成目前車身方向',
+        ind2 + 'mtc.moveSCurve(dx * cos(h) - dy * sin(h), dx * sin(h) + dy * cos(h), -rot, vm, a, -a, 0, 0);');
+      if (useBno) helpers.push('  }');
+      helpers.push('  posX = x; posY = y; headDeg += rot;', '}',
+        'void goDist(double bx, double by, double vm, double a) {   // 依目前車頭方向移動（右＋、前＋），並更新位置',
+        '  mtc.moveSCurve(bx, by, 0, vm, a, -a, 0, 0);',
+        '  double h = headDeg * PI / 180.0;',
+        '  posX += bx * cos(h) + by * sin(h);',
+        '  posY += -bx * sin(h) + by * cos(h);',
+        '}');
+    }
     if (speedHit || need.speed) {
       const sp = clampInt((K.auto || {}).speed, 10, 200, 100);
       helpers.push('', '// ===== 自動移動速度：規劃好路線後，改這個數字就能讓所有自動移動一起變快或變慢 =====',
@@ -863,6 +950,11 @@
     if (need.oled) setups.push('  display.begin(0x3C, true);');
     if (need.zh) setups.push('  u8g2.begin(display);');
     if (need.bno) setups.push('  bnoOK = bnoFound();', '  if (bnoOK) bno.start();   // 找到 BNO055 才啟動', '  else Serial.println("BNO055 not found (I2C 0x28): check SDA/SCL/VIN/GND");');
+    if (need.bno && need.goto) setups.push('  if (bnoOK) {   // 新版 MTC V3：定點移動用 BNO 修正航向',
+      '    unsigned long tuMtcBnoWaitStart = millis();',
+      '    while (!TuMtcBnoReadyCompat::read(bno, 0) && millis() - tuMtcBnoWaitStart < 5000UL) delay(20);',
+      '    mtc.setYawReader(readTuMtcBnoOrientationZ);', '    mtc.setYawDirection(1);',
+      '    mtc.setHeadingPid(3.0, 0.0, 0.03, 120.0, 60.0);', '    mtc.setHeadingSettle(1.0, 100, 1500);', '  }');
     if (need.ps3) {
       const mac = String(K.ps3.mac || '').trim();
       setups.push(/^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$/.test(mac) && mac !== '00:00:00:00:00:00' ? '  Ps3.begin(' + cStr(mac) + ');   // 改成自己手把記住的 MAC' : '  Ps3.begin();');
@@ -919,6 +1011,12 @@
       case 'gunPan': return inp('deg', '角度（90 正前）', a.deg, ' min="0" max="180"') + secIn(a.sec);
       case 'gunHead': return inp('deg', '仰角', a.deg, ' min="0" max="180"') + secIn(a.sec);
       case 'ultraShow': return '<span class="muted">在 OLED 以大字顯示前方距離</span>';
+      case 'origin': return '<span class="muted">車子放在這裡時設為 (0, 0)：當下車頭方向＝Y＋、右邊＝X＋。之後的「前往定點」都以這裡為準；勾 BNO055 時會用新版 MTC V3 鎖定場地方向，到點更準。</span>';
+      case 'goXY': return inp('x', 'X（右＋）cm', a.x) + inp('y', 'Y（前＋）cm', a.y) + inp('r', '途中車頭轉 °（右轉＋）', a.r) + inp('vm', '最高速 deg/s', a.vm, ' min="0"') + inp('a', '加速度', a.a, ' min="0"') +
+        sel('then', '到點動作', [['none', '不動作'], ['grab', '夾取（張開→下降→合爪→抬升）'], ['place', '放置（下降→張開→抬升）'], ['open', '開爪'], ['close', '合爪'], ['lift', '手臂升降到角度']], a.then || 'none') +
+        inp('deg', '升降角度 °（到點動作選「升降」或「放置」時使用）', a.deg, ' min="0" max="180"');
+      case 'goDist': return sel('dir', '方向', [['fwd', '前進'], ['back', '後退'], ['left', '左移'], ['right', '右移']], a.dir) + inp('cm', '距離 cm', a.cm, ' min="0"') + inp('vm', '最高速 deg/s', a.vm, ' min="0"') + inp('a', '加速度', a.a, ' min="0"');
+      case 'distMove': return inp('cm', '目標距離 cm', a.cm, ' min="0"') + inp('tol', '容許誤差 cm', a.tol, ' min="0.5" step="0.5"') + inp('speed', '最高速度 0–255', a.speed, ' min="40" max="255"') + inp('timeout', '逾時秒數', a.timeout, ' min="0.5" step="0.5"');
       case 'wall': return sel('dir', '朝哪面牆推', WALL_DIRS.map(k => [k, MOVES[k].label]), a.dir) + inp('speed', '推牆速度 0–255', a.speed, ' min="0" max="255"') + inp('sec', '推牆秒數', a.sec, ' min="0" step="0.1"') + inp('backCm', '退開 cm（0＝不退）', a.backCm, ' min="0"');
       case 'bnoTurn': return inp('deg', '目標角度 °（開機車頭＝0°，順時針增加：90＝右轉）', a.deg) + inp('tol', '容許誤差 °', a.tol, ' min="0.1" step="0.1"') + inp('timeout', '逾時秒數', a.timeout, ' min="0.5" step="0.5"');
       case 'approach': return inp('cm', '停在距離 cm', a.cm, ' min="1"') + inp('speed', '速度 0–255', a.speed, ' min="0" max="255"') + inp('timeout', '逾時秒數', a.timeout, ' min="0.5" step="0.5"');
