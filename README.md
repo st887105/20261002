@@ -2,9 +2,13 @@
 
 TU:bit V2（MTC V2 麥克納姆輪）機器人的教學網站：從安裝 TubitBlock、組裝接線、PS3／V7RC 遙控、手臂與乒乓球發射器，到 2026 全國 AI 智創機器人競賽專區與競賽路徑規劃器。
 
-目前版本：**v1.6.6**（完整更新紀錄見 [CHANGELOG.md](CHANGELOG.md)，網頁標題旁的版本號也可點開查看）
+目前版本：**v1.6.7**（完整更新紀錄見 [CHANGELOG.md](CHANGELOG.md)，網頁標題旁的版本號也可點開查看）
 
 ## 版本更新
+
+### v1.6.7（2026-10-05）
+- PS3 預設配置簡化（產生器、路徑規劃器 v1.6.2 同步）：按住 △＋←→ 轉雲台、按住 ○＋↑↓ 手臂升降／砲管升降、□ 開爪或發射、✕ 合爪，START 自動、SELECT 手動；其他設定收進「更多手把設定」。
+- 水平雲台與手臂／發射器的旋轉是同一顆伺服（S0），改為擇一。
 
 ### v1.6.6（2026-10-04）
 - 程式範例新增「BNO 精準移動」與「MTC＋BNO＋PS3 無頭模式」兩支範例，含文字版積木、逐塊說明、已編譯驗證的 Arduino 程式碼與 .tb 下載（`examples/` 資料夾）。
@@ -49,7 +53,7 @@ examples/           本站整理的 .tb 範例檔（01_BNO精準移動、02_MTC_
 generator.html      程式產生器（基礎篇、進階篇、競賽自動化）
 resources.html      資料下載（官方講義、範例 .tb、雲端備份連結）
 competition.html    競賽專區（2026 全國賽規則重點、計分試算）
-race-planner/       TU:bit V2 2026全國競賽路徑規劃器 v1.6.1（含自己的 README、CHANGELOG）
+race-planner/       TU:bit V2 2026全國競賽路徑規劃器 v1.6.2（含自己的 README、CHANGELOG）
 planner/            舊網址，自動導向程式產生器（競賽自動化）
 assets/site.css     共用樣式（自建輕量 CSS，無框架）
 assets/site.js      共用頁首頁尾、版本號、更新紀錄

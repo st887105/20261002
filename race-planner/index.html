@@ -148,7 +148,9 @@ table.kit th{color:var(--mute);font-weight:500;font-size:11px}
 table.kit td small{color:var(--mute);display:block}
 .kbox{border:1px solid var(--line);border-radius:8px;padding:8px;margin-top:8px;background:var(--card)}
 .kbox h4{margin:0 0 6px;font-size:13px}
-.kbox .maplist{font-size:11px;color:var(--mute);margin-top:4px;max-height:140px;overflow:auto}
+.kbox .maplist{font-size:12px;color:var(--ink);margin-top:4px;line-height:1.7}
+.kbox details.more{margin-top:8px;border-top:1px dashed var(--line);padding-top:6px}
+.kbox details.more summary{cursor:pointer;font-size:12px;color:var(--mute)}
 .note{font-size:12px;color:var(--warn);margin:6px 0}
 table.ref{width:100%;border-collapse:collapse;font-size:12px}
 table.ref td{border-bottom:1px solid var(--line);padding:5px 4px;vertical-align:top}
@@ -175,7 +177,7 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
 <body>
 <div class="app">
 <header>
-  <div class="brand"><h1>TU:bit V2 2026全國競賽路徑規劃器</h1><span class="ver" id="ver" title="更新紀錄">v1.6.1</span><a class="ver" href="../competition.html" title="回競賽專區">← 競賽專區</a><a class="ver" href="../generator.html#race" title="程式產生器：競賽自動化">程式產生器</a></div>
+  <div class="brand"><h1>TU:bit V2 2026全國競賽路徑規劃器</h1><span class="ver" id="ver" title="更新紀錄">v1.6.2</span><a class="ver" href="../competition.html" title="回競賽專區">← 競賽專區</a><a class="ver" href="../generator.html#race" title="程式產生器：競賽自動化">程式產生器</a></div>
   <div class="hgroup">
     <select id="gameSel" aria-label="競賽項目">
       <option value="energy">物資能源爭霸戰 300×300</option>
@@ -415,6 +417,7 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
 </dialog>
 <dialog id="logDlg">
   <h3 style="margin-top:0">更新紀錄</h3>
+  <p><b>v1.6.2</b>（2026-10-05）PS3 預設配置簡化：手臂車為按住 △＋←→ 轉雲台、按住 ○＋↑↓ 手臂升降、□ 開爪、✕ 合爪；發射車為按住 △＋←→ 轉雲台、按住 ○＋↑↓ 砲管升降、□ 發射；START 自動、SELECT 手動。其他按鍵與搖桿、速度設定收進「更多手把設定」。水平雲台與手臂／發射器的旋轉是同一顆伺服（S0），兩者改為擇一；舊版 12 鍵官方配置會自動換成新配置。</p>
   <p><b>v1.6.1</b>（2026-10-04）頁面下方加上「車城國小資訊老師徐吉德整理製作@2026」。</p>
   <p><b>v1.6.0</b>（2026-10-04）水平雲台可微調：勾選後可設定腳位、回正角度、微調（±45°）與可轉範圍，新增「雲台轉到」動作；畫路徑時若車身預計會碰到障礙物，到點動作工具列會顯示碰撞提示，可一鍵「加繞行點」或「移到最近可通過位置」；碰撞檢查只計算路段附近的障礙物，速度更快。</p>
   <p><b>v1.5.0</b>（2026-10-04）新增「自動移動速度 %」：規劃好路線後，在上方工具列或「套件與感測器」改一個數字（或按 80%／100%／120%），所有路徑移動一起變快或變慢；程式碼產生 <code>AUTO_SPEED</code> 常數與 <code>autoV()</code>，燒錄前也能直接改；模擬時間同步換算。程式產生器的競賽自動化同步加入相同設定。</p>
@@ -435,7 +438,7 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
 <script>
 'use strict';
 /* ================= 基本工具 ================= */
-const VERSION = 'v1.6.1';
+const VERSION = 'v1.6.2';
 const STORE_KEY = 'tubit-planner-v1';
 const uid = () => Math.random().toString(36).slice(2, 9);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -617,14 +620,15 @@ const GEN = (function () {
     return [mapRow('left', pan, { mod, v: st, pin: 'S0' }), mapRow('right', pan, { mod, v: -st, pin: 'S0' }),
       mapRow('up', tilt, { mod, v: st, pin: 'S1' }), mapRow('down', tilt, { mod, v: -st, pin: 'S1' })];
   };
-  // 官方範例的按鍵配置（夾爪機器人_ps3搖桿.tb、射擊機器人_ps3搖桿.tb、01.MTC_手臂／發射器機器人_V7RC_(藍牙)BLE.tb）
+  // PS3 預設配置（課程簡化版）：按住 △＋←→ 轉雲台、按住 ○＋↑↓ 升降，□／✕ 單鍵；START 自動、SELECT 手動在「一鍵自動／手動」設定
+  // V7RC 配置依官方範例（01.MTC_手臂／發射器機器人_V7RC_(藍牙)BLE.tb）
   const OFFICIAL_MAP = {
-    ps3arm: () => [mapRow('cross', 'liftAdd', { v: -0.1 }), mapRow('triangle', 'liftAdd', { v: 0.1 }), mapRow('l1', 'panAdd', { v: 0.1 }), mapRow('r1', 'panAdd', { v: -0.1 }),
-      mapRow('circle', 'clawClose'), mapRow('square', 'clawOpen'), mapRow('up', 'liftSet', { v: 65 }), mapRow('down', 'liftSet', { v: 10 }),
-      mapRow('right', 'panSet', { v: 55 }), mapRow('left', 'panSet', { v: 125 }), mapRow('r2', 'panSet', { v: 90 }), mapRow('l2', 'angle')],
-    ps3gun: () => [mapRow('cross', 'headAdd', { v: -0.05 }), mapRow('triangle', 'headAdd', { v: 0.05 }), mapRow('l1', 'gPanAdd', { v: 0.1 }), mapRow('r1', 'gPanAdd', { v: -0.1 }),
-      mapRow('circle', 'gPanSet', { v: 90 }), mapRow('square', 'headSet', { v: 30 }), mapRow('up', 'headSet', { v: 45 }), mapRow('down', 'headSet', { v: 10 }),
-      mapRow('right', 'gPanSet', { v: 45 }), mapRow('left', 'gPanSet', { v: 135 }), mapRow('r2', 'fire'), mapRow('l2', 'angle')],
+    ps3arm: () => [mapRow('left', 'panAdd', { mod: 'triangle', v: 0.1 }), mapRow('right', 'panAdd', { mod: 'triangle', v: -0.1 }),
+      mapRow('up', 'liftAdd', { mod: 'circle', v: 0.1 }), mapRow('down', 'liftAdd', { mod: 'circle', v: -0.1 }),
+      mapRow('square', 'clawOpen'), mapRow('cross', 'clawClose')],
+    ps3gun: () => [mapRow('left', 'gPanAdd', { mod: 'triangle', v: 0.1 }), mapRow('right', 'gPanAdd', { mod: 'triangle', v: -0.1 }),
+      mapRow('up', 'headAdd', { mod: 'circle', v: 0.05 }), mapRow('down', 'headAdd', { mod: 'circle', v: -0.05 }),
+      mapRow('square', 'fire')],
     v7arm: () => [mapRow('1', 'liftAdd', { v: 0.45 }), mapRow('2', 'liftAdd', { v: -0.45 }), mapRow('8', 'panAdd', { v: -0.45 }), mapRow('6', 'panAdd', { v: 0.45 }),
       mapRow('7', 'clawOpen'), mapRow('5', 'clawClose')],
     v7gun: () => [mapRow('1', 'headAdd', { v: 0.45 }), mapRow('2', 'headAdd', { v: -0.45 }), mapRow('8', 'gPanAdd', { v: -0.45 }), mapRow('6', 'gPanAdd', { v: 0.45 }), mapRow('7', 'fire')]
@@ -635,7 +639,7 @@ const GEN = (function () {
     v7rc: [['move', '移動車子：左搖桿前後左右（官方）'], ['aim', '調整瞄準'], ['none', '不使用']]
   };
   const DPAD_FN = {
-    ps3: [['none', '不使用（交給按鍵對應；官方配置有用到方向鍵）'], ['move', '移動車子：↑↓ 前後、←→ 平移、L1／R1 旋轉'], ['aim', '調整瞄準：←→ 旋轉、↑↓ 升降／仰角']],
+    ps3: [['none', '不使用（交給按鍵對應：預設配置用 △／○＋方向鍵）'], ['move', '移動車子：↑↓ 前後、←→ 平移、L1／R1 旋轉'], ['aim', '調整瞄準：←→ 旋轉、↑↓ 升降／仰角']],
     v7rc: [['turn', '← → 原地旋轉（官方）'], ['move', '移動車子：↑↓ 前後、←→ 平移、↖ ↗ 旋轉'], ['aim', '調整瞄準：←→ 旋轉、↑↓ 升降／仰角'], ['none', '不使用（交給按鍵對應）']]
   };
   const aimTarget = on => on.arm ? { pan: '手臂旋轉', tilt: '手臂升降' } : on.gun ? { pan: '砲台旋轉', tilt: '砲管仰角' } : { pan: '雲台 S0 旋轉', tilt: 'S1 仰角' };
@@ -684,7 +688,7 @@ const GEN = (function () {
     fireN: { label: '連續發射', level: 'race', kit: 'gun' }
   };
   const KITS = {
-    gimbal: { label: '水平雲台（底盤）', pins: 'S0', row: ['S0', '—', '—', '校正：S0 轉到 90°'] },
+    gimbal: { label: '水平雲台（底盤；與手臂／發射器的旋轉是同一顆，擇一）', pins: 'S0', row: ['S0', '—', '—', '校正：S0 轉到 90°'] },
     arm: { label: '手臂 ATARM', row: ['S0', 'S7', 'S6（夾爪）', '手臂初始化 旋轉 S0、升降 S7、夾爪 S6'] },
     gun: { label: '乒乓球發射器 PPGUN（與手臂擇一）', row: ['S0', 'S1', 'S2（發射）', '發射器初始化 旋轉 S0、上下 S1、發射 S2'] },
     ultra: { label: '超音波', row: ['—', '—', '—', 'Trig GPIO 23、Echo GPIO 15'] },
@@ -757,6 +761,11 @@ const GEN = (function () {
     if (on && k === 'gun' && state.kits.on.arm) { state.kits.on.arm = false; kitNote = '已取消手臂：ATARM 與 PPGUN 函式庫不能放在同一支程式。'; }
     if (on && k === 'ps3' && state.kits.on.v7rc) { state.kits.on.v7rc = false; kitNote = '已取消 V7RC：一支程式只用一種遙控方式。'; }
     if (on && k === 'v7rc' && state.kits.on.ps3) { state.kits.on.ps3 = false; kitNote = '已取消 PS3：一支程式只用一種遙控方式。'; }
+    // 水平雲台（底盤）就是手臂／發射器的「旋轉」伺服：同一個腳位只能由一個套件控制
+    const K = state.kits, gp = (K.gimbal || {}).pin || 'S0';
+    const armUses = K.arm && [K.arm.pan, K.arm.lift, K.arm.claw].includes(gp), gunUses = K.gun && [K.gun.pan, K.gun.head, K.gun.shoot].includes(gp);
+    if (on && k === 'gimbal' && ((K.on.arm && armUses) || (K.on.gun && gunUses))) { K.on.gimbal = false; kitNote = '水平雲台（' + gp + '）就是' + (K.on.arm ? '手臂' : '發射器') + '的旋轉伺服，已由' + (K.on.arm ? '手臂' : '發射器') + '控制，不能再勾水平雲台；要轉底盤請用「' + (K.on.arm ? '手臂旋轉' : '砲台旋轉') + '」，微調範圍請改「旋轉最小／最大」。'; }
+    if (on && (k === 'arm' || k === 'gun') && K.on.gimbal && (k === 'arm' ? armUses : gunUses)) { K.on.gimbal = false; kitNote = (kitNote ? kitNote + ' ' : '') + '已取消水平雲台：' + gp + ' 就是' + (k === 'arm' ? '手臂' : '發射器') + '的旋轉伺服，改由' + (k === 'arm' ? '手臂' : '發射器') + '控制。'; }
   }
   // 自動／手動鍵若指到沒啟用的遙控，換成可用的按鍵
   function keyValid(k) {
@@ -1354,6 +1363,8 @@ function upgradeState(o){
   // 預設套件結構補齊（產生器新增欄位時）
   const fill = (a, b) => { for (const k in b){ if (a[k] === undefined) a[k] = clone(b[k]); else if (b[k] && typeof b[k] === 'object' && !Array.isArray(b[k]) && a[k] && typeof a[k] === 'object') fill(a[k], b[k]); } };
   ['robot','motion','axes','arm','turn','kits','ui'].forEach(k => { if (!o[k]) o[k] = clone(d[k]); else fill(o[k], d[k]); });
+  // 舊版 PS3 官方配置（12 個按鍵）自動換成新版簡化配置；自己改過的配置不動
+  (function () { const P = o.kits.ps3; const m = P && P.map; if (Array.isArray(m) && m.length === 12 && m.some(r => r.btn === 'l2' && r.act === 'angle')) P.map = m.some(r => r.act === 'fire') ? GEN.OFFICIAL_MAP.ps3gun() : GEN.OFFICIAL_MAP.ps3arm(); })();
   o.v = 1; return o;
 }
 
@@ -2585,6 +2596,8 @@ const KIT_LV = {
   targetShooter:{gun:['must','必備'], ps3:['must','遙控擇一'], v7rc:['must','遙控擇一'], bno:['rec1','建議'], ultra:['opt','選用'], gimbal:['opt','選用']},
 };
 let kitNoteMsg = '';
+const moreOpen = {};   // 「更多手把設定」是否展開（重畫時保留）
+document.addEventListener('toggle', e => { const d = e.target; if (d && d.dataset && d.dataset.more) moreOpen[d.dataset.more] = d.open; }, true);
 function kitInit(k){
   const K = S.kits;
   if (k === 'gimbal'){ const G = K.gimbal || {}; return `${G.pin || 'S0'}、回正 ${num(G.center, 90)}°、微調 ${num(G.trim, 0) > 0 ? '+' : ''}${num(G.trim, 0)}°`; }
@@ -2602,12 +2615,11 @@ function keyOptions(){
 }
 function mapListHtml(rk){
   const R = S.kits[rk], rows = R.map || [];
-  if (!rows.length) return '（沒有按鍵對應）';
+  if (!rows.length) return '（沒有按鍵對應，可在上方選擇配置）';
   const bl = b => rk === 'ps3' ? ((GEN.PS3_BTNS.find(x => x[0] === b) || ['', b])[1]) : (b + ' ' + ((GEN.V7_BTNS[b] || [''])[0]));
   return rows.map(m => {
     const A = GEN.MAP_ACTS[m.act]; if (!A) return '';
-    const v = m.v !== undefined ? ' ' + m.v : '';
-    return `${m.mod ? '按住 ' + bl(m.mod) + '＋' : ''}${bl(m.btn)} → ${A.label}${v}`;
+    return `${m.mod ? '按住 ' + bl(m.mod) + '＋' : ''}${bl(m.btn)} → ${A.label}`;
   }).filter(Boolean).join('<br>');
 }
 function renderKits(){
@@ -2648,12 +2660,15 @@ function renderKits(){
       h += `<label class="f"><span>連線方式</span>${sel('kits.v7rc.mode', [['BT', '藍牙 BLE'], ['WIFI', 'Wi-Fi']])}</label>`;
       h += R.mode === 'WIFI' ? `<div class="row">${tin('SSID', 'kits.v7rc.ssid')}${tin('密碼', 'kits.v7rc.pass')}${nin('頻道', 'kits.v7rc.ch')}</div>` : tin('藍牙名稱（每台要不同）', 'kits.v7rc.name');
     }
-    h += `<label class="f" style="margin-top:6px"><span>${isP ? '搖桿控制' : '左搖桿控制'}</span>${sel(`kits.${rk}.stick`, GEN.STICK_FN[rk])}</label>
-      <label class="f" style="margin-top:6px"><span>${isP ? '方向鍵控制' : '右側方向鍵控制'}</span>${sel(`kits.${rk}.dpad`, GEN.DPAD_FN[rk])}</label>
-      <div class="row" style="margin-top:6px">${nin('移動速度', `kits.${rk}.speed`)}${nin('旋轉速度', `kits.${rk}.turn`)}${nin('死區', `kits.${rk}.dead`)}${nin('瞄準速度', `kits.${rk}.aim`, 'step="0.05"')}</div>
-      <label class="f" style="margin-top:6px"><span>按鍵對應</span><select data-map="${rk}"><option value="">不使用</option><option value="arm" ${R.mapPreset === 'arm' ? 'selected' : ''}>官方手臂車配置</option><option value="gun" ${R.mapPreset === 'gun' ? 'selected' : ''}>官方發射車配置</option>${R.mapPreset === 'custom' ? '<option value="custom" selected>自訂（匯入）</option>' : ''}</select></label>
+    const pname = isP ? '' : '官方';
+    h += `<label class="f" style="margin-top:6px"><span>按鍵對應</span><select data-map="${rk}"><option value="">不使用</option><option value="arm" ${R.mapPreset === 'arm' ? 'selected' : ''}>${pname}手臂車配置</option><option value="gun" ${R.mapPreset === 'gun' ? 'selected' : ''}>${pname}發射車配置</option>${R.mapPreset === 'custom' ? '<option value="custom" selected>自訂（匯入）</option>' : ''}</select></label>
       <div class="maplist">${mapListHtml(rk)}</div>
-      <p class="hint">需要逐鍵修改或組合鍵，請用 <a href="../generator.html#adv" target="_blank" rel="noopener">程式產生器</a> 設定後把程式碼的 remoteControl() 合併。</p></div>`;
+      <details class="more" data-more="${rk}"${moreOpen[rk] ? ' open' : ''}><summary>更多手把設定（搖桿／方向鍵功能、速度、死區）</summary>
+        <label class="f" style="margin-top:6px"><span>${isP ? '搖桿控制' : '左搖桿控制'}</span>${sel(`kits.${rk}.stick`, GEN.STICK_FN[rk])}</label>
+        <label class="f" style="margin-top:6px"><span>${isP ? '方向鍵控制' : '右側方向鍵控制'}</span>${sel(`kits.${rk}.dpad`, GEN.DPAD_FN[rk])}</label>
+        <div class="row" style="margin-top:6px">${nin('移動速度', `kits.${rk}.speed`)}${nin('旋轉速度', `kits.${rk}.turn`)}${nin('死區', `kits.${rk}.dead`)}${nin('瞄準速度', `kits.${rk}.aim`, 'step="0.05"')}</div>
+        <p class="hint">要新增其他按鍵或組合鍵，請到 <a href="../generator.html#adv" target="_blank" rel="noopener">程式產生器</a> 的「更多手把設定」，再把程式碼的 remoteControl() 合併。</p>
+      </details></div>`;
   });
   const M = K.mode;
   h += `<div class="kbox"><h4>自動移動速度</h4><label class="f"><span>速度 %（10～200，100＝原規劃速度）</span><input type="number" min="10" max="200" step="10" data-bind="kits.auto.speed"></label>

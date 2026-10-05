@@ -103,7 +103,7 @@
         <tr><td>BNO055</td><td><code>#include &lt;EasyBNO055_ESP.h&gt;</code>、<code>EasyBNO055_ESP bno;</code>、<code>bno.start();</code>、<code>mtc.bnoMoveClosed(0,0,誤差×係數,bno.orientationZ);</code></td></tr>
         <tr><td>OLED 文字</td><td><code>Adafruit_SH1106G display(128, 64, &amp;Wire);</code>、<code>display.print(...)</code></td></tr>
         <tr><td>MTC Robot</td><td><code>mtc.driveVectorOpen(X,Y,R);</code>、<code>mtc.angleToXY(角度,速度);</code>、<code>mtc.moveCurveSCurve(X,Y,旋轉,弧度,最高速,加速,-(加速),0,0);</code>、<code>mtc.setMtcParameters(6,3,20,20);</code></td></tr>
-        <tr><td>遙控移動與按鍵對應</td><td>自動產生 <code>remoteControl()</code>。「搖桿控制」與「方向鍵控制」各自選功能：移動車子、調整瞄準（手臂／砲台／雲台，產生 <code>aimPan()</code>、<code>aimTilt()</code>）或不使用，兩者可同時移動車子（數值相加後限制在 ±255）；速度、旋轉速度、瞄準速度、死區寫成 <code>DRIVE_SPEED</code>、<code>TURN_SPEED</code>、<code>AIM_SPEED</code>、<code>DEADZONE</code> 常數；V7RC 右側 8 方向鍵用 <code>v7Key(n)</code> 判斷；按鍵對應可一鍵套用官方手臂車／發射車配置（<code>ATARM_LiftAdd</code>、<code>ATARM_PanAdd</code>、<code>PPGUN_HeadAdd</code>、<code>PPGUN_PanAdd</code>…，依 4 個官方 .tb 範例）</td></tr>
+        <tr><td>遙控移動與按鍵對應</td><td>自動產生 <code>remoteControl()</code>。「搖桿控制」與「方向鍵控制」各自選功能：移動車子、調整瞄準（手臂／砲台／雲台，產生 <code>aimPan()</code>、<code>aimTilt()</code>）或不使用，兩者可同時移動車子（數值相加後限制在 ±255）；速度、旋轉速度、瞄準速度、死區寫成 <code>DRIVE_SPEED</code>、<code>TURN_SPEED</code>、<code>AIM_SPEED</code>、<code>DEADZONE</code> 常數；V7RC 右側 8 方向鍵用 <code>v7Key(n)</code> 判斷；按鍵對應可一鍵套用手臂車／發射車配置：PS3 為課程簡化版（按住 △＋←→ 轉雲台、按住 ○＋↑↓ 手臂升降／砲管仰角、□ 開爪或發射、✕ 合爪，START 自動、SELECT 手動），V7RC 依官方 .tb 範例；其他按鍵在「更多手把設定」新增</td></tr>
         <tr><td>PS3 組合鍵</td><td>按鍵對應每一列可設「按住」某鍵（例如按住 ○ 時，方向鍵改調雲台／砲台／手臂），產生 <code>shiftHeld</code> 判斷；沒有組合鍵的列在按住時不會動作。伺服累加用 <code>servoDeg[]</code> 記住目前角度。「PS3 按鍵被按下時」也能設組合鍵，且會等放開按鍵才結束，避免一直重複觸發</td></tr>
         <tr><td>PS3 手把</td><td><code>#include &lt;Ps3Controller.h&gt;</code>、<code>Ps3.begin("MAC");</code>、<code>Ps3.isConnected()</code>、<code>Ps3.data.analog.stick.lx</code>、<code>Ps3.data.button.cross</code>、<code>Ps3.setRumble(強度,毫秒);</code></td></tr>
         <tr><td>V7RC</td><td><code>#include &lt;V7RC_BT.h&gt;</code>、<code>V7RC_BT v7rc;</code>、<code>v7rc.setupBLE("名稱");</code>、<code>v7rc.connect()</code>、<code>v7rc.setMode("SRT")</code>、<code>v7rc.readSRTdata(1~4)</code>（Wi-Fi 版為 <code>V7RC_WIFI</code>、<code>v7rc.setupWIFI(ssid, password, channel);</code>）</td></tr>
@@ -190,14 +190,15 @@
     return [mapRow('left', pan, { mod, v: st, pin: 'S0' }), mapRow('right', pan, { mod, v: -st, pin: 'S0' }),
       mapRow('up', tilt, { mod, v: st, pin: 'S1' }), mapRow('down', tilt, { mod, v: -st, pin: 'S1' })];
   };
-  // 官方範例的按鍵配置（夾爪機器人_ps3搖桿.tb、射擊機器人_ps3搖桿.tb、01.MTC_手臂／發射器機器人_V7RC_(藍牙)BLE.tb）
+  // PS3 預設配置（課程簡化版）：按住 △＋←→ 轉雲台、按住 ○＋↑↓ 升降，□／✕ 單鍵；START 自動、SELECT 手動在「一鍵自動／手動」設定
+  // V7RC 配置依官方範例（01.MTC_手臂／發射器機器人_V7RC_(藍牙)BLE.tb）
   const OFFICIAL_MAP = {
-    ps3arm: () => [mapRow('cross', 'liftAdd', { v: -0.1 }), mapRow('triangle', 'liftAdd', { v: 0.1 }), mapRow('l1', 'panAdd', { v: 0.1 }), mapRow('r1', 'panAdd', { v: -0.1 }),
-      mapRow('circle', 'clawClose'), mapRow('square', 'clawOpen'), mapRow('up', 'liftSet', { v: 65 }), mapRow('down', 'liftSet', { v: 10 }),
-      mapRow('right', 'panSet', { v: 55 }), mapRow('left', 'panSet', { v: 125 }), mapRow('r2', 'panSet', { v: 90 }), mapRow('l2', 'angle')],
-    ps3gun: () => [mapRow('cross', 'headAdd', { v: -0.05 }), mapRow('triangle', 'headAdd', { v: 0.05 }), mapRow('l1', 'gPanAdd', { v: 0.1 }), mapRow('r1', 'gPanAdd', { v: -0.1 }),
-      mapRow('circle', 'gPanSet', { v: 90 }), mapRow('square', 'headSet', { v: 30 }), mapRow('up', 'headSet', { v: 45 }), mapRow('down', 'headSet', { v: 10 }),
-      mapRow('right', 'gPanSet', { v: 45 }), mapRow('left', 'gPanSet', { v: 135 }), mapRow('r2', 'fire'), mapRow('l2', 'angle')],
+    ps3arm: () => [mapRow('left', 'panAdd', { mod: 'triangle', v: 0.1 }), mapRow('right', 'panAdd', { mod: 'triangle', v: -0.1 }),
+      mapRow('up', 'liftAdd', { mod: 'circle', v: 0.1 }), mapRow('down', 'liftAdd', { mod: 'circle', v: -0.1 }),
+      mapRow('square', 'clawOpen'), mapRow('cross', 'clawClose')],
+    ps3gun: () => [mapRow('left', 'gPanAdd', { mod: 'triangle', v: 0.1 }), mapRow('right', 'gPanAdd', { mod: 'triangle', v: -0.1 }),
+      mapRow('up', 'headAdd', { mod: 'circle', v: 0.05 }), mapRow('down', 'headAdd', { mod: 'circle', v: -0.05 }),
+      mapRow('square', 'fire')],
     v7arm: () => [mapRow('1', 'liftAdd', { v: 0.45 }), mapRow('2', 'liftAdd', { v: -0.45 }), mapRow('8', 'panAdd', { v: -0.45 }), mapRow('6', 'panAdd', { v: 0.45 }),
       mapRow('7', 'clawOpen'), mapRow('5', 'clawClose')],
     v7gun: () => [mapRow('1', 'headAdd', { v: 0.45 }), mapRow('2', 'headAdd', { v: -0.45 }), mapRow('8', 'gPanAdd', { v: -0.45 }), mapRow('6', 'gPanAdd', { v: 0.45 }), mapRow('7', 'fire')]
@@ -208,7 +209,7 @@
     v7rc: [['move', '移動車子：左搖桿前後左右（官方）'], ['aim', '調整瞄準'], ['none', '不使用']]
   };
   const DPAD_FN = {
-    ps3: [['none', '不使用（交給按鍵對應；官方配置有用到方向鍵）'], ['move', '移動車子：↑↓ 前後、←→ 平移、L1／R1 旋轉'], ['aim', '調整瞄準：←→ 旋轉、↑↓ 升降／仰角']],
+    ps3: [['none', '不使用（交給按鍵對應：預設配置用 △／○＋方向鍵）'], ['move', '移動車子：↑↓ 前後、←→ 平移、L1／R1 旋轉'], ['aim', '調整瞄準：←→ 旋轉、↑↓ 升降／仰角']],
     v7rc: [['turn', '← → 原地旋轉（官方）'], ['move', '移動車子：↑↓ 前後、←→ 平移、↖ ↗ 旋轉'], ['aim', '調整瞄準：←→ 旋轉、↑↓ 升降／仰角'], ['none', '不使用（交給按鍵對應）']]
   };
   const aimTarget = on => on.arm ? { pan: '手臂旋轉', tilt: '手臂升降' } : on.gun ? { pan: '砲台旋轉', tilt: '砲管仰角' } : { pan: '雲台 S0 旋轉', tilt: 'S1 仰角' };
@@ -257,7 +258,7 @@
     fireN: { label: '連續發射', level: 'race', kit: 'gun' }
   };
   const KITS = {
-    gimbal: { label: '水平雲台（底盤）', pins: 'S0', row: ['S0', '—', '—', '校正：S0 轉到 90°'] },
+    gimbal: { label: '水平雲台（底盤；與手臂／發射器的旋轉是同一顆，擇一）', pins: 'S0', row: ['S0', '—', '—', '校正：S0 轉到 90°'] },
     arm: { label: '手臂 ATARM', row: ['S0', 'S7', 'S6（夾爪）', '手臂初始化 旋轉 S0、升降 S7、夾爪 S6'] },
     gun: { label: '乒乓球發射器 PPGUN（與手臂擇一）', row: ['S0', 'S1', 'S2（發射）', '發射器初始化 旋轉 S0、上下 S1、發射 S2'] },
     ultra: { label: '超音波', row: ['—', '—', '—', 'Trig GPIO 23、Echo GPIO 15'] },
@@ -374,6 +375,11 @@
     if (on && k === 'gun' && state.kits.on.arm) { state.kits.on.arm = false; kitNote = '已取消手臂：ATARM 與 PPGUN 函式庫不能放在同一支程式。'; }
     if (on && k === 'ps3' && state.kits.on.v7rc) { state.kits.on.v7rc = false; kitNote = '已取消 V7RC：一支程式只用一種遙控方式。'; }
     if (on && k === 'v7rc' && state.kits.on.ps3) { state.kits.on.ps3 = false; kitNote = '已取消 PS3：一支程式只用一種遙控方式。'; }
+    // 水平雲台（底盤）就是手臂／發射器的「旋轉」伺服：同一個腳位只能由一個套件控制
+    const K = state.kits, gp = (K.gimbal || {}).pin || 'S0';
+    const armUses = K.arm && [K.arm.pan, K.arm.lift, K.arm.claw].includes(gp), gunUses = K.gun && [K.gun.pan, K.gun.head, K.gun.shoot].includes(gp);
+    if (on && k === 'gimbal' && ((K.on.arm && armUses) || (K.on.gun && gunUses))) { K.on.gimbal = false; kitNote = '水平雲台（' + gp + '）就是' + (K.on.arm ? '手臂' : '發射器') + '的旋轉伺服，已由' + (K.on.arm ? '手臂' : '發射器') + '控制，不能再勾水平雲台；要轉底盤請用「' + (K.on.arm ? '手臂旋轉' : '砲台旋轉') + '」，微調範圍請改「旋轉最小／最大」。'; }
+    if (on && (k === 'arm' || k === 'gun') && K.on.gimbal && (k === 'arm' ? armUses : gunUses)) { K.on.gimbal = false; kitNote = (kitNote ? kitNote + ' ' : '') + '已取消水平雲台：' + gp + ' 就是' + (k === 'arm' ? '手臂' : '發射器') + '的旋轉伺服，改由' + (k === 'arm' ? '手臂' : '發射器') + '控制。'; }
   }
   // 自動／手動鍵若指到沒啟用的遙控，換成可用的按鍵
   function keyValid(k) {
@@ -396,6 +402,8 @@
   let state = load() || { level: 'basic', kits: defaultKits(), trig: PRESETS.basic[0][1]().trig };
   state.kits = (function (dk, sk) { sk = sk || {}; Object.keys(dk).forEach(g => { dk[g] = Object.assign(dk[g], sk[g] || {}); }); return dk; })(defaultKits(), state.kits);
   state.trig = Object.assign(emptyTrig(), state.trig || {});
+  // 舊版 PS3 官方配置（12 個按鍵）自動換成新版簡化配置；自己改過的配置不動
+  (function () { const P = state.kits.ps3; const m = P && P.map; if (Array.isArray(m) && m.length === 12 && m.some(r => r.btn === 'l2' && r.act === 'angle')) P.map = m.some(r => r.act === 'fire') ? OFFICIAL_MAP.ps3gun() : OFFICIAL_MAP.ps3arm(); })();
   const hash = (location.hash || '').slice(1);
   if (hash === 'race' || hash === 'adv' || hash === 'basic') state.level = hash;
 
@@ -409,6 +417,8 @@
   const cStr = s => '"' + String(s).replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"';
   const secInt = v => clampInt(v, 0, 30, 1);   // ATARM／PPGUN 的秒數參數取整數
 
+  const moreOpen = {};   // 收合區塊（更多手把設定）是否展開，重畫時保留
+  document.addEventListener('toggle', e => { const d = e.target; if (d && d.dataset && d.dataset.more) moreOpen[d.dataset.more] = d.open; }, true);
   /* ---------- 程式碼產生 ---------- */
   function motorLine(move, sp) { return 'tubit.setMotorsPwm(' + MOVES[move].v.map(k => fmt(k * sp === 0 ? 0 : k * sp)).join(',') + ');'; }
   function gimbalCfg() {   // 水平雲台設定（補預設值並限制範圍）
@@ -972,7 +982,20 @@
       const btnOpts = remote === 'ps3' ? PS3_BTNS : Object.entries(V7_BTNS).map(([k, b]) => [k, k + ' ' + b[0]]);
       const isP = remote === 'ps3';
       const T = aimTarget(K.on);
-      h += '<b style="width:100%">' + (isP ? 'PS3' : 'V7RC') + ' 遙控（手動模式）：搖桿與方向鍵各自設定</b>';
+      h += '<b style="width:100%">' + (isP ? 'PS3' : 'V7RC') + ' 遙控（手動模式）</b>';
+      h += '<div style="width:100%;display:flex;flex-wrap:wrap;gap:6px">' +
+        '<button type="button" class="btn small" data-mapoff="' + remote + 'arm">套用' + (isP ? '' : '官方') + '手臂車配置</button>' +
+        '<button type="button" class="btn small" data-mapoff="' + remote + 'gun">套用' + (isP ? '' : '官方') + '發射車配置</button></div>';
+      {
+        const pl2 = b => isP ? ((PS3_BTNS.find(x => x[0] === b) || ['', b])[1]) : ('按鈕 ' + b + ' ' + ((V7_BTNS[b] || [''])[0]));
+        const lab = fn => ((STICK_FN[remote].find(x => x[0] === R.stick) || ['', ''])[1]);
+        const sum = [[isP ? '搖桿' : '左搖桿', lab()], [isP ? '方向鍵' : '右側方向鍵', (DPAD_FN[remote].find(x => x[0] === R.dpad) || ['', ''])[1]]]
+          .concat((R.map || []).map(m => [(m.mod ? '按住 ' + pl2(m.mod) + '＋' : '') + pl2(m.btn), (MAP_ACTS[m.act] || {}).label || m.act]));
+        h += '<div class="table-wrap" style="width:100%;margin:2px 0"><table><thead><tr><th>手把操作</th><th>動作</th></tr></thead><tbody>' +
+          sum.map(r => '<tr><td>' + esc(r[0]) + '</td><td>' + esc(r[1]) + '</td></tr>').join('') + '</tbody></table></div>';
+      }
+      h += '<details data-more="remote" style="width:100%"' + (moreOpen.remote ? ' open' : '') + '><summary style="cursor:pointer;font-weight:600">更多手把設定（搖桿／方向鍵功能、速度、新增或修改按鍵）</summary>' +
+        '<div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin-top:8px">';
       h += '<div class="card" style="width:100%;margin:0;padding:10px 12px"><b>' + (isP ? '🕹 搖桿控制（左／右搖桿）' : '🕹 左搖桿控制') + '</b><div class="act-fields" style="margin-top:6px">' + o(remote, 'stick', '功能', STICK_FN[remote], R.stick) + '</div></div>';
       h += '<div class="card" style="width:100%;margin:0;padding:10px 12px"><b>' + (isP ? '✚ 方向鍵控制（↑↓←→' + (R.dpad === 'move' ? '＋L1／R1' : '') + '）' : '✚ 右側方向鍵控制（8 方向）') + '</b><div class="act-fields" style="margin-top:6px">' + o(remote, 'dpad', '功能', DPAD_FN[remote], R.dpad) + '</div></div>';
       const moving = ['move', 'moveAim'].includes(R.stick) || ['move', 'turn'].includes(R.dpad);
@@ -999,8 +1022,6 @@
       if (aiming) h += '<span class="muted" style="width:100%">瞄準對象依勾選的套件：' + (K.on.arm ? '手臂 ATARM' : K.on.gun ? '發射器 PPGUN' : '沒有手臂／發射器，改控制伺服 S0（旋轉）、S1（仰角）') + '。</span>';
       h += '<b style="width:100%">按鍵對應（按住時持續執行）</b>';
       h += '<div style="width:100%;display:flex;flex-wrap:wrap;gap:6px">' +
-        '<button type="button" class="btn small" data-mapoff="' + remote + 'arm">套用官方手臂車配置</button>' +
-        '<button type="button" class="btn small" data-mapoff="' + remote + 'gun">套用官方發射車配置</button>' +
         (remote === 'ps3' ? '<span style="display:inline-flex;align-items:center;gap:4px">按住<select data-shiftmod="1">' + PS3_BTNS.filter(b => !['up', 'down', 'left', 'right'].includes(b[0])).map(b => '<option value="' + b[0] + '"' + (b[0] === 'circle' ? ' selected' : '') + '>' + esc(b[1]) + '</option>').join('') + '</select>' +
           '<button type="button" class="btn small" data-shiftadd="1">時方向鍵調' + (K.on.arm ? '手臂旋轉／升降' : K.on.gun ? '砲台旋轉／仰角' : '雲台 S0／S1') + '</button></span>' : '') +
         '<button type="button" class="btn small" data-mapadd="1">＋ 新增按鍵</button>' +
@@ -1020,6 +1041,7 @@
           '<div class="act-tools"><button class="icon-btn" type="button" data-mapdel="' + i + '" title="刪除">✕</button></div></div>';
       });
       if (!(R.map || []).length) h += '<span class="muted" style="width:100%">還沒有按鍵對應：可套用官方配置，或按「＋ 新增按鍵」。</span>';
+      h += '</div></details>';
     }
     // ----- 自動移動速度 -----
     h += '<b style="width:100%">自動移動速度（規劃後可直接調）</b>' + f('auto', 'speed', '速度 %（10～200，100＝原規劃速度）', (K.auto || {}).speed === undefined ? 100 : K.auto.speed) +
