@@ -2,9 +2,12 @@
 
 TU:bit V2（MTC V2 麥克納姆輪）機器人的教學網站：從安裝 TubitBlock、組裝接線、PS3／V7RC 遙控、手臂與乒乓球發射器，到 2026 全國 AI 智創機器人競賽專區與競賽路徑規劃器。
 
-目前版本：**v1.6.5**（完整更新紀錄見 [CHANGELOG.md](CHANGELOG.md)，網頁標題旁的版本號也可點開查看）
+目前版本：**v1.6.6**（完整更新紀錄見 [CHANGELOG.md](CHANGELOG.md)，網頁標題旁的版本號也可點開查看）
 
 ## 版本更新
+
+### v1.6.6（2026-10-04）
+- 程式範例新增「BNO 精準移動」與「MTC＋BNO＋PS3 無頭模式」兩支範例，含文字版積木、逐塊說明、已編譯驗證的 Arduino 程式碼與 .tb 下載（`examples/` 資料夾）。
 
 ### v1.6.5（2026-10-04）
 - 每頁頁尾與路徑規劃器下方加上「車城國小資訊老師徐吉德整理製作@2026」。
@@ -41,7 +44,8 @@ index.html          首頁（學習路線、重要日期、官方資源）
 start.html          STEP 1 開始使用（控制板、安裝、連線上傳）
 wiring.html         STEP 2 組裝與接線（馬達、伺服、超音波、校正）
 modules.html        STEP 3 擴充模組（PS3、V7RC、手臂、發射器、BNO055…）
-code.html           STEP 4 程式範例（官方 .tb 逐段解說、BNO 轉正）
+code.html           STEP 4 程式範例（官方 .tb 逐段解說、BNO 轉正、BNO 精準移動、PS3 無頭模式）
+examples/           本站整理的 .tb 範例檔（01_BNO精準移動、02_MTC_BNO_PS3無頭模式控制）
 generator.html      程式產生器（基礎篇、進階篇、競賽自動化）
 resources.html      資料下載（官方講義、範例 .tb、雲端備份連結）
 competition.html    競賽專區（2026 全國賽規則重點、計分試算）

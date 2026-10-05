@@ -1,8 +1,9 @@
 'use strict';
 /* TU:bit V2 機器人課程網站｜共用頁首、頁尾、版本紀錄
    改版時只改 APP_VERSION 與 CHANGELOG 兩個常數。 */
-const APP_VERSION = 'v1.6.5';
+const APP_VERSION = 'v1.6.6';
 const CHANGELOG = [
+  { version: 'v1.6.6', date: '2026-10-04', desc: '程式範例新增兩支 BNO 範例：01_BNO精準移動（BNO 移動起點＋BNO 移動，邊走邊轉的 50 cm 正方形）與 02_MTC_BNO_PS3無頭模式控制（以開機方向為準的 PS3 遙控）；附文字版積木、逐塊說明、產生的 Arduino 程式碼（已在兔比積木線上 Arduino IDE 編譯成功）與 .tb 下載。新增共用「複製程式碼」按鈕。' },
   { version: 'v1.6.5', date: '2026-10-04', desc: '每頁頁尾與路徑規劃器下方加上「車城國小資訊老師徐吉德整理製作@2026」。' },
   { version: 'v1.6.4', date: '2026-10-04', desc: '水平雲台可微調：程式產生器與路徑規劃器勾選後可設定腳位、回正角度、微調（±45°）與可轉範圍，程式碼產生 GIMBAL_TRIM 與 gimbalTo()。路徑規劃器 v1.6.0：畫路徑時預計碰撞會提示，可一鍵加繞行點（自動找繞過障礙的最少轉折點）或移到最近可通過位置。' },
   { version: 'v1.6.3', date: '2026-10-04', desc: '程式產生器（競賽自動化）與路徑規劃器 v1.5.0 新增「自動移動速度 %」：規劃好路線後改一個數字，所有 MTC 自動移動一起變快或變慢；程式碼產生 AUTO_SPEED 常數與 autoV()，燒錄前也能直接改。' },
@@ -113,7 +114,27 @@ function initTabs() {
   });
 }
 
+/* 複製按鈕：<button data-copy="元素id">，複製該元素的文字（共用，任何頁面都可用） */
+function initCopy() {
+  document.addEventListener('click', e => {
+    const b = e.target.closest('[data-copy]'); if (!b) return;
+    const el = document.getElementById(b.dataset.copy); if (!el) return;
+    const label = b.dataset.label || b.textContent;
+    b.dataset.label = label;
+    const done = msg => { b.textContent = msg; setTimeout(() => { b.textContent = label; }, 1500); };
+    const text = el.textContent;
+    if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(text).then(() => done('已複製 ✓'), () => fallback());
+    else fallback();
+    function fallback() {
+      const r = document.createRange(); r.selectNodeContents(el);
+      const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r);
+      done('已選取，請按 Ctrl+C');
+    }
+  });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   renderChrome();
   initTabs();
+  initCopy();
 });
