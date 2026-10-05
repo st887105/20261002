@@ -2,9 +2,15 @@
 
 TU:bit V2（MTC V2 麥克納姆輪）機器人的教學網站：從安裝 TubitBlock、組裝接線、PS3／V7RC 遙控、手臂與乒乓球發射器，到 2026 全國 AI 智創機器人競賽專區與競賽路徑規劃器。
 
-目前版本：**v1.6.9**（完整更新紀錄見 [CHANGELOG.md](CHANGELOG.md)，網頁標題旁的版本號也可點開查看）
+目前版本：**v1.7.1**（完整更新紀錄見 [CHANGELOG.md](CHANGELOG.md)，網頁標題旁的版本號也可點開查看）
 
 ## 版本更新
+
+### v1.7.1（2026-10-05）
+- 修正 BNO055 開機偵測太早而誤判「沒有 BNO055」的問題：改為最多重試 1.5 秒（程式產生器、路徑規劃器 v1.7.1）。
+
+### v1.7.0（2026-10-05）
+- OLED 中文改用精簡字型：只打包用到的字，解決 PS3／V7RC＋中文顯示「Sketch too big」無法編譯的問題。
 
 ### v1.6.9（2026-10-05）
 - 自動化定點移動：程式產生器新增「設定定點原點」「前往定點（座標）＋到點升降／開爪／合爪」「前進／後退指定距離」「感測距離移動」；勾 BNO055 時用新版 MTC V3 精準定點。預設動作為零。
@@ -58,10 +64,11 @@ wiring.html         STEP 2 組裝與接線（馬達、伺服、超音波、校�
 modules.html        STEP 3 擴充模組（PS3、V7RC、手臂、發射器、BNO055…）
 code.html           STEP 4 程式範例（官方 .tb 逐段解說、BNO 轉正、BNO 精準移動、PS3 無頭模式）
 examples/           本站整理的 .tb 範例檔（01_BNO精準移動、02_MTC_BNO_PS3無頭模式控制）
+assets/fonts/       u8g2_unifont_t_chinese1.bin：程式產生器產生 OLED 精簡中文字型用（約 212 KB）
 generator.html      程式產生器（基礎篇、進階篇、競賽自動化）
 resources.html      資料下載（官方講義、範例 .tb、雲端備份連結）
 competition.html    競賽專區（2026 全國賽規則重點、計分試算）
-race-planner/       TU:bit V2 2026全國競賽路徑規劃器 v1.7.0（含自己的 README、CHANGELOG）
+race-planner/       TU:bit V2 2026全國競賽路徑規劃器 v1.7.1（含自己的 README、CHANGELOG）
 planner/            舊網址，自動導向程式產生器（競賽自動化）
 assets/site.css     共用樣式（自建輕量 CSS，無框架）
 assets/site.js      共用頁首頁尾、版本號、更新紀錄

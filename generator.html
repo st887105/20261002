@@ -429,6 +429,26 @@
   const cStr = s => '"' + String(s).replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"';
   const secInt = v => clampInt(v, 0, 30, 1);   // ATARM／PPGUN 的秒數參數取整數
 
+  /* OLED 中文：只把用到的字打包成精簡字型（u8g2_font_unifont_t_chinese1 約 212 KB，加上 PS3 藍牙會超過 ESP32 程式空間） */
+  let zhFont = null;   // { f: 字型位元組, uni: unicode 區段起點, map: 字碼 → [位置, 長度] }
+  fetch('assets/fonts/u8g2_unifont_t_chinese1.bin').then(r => r.ok ? r.arrayBuffer() : null).then(buf => {
+    if (!buf) return;
+    const f = new Uint8Array(buf), uni = (f[21] << 8) | f[22];
+    let q = 23 + uni;
+    while (q + 3 < f.length) { const u = (f[q + 2] << 8) | f[q + 3]; q += 4; if (u === 0xffff) break; }
+    const map = new Map();
+    for (let g = q; g + 2 < f.length;) { const e = (f[g] << 8) | f[g + 1]; if (!e || !f[g + 2]) break; map.set(e, [g, f[g + 2]]); g += f[g + 2]; }
+    zhFont = { f, uni, map };
+    if (typeof render === 'function') render();
+  }).catch(() => {});
+  function zhSubset(text) {   // 回傳精簡字型的位元組與缺字
+    const F = zhFont, cps = [...new Set([...String(text)].map(c => c.codePointAt(0)).filter(c => c > 255))].sort((a, b) => a - b);
+    const out = Array.from(F.f.slice(0, 23 + F.uni)), miss = [];
+    out.push(0x00, 0x04, 0xff, 0xff);   // unicode 查表：只有一段，直接接字形
+    cps.forEach(c => { const g = F.map.get(c); if (g) { for (let i = 0; i < g[1]; i++) out.push(F.f[g[0] + i]); } else miss.push(String.fromCodePoint(c)); });
+    out.push(0, 0);
+    return { bytes: out, missing: miss };
+  }
   const moreOpen = {};   // 收合區塊（更多手把設定）是否展開，重畫時保留
   document.addEventListener('toggle', e => { const d = e.target; if (d && d.dataset && d.dataset.more) moreOpen[d.dataset.more] = d.open; }, true);
   /* ---------- 程式碼產生 ---------- */
@@ -472,7 +492,8 @@
         L.push(ind + 'display.clearDisplay();');
         if (a.type === 'oled' && a.font === 'zh') {
           need.zh = true;
-          L.push(ind + 'u8g2.setFont(u8g2_font_unifont_t_chinese1);');
+          need.zhText = (need.zhText || '') + String(a.text || '');
+          L.push(ind + 'u8g2.setFont(' + (zhFont ? 'tubitZhFont' : 'u8g2_font_unifont_t_chinese1') + ');' + (zhFont ? '   // 精簡中文字型（只含用到的字）' : '   // 完整中文字型約 212 KB'));
           L.push(ind + 'u8g2.setCursor(' + x + ', ' + y + ');');
           L.push(ind + 'u8g2.print(' + cStr(a.text) + ');');
         } else {
@@ -868,6 +889,15 @@
     if (need.mtc) def.push('TuMTC mtc(tubit);');
     if (need.oled) def.push('Adafruit_SH1106G display(128, 64, &Wire);');
     if (need.zh) def.push('U8G2_FOR_ADAFRUIT_GFX u8g2;');
+    if (need.zh && zhFont) {
+      const z = zhSubset(need.zhText || ''), hex = z.bytes.map(b => '0x' + (b < 16 ? '0' : '') + b.toString(16));
+      const uniq = [...new Set([...String(need.zhText || '')].filter(c => c.codePointAt(0) > 255))].join('');
+      def.push('', '// 精簡中文字型：只收錄用到的 ' + uniq.length + ' 個中文字「' + uniq.replace(/\*\//g, '') + '」（字形取自 u8g2_font_unifont_t_chinese1）',
+        '// 完整字型約 212 KB，加上 PS3／V7RC 藍牙會超過程式空間；改文字後請回產生器重新產生' + (z.missing.length ? '；缺字（會顯示空白）：' + z.missing.join('') : ''),
+        'const uint8_t tubitZhFont[' + hex.length + '] = {');
+      for (let i = 0; i < hex.length; i += 24) def.push('  ' + hex.slice(i, i + 24).join(',') + (i + 24 < hex.length ? ',' : ''));
+      def.push('};');
+    }
     if (need.ultra) def.push('Ultrasonic ' + uname + '(' + trig + ', ' + echo + ');   // Trig, Echo');
     if (need.bno) def.push('EasyBNO055_ESP bno;', 'bool bnoOK = false;   // 開機時有沒有找到 BNO055（沒接好就略過，不讓程式卡住）');
     if (need.servoArr) def.push('float servoDeg[8] = {90, 90, 90, 90, 90, 90, 90, 90};   // S0～S7 目前角度（累加調整用，開機假設在 90°）');
@@ -935,7 +965,13 @@
     }
     if (need.bno) {
       helpers.push('', 'bool bnoFound() {   // 先確認 I2C 位址 0x28 有 BNO055；bno.start() 找不到感測器會一直等，整支程式會卡住',
-        '  Wire.begin();', '  Wire.beginTransmission(0x28);', '  return Wire.endTransmission() == 0;', '}');
+        '  Wire.begin();',
+        '  for (int i = 0; i < 15; i++) {   // BNO055 上電約 0.65 秒後才回應，最多重試 1.5 秒',
+        '    Wire.beginTransmission(0x28);',
+        '    if (Wire.endTransmission() == 0) return true;',
+        '    delay(100);',
+        '  }',
+        '  return false;', '}');
     }
     if (need.turn) {
       helpers.push('', 'double headingErr(double target) {   // 目標角與 BNO 角度差，換算到 -180~180',
@@ -1000,7 +1036,7 @@
       case 'single': return sel('motor', '馬達', [['M1', 'M1 左前'], ['M2', 'M2 左後'], ['M3', 'M3 右後'], ['M4', 'M4 右前']], a.motor) + inp('speed', '速度 −255–255', a.speed, ' min="-255" max="255"');
       case 'mtc': return inp('x', 'X 右移 cm', a.x) + inp('y', 'Y 前進 cm', a.y) + inp('r', '旋轉 °（逆時針＋）', a.r) + inp('vm', '最高速 deg/s', a.vm, ' min="0"') + inp('a', '加速度', a.a, ' min="0"');
       case 'servo': return sel('pin', '腳位', ['S0', 'S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7'].map(p => [p, p]), a.pin) + inp('deg', '角度 0–180', a.deg, ' min="0" max="180"');
-      case 'oled': return '<label>文字<input class="w-text" type="text" data-k="text" data-id="' + id + '" value="' + esc(a.text) + '"></label>' + inp('x', 'X 0–127', a.x, ' min="0" max="127"') + inp('y', 'Y 0–63', a.y, ' min="0" max="63"') + sel('font', '字型', [['en', '英數字'], ['zh', '中文（常用字）']], a.font);
+      case 'oled': return '<label>文字<input class="w-text" type="text" data-k="text" data-id="' + id + '" value="' + esc(a.text) + '"></label>' + inp('x', 'X 0–127', a.x, ' min="0" max="127"') + inp('y', 'Y 0–63', a.y, ' min="0" max="63"') + sel('font', '字型', [['en', '英數字'], ['zh', '中文（只打包用到的字）']], a.font);
       case 'wait': return inp('sec', '秒數', a.sec, ' min="0" step="0.1"');
       case 'stop': return '<span class="muted">停止所有馬達</span>';
       case 'gimbal': return inp('deg', '角度（90＝正前方）', a.deg, ' min="0" max="180"');
