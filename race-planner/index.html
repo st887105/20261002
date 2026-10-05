@@ -177,7 +177,7 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
 <body>
 <div class="app">
 <header>
-  <div class="brand"><h1>TU:bit V2 2026全國競賽路徑規劃器</h1><span class="ver" id="ver" title="更新紀錄">v1.7.1</span><a class="ver" href="../competition.html" title="回競賽專區">← 競賽專區</a><a class="ver" href="../generator.html#race" title="程式產生器：競賽自動化">程式產生器</a></div>
+  <div class="brand"><h1>TU:bit V2 2026全國競賽路徑規劃器</h1><span class="ver" id="ver" title="更新紀錄">v1.7.2</span><a class="ver" href="../competition.html" title="回競賽專區">← 競賽專區</a><a class="ver" href="../generator.html#race" title="程式產生器：競賽自動化">程式產生器</a></div>
   <div class="hgroup">
     <select id="gameSel" aria-label="競賽項目">
       <option value="energy">物資能源爭霸戰 300×300</option>
@@ -422,6 +422,7 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
 </dialog>
 <dialog id="logDlg">
   <h3 style="margin-top:0">更新紀錄</h3>
+  <p><b>v1.7.2</b>（2026-10-05）勾選 PS3／V7RC 時，自動／手動鍵改成該遙控的預設（PS3：START／SELECT），不再沿用上一種遙控的按鍵。</p>
   <p><b>v1.7.1</b>（2026-10-05）修正 BNO055 開機偵測：BNO055 上電約 0.65 秒後才回應，原本只檢查一次可能誤判「沒有 BNO055」而略過初始化，改為最多重試 1.5 秒。</p>
   <p><b>v1.7.0</b>（2026-10-05）自動化定點移動：新增「BNO 精準定點」（預設開啟，需勾 BNO055）——每個路徑點改用 <code>goTo()</code> 以起點為原點的座標前往，新版 MTC V3 用陀螺儀鎖定方向，到點更準；校正、撞牆、超音波等改變位置的步驟後自動 <code>setPos()</code> 同步座標。新增「感測距離移動」步驟（太遠前進、太近後退，停在目標距離）。預設動作為零：新方案沒有步驟，範例路線改放在「快速範本」。與程式產生器的「設定原點、前往定點＋到點動作、指定距離、感測距離移動」共用同一套寫法。</p>
   <p><b>v1.6.3</b>（2026-10-05）物資能源爭霸戰場地依新版規則「場地規格圖」重新布置：出發區含膠帶外框 75×40、迷宮隔板（出發區下方 x35、L 形距上 60、左牆隔板距上 100、T 形距左 80 與 12.5 偏移）、齒輪物資（迷宮參考點）距左 78／距上 128、倉儲牆 5 cm 與閘門 x60～95、觸發閘門裝置緊貼倉儲上緣；藍方為 180° 對稱。舊的官方場地開啟時自動換新，自己改過的場地不動。PS3 預設配置更正：手臂車為方向鍵 ↑↓ 手臂升降、←→ 雲台轉動、△ 開爪、○ 合爪；發射車為方向鍵 ↑↓ 砲管升降、←→ 雲台轉動、△ 發射；START 自動、SELECT 手動。舊配置（12 鍵版、△／○ 組合鍵版）開啟時自動換新。</p>
@@ -446,7 +447,7 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
 <script>
 'use strict';
 /* ================= 基本工具 ================= */
-const VERSION = 'v1.7.1';
+const VERSION = 'v1.7.2';
 const STORE_KEY = 'tubit-planner-v1';
 const uid = () => Math.random().toString(36).slice(2, 9);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -780,6 +781,11 @@ const GEN = (function () {
     if (on && k === 'gun' && state.kits.on.arm) { state.kits.on.arm = false; kitNote = '已取消手臂：ATARM 與 PPGUN 函式庫不能放在同一支程式。'; }
     if (on && k === 'ps3' && state.kits.on.v7rc) { state.kits.on.v7rc = false; kitNote = '已取消 V7RC：一支程式只用一種遙控方式。'; }
     if (on && k === 'v7rc' && state.kits.on.ps3) { state.kits.on.ps3 = false; kitNote = '已取消 PS3：一支程式只用一種遙控方式。'; }
+    // 換遙控方式時，自動／手動鍵改成該遙控的預設（PS3：START／SELECT；V7RC：按鈕 5／控制板 B），避免沿用上一種遙控的按鍵
+    if (on && (k === 'ps3' || k === 'v7rc') && state.kits.mode) {
+      const M = state.kits.mode;
+      if (k === 'ps3') { M.autoKey = 'ps3:start'; M.manKey = 'ps3:select'; } else { M.autoKey = 'v7:5'; M.manKey = 'btnB'; }
+    }
     // 水平雲台（底盤）就是手臂／發射器的「旋轉」伺服：同一個腳位只能由一個套件控制
     const K = state.kits, gp = (K.gimbal || {}).pin || 'S0';
     const armUses = K.arm && [K.arm.pan, K.arm.lift, K.arm.claw].includes(gp), gunUses = K.gun && [K.gun.pan, K.gun.head, K.gun.shoot].includes(gp);

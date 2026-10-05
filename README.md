@@ -2,9 +2,12 @@
 
 TU:bit V2（MTC V2 麥克納姆輪）機器人的教學網站：從安裝 TubitBlock、組裝接線、PS3／V7RC 遙控、手臂與乒乓球發射器，到 2026 全國 AI 智創機器人競賽專區與競賽路徑規劃器。
 
-目前版本：**v1.7.1**（完整更新紀錄見 [CHANGELOG.md](CHANGELOG.md)，網頁標題旁的版本號也可點開查看）
+目前版本：**v1.7.2**（完整更新紀錄見 [CHANGELOG.md](CHANGELOG.md)，網頁標題旁的版本號也可點開查看）
 
 ## 版本更新
+
+### v1.7.2（2026-10-05）
+- 換遙控方式時自動／手動鍵自動改成該遙控的預設（PS3：START／SELECT）；按鍵對應 ↑↓、←→ 同方向時提醒。
 
 ### v1.7.1（2026-10-05）
 - 修正 BNO055 開機偵測太早而誤判「沒有 BNO055」的問題：改為最多重試 1.5 秒（程式產生器、路徑規劃器 v1.7.1）。
@@ -68,7 +71,7 @@ assets/fonts/       u8g2_unifont_t_chinese1.bin：程式產生器產生 OLED 精
 generator.html      程式產生器（基礎篇、進階篇、競賽自動化）
 resources.html      資料下載（官方講義、範例 .tb、雲端備份連結）
 competition.html    競賽專區（2026 全國賽規則重點、計分試算）
-race-planner/       TU:bit V2 2026全國競賽路徑規劃器 v1.7.1（含自己的 README、CHANGELOG）
+race-planner/       TU:bit V2 2026全國競賽路徑規劃器 v1.7.2（含自己的 README、CHANGELOG）
 planner/            舊網址，自動導向程式產生器（競賽自動化）
 assets/site.css     共用樣式（自建輕量 CSS，無框架）
 assets/site.js      共用頁首頁尾、版本號、更新紀錄

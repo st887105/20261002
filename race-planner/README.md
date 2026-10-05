@@ -4,7 +4,7 @@
 [兔比積木 Arduino IDE](https://tubitblock.trgreat.com/arduino-ide.html) 直接編譯燒錄的程式碼。
 內建「2026 全國 AI 智創機器人競賽（扶輪盃）」兩項賽事場地，也可自訂空白場地。
 
-目前版本：**v1.7.1**（完整更新紀錄見 [CHANGELOG.md](CHANGELOG.md)，網頁標題旁的版本號也可點開查看）
+目前版本：**v1.7.2**（完整更新紀錄見 [CHANGELOG.md](CHANGELOG.md)，網頁標題旁的版本號也可點開查看）
 
 ## 版本更新
 
