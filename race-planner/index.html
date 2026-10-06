@@ -177,7 +177,7 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
 <body>
 <div class="app">
 <header>
-  <div class="brand"><h1>TU:bit V2 2026全國競賽路徑規劃器</h1><span class="ver" id="ver" title="更新紀錄">v1.8.0</span><a class="ver" href="../competition.html" title="回競賽專區">← 競賽專區</a><a class="ver" href="../generator.html#race" title="程式產生器：競賽自動化">程式產生器</a></div>
+  <div class="brand"><h1>TU:bit V2 2026全國競賽路徑規劃器</h1><span class="ver" id="ver" title="更新紀錄">v1.9.2</span><a class="ver" href="../competition.html" title="回競賽專區">← 競賽專區</a><a class="ver" href="../generator.html#race" title="程式產生器：競賽自動化">程式產生器</a></div>
   <div class="hgroup">
     <select id="gameSel" aria-label="競賽項目">
       <option value="energy">物資能源爭霸戰 300×300</option>
@@ -245,6 +245,7 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
           <label class="f"><span>車長 (前後) cm</span><input type="number" step="0.5" data-bind="robot.l"></label>
           <label class="f"><span>夾爪中心離車心 cm</span><input type="number" step="0.5" data-bind="robot.clawOff"></label>
           <label class="f"><span>輪徑 cm</span><input type="number" step="0.1" data-bind="motion.wheelD"></label>
+          <label class="f"><span>放置容許誤差 cm</span><input type="number" step="0.5" min="0" max="5" data-bind="robot.placeTol"></label>
         </div>
       </div>
       <div class="sec"><h3>起始姿態</h3>
@@ -254,6 +255,18 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
           <label class="f"><span>車頭 °</span><input type="number" step="15" data-bind="robot.start.h"></label>
         </div>
         <p class="hint">車頭 0° 朝上 (+Y)，90° 朝左，180° 朝下，-90° 朝右（逆時針為正）。</p>
+      </div>
+      <div class="sec"><h3>另一台機器人（同時出發、手動）</h3>
+        <label class="chk"><input type="checkbox" data-bind="robotB.on"> 顯示機器人 B（自動規劃與碰撞檢查會避開它的出發位置）</label>
+        <div class="row3" style="margin-top:6px">
+          <label class="f"><span>X cm</span><input type="number" step="1" data-bind="robotB.x"></label>
+          <label class="f"><span>Y cm</span><input type="number" step="1" data-bind="robotB.y"></label>
+          <label class="f"><span>車頭 °</span><input type="number" step="15" data-bind="robotB.h"></label>
+          <label class="f"><span>車寬 cm</span><input type="number" step="0.5" data-bind="robotB.w"></label>
+          <label class="f"><span>車長 cm</span><input type="number" step="0.5" data-bind="robotB.l"></label>
+        </div>
+        <button class="btn small" id="swapAB" style="margin-top:6px">交換 A（自動）與 B（手動）位置</button>
+        <p class="hint">也可以在畫布上直接拖曳紫色虛線的 B 車；選取後按 Q／E 旋轉。交換後請再按一次「自動規劃最佳路徑」。</p>
       </div>
       <div class="sec"><h3>預設移動參數 (moveSCurve)</h3>
         <div class="row3">
@@ -371,6 +384,8 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
           <option value="irTurn">IR 靠牆校正 → BNO 轉正</option>
           <option value="fire5">砲台回正 → 連續發射 5 顆</option>
         </select>
+        <button class="btn small primary" id="autoPlanBtn" style="flex:1 1 70%">自動規劃最佳路徑：夾取齒輪 → 放到觸發閘門裝置</button>
+        <button class="btn small" id="swapAB2" title="交換 A（自動）與 B（手動）的出發位置">A ⇄ B 交換位置</button>
         <button class="btn small" data-add="move">移動</button>
         <button class="btn small" data-add="clawOpen">夾爪張開</button>
         <button class="btn small" data-add="clawClose">夾爪夾緊</button>
@@ -422,6 +437,9 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
 </dialog>
 <dialog id="logDlg">
   <h3 style="margin-top:0">更新紀錄</h3>
+  <p><b>v1.9.2</b>（2026-10-06）新增「A ⇄ B 交換位置」按鈕（動作步驟上方與「參數 → 另一台機器人」）；物資能源預設改為 A（自動）在出發區右側、B（手動）在左側，A 直接走右側通道，夾取路線更短；範例路線同步更新。</p>
+  <p><b>v1.9.1</b>（2026-10-06）車身預設值更正為實測：車寬 20 cm、車長 20 cm、夾爪中心離車心 15 cm、輪徑 6 cm（機器人 B 也是 20×20 cm）；舊方案仍是舊預設值（28×28 cm、夾爪 20 cm）時自動更正。新增「放置容許誤差」（預設 2 cm）：自動規劃放置時，夾爪中心落在觸發裝置中心這個範圍內都算放上，並顯示實際偏差；放不到時說明放寬多少就放得到。</p>
+  <p><b>v1.9.0</b>（2026-10-06）兩台同時出發：新增機器人 B（手動）出發位置，可拖曳、旋轉、設定尺寸，碰撞檢查與自動規劃會避開它，賽規檢查確認 A、B 都在出發區且不重疊。新增「自動規劃最佳路徑」：自動找本方齒輪與觸發閘門裝置，試每 15° 車頭與手臂旋轉角度找夾取／放置姿態，用格點 A* 找最短無碰撞路線，產生移動與到點動作；放不到時算出夾爪至少要多長。模擬會計入手臂旋轉角度。</p>
   <p><b>v1.8.0</b>（2026-10-05）新增「現場微調與校正」（程式產生器、路徑規劃器共用，數值存在 ESP32 快閃記憶體 Preferences，斷電不會消失，比賽現場不用改程式）：① IR 校正模式：開機按住控制板 A，依序把前（33）、後（32）、左（35／34）、右（39／36）面放在離牆 10 cm，每面按 A 取 20 次平均存成 IR 目標值（B 跳過）；② BNO 校正模式：開機按住 B，靜置顯示角度與每分鐘漂移，A＝目前方向設為 0°，B＝離開；③ 現場微調：PS3 手動模式按住 START＋L1／L2 前後、R1／R2 雲台（手臂或砲台旋轉），START＋SELECT 歸零，可設定每按一下幾 cm／幾度，套用在夾取點、放置點或兩者（trimBefore／trimAfter，夾好或放好後自動復原）；單按 START 放開才啟動自動，按住 START 的組合鍵不會誤啟動。</p>
   <p><b>v1.7.2</b>（2026-10-05）勾選 PS3／V7RC 時，自動／手動鍵改成該遙控的預設（PS3：START／SELECT），不再沿用上一種遙控的按鍵。</p>
   <p><b>v1.7.1</b>（2026-10-05）修正 BNO055 開機偵測：BNO055 上電約 0.65 秒後才回應，原本只檢查一次可能誤判「沒有 BNO055」而略過初始化，改為最多重試 1.5 秒。</p>
@@ -448,7 +466,7 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
 <script>
 'use strict';
 /* ================= 基本工具 ================= */
-const VERSION = 'v1.8.0';
+const VERSION = 'v1.9.2';
 const STORE_KEY = 'tubit-planner-v1';
 const uid = () => Math.random().toString(36).slice(2, 9);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -1532,15 +1550,13 @@ function defaultKitsFor(robot){
   }
   return K;
 }
-function demoSteps(){
+function demoSteps(){   // 範例：A（自動）在出發區右側，往下走右側通道夾取齒輪
   const mv = (x, y, h) => ({id:uid(), type:'move', x, y, h, curve:false, bulge:0, vm:'', a:'', ad:'', stopCm:0});
   return [
-    {id:uid(), type:'align', main:'IR_R', sub:'IR_BACK', timeout:8, confirm:1, reset:true, rx:20, ry:280, rh:180},
-    mv(60, 280, 180),
-    mv(60, 215, 180),
+    mv(53, 215, 180),
     {id:uid(), type:'claw', close:false, sec:1},
     {id:uid(), type:'lift', deg:0, sec:1},
-    mv(78, 192, 180),
+    mv(78, 187, 180),
     {id:uid(), type:'claw', close:true, sec:1},
     {id:uid(), type:'lift', deg:65, sec:1},
   ];
@@ -1552,7 +1568,8 @@ function newState(game, robot, W, H){
   const f = game === 'energy' ? presetEnergy() : game === 'target' ? presetTarget() : presetCustom(W || 200, H || 200);
   const st = {
     v:1, kv:2, game, rtype:robot, field:{W:f.W, H:f.H}, objects:f.objects,
-    robot: {w:28, l:28, clawOff:20, start: game === 'energy' ? {x:37, y:280, h:180} : {x:Math.round(f.W / 2), y:30, h:0}},
+    robot: {w:20, l:20, clawOff:15, placeTol:2, start: game === 'energy' ? {x:53, y:280, h:180} : {x:Math.round(f.W / 2), y:30, h:0}},
+    robotB: game === 'energy' ? {on:true, x:17, y:280, h:180, w:20, l:20} : {on:false, x:Math.round(f.W / 2) + 16, y:30, h:0, w:24, l:24},   // 同時出發的另一台（手動）
     motion:{vm:600, a:800, ad:800, wheelD:6, bnoGoto:true},
     axes:{frame:'body', map:'xr_yf', invX:false, invY:false, zCW:false, invBulge:false},
     arm:{liftDown:0, liftUp:65, liftPlace:20, sec:1},
@@ -1594,7 +1611,17 @@ function upgradeState(o){
   }
   // 預設套件結構補齊（產生器新增欄位時）
   const fill = (a, b) => { for (const k in b){ if (a[k] === undefined) a[k] = clone(b[k]); else if (b[k] && typeof b[k] === 'object' && !Array.isArray(b[k]) && a[k] && typeof a[k] === 'object') fill(a[k], b[k]); } };
-  ['robot','motion','axes','arm','turn','kits','ui'].forEach(k => { if (!o[k]) o[k] = clone(d[k]); else fill(o[k], d[k]); });
+  // 車身預設值更正：舊的 28×28 cm、夾爪 20 cm 改成實測 20×20 cm、夾爪 15 cm（自己改過的不動）
+  if (o.robot && o.robot.w === 28 && o.robot.l === 28 && o.robot.clawOff === 20){ o.robot.w = 20; o.robot.l = 20; o.robot.clawOff = 15; }
+  if (o.robotB && o.robotB.w === 28 && o.robotB.l === 28){ o.robotB.w = 20; o.robotB.l = 20; }
+  const hadB = !!o.robotB;
+  ['robot','robotB','motion','axes','arm','turn','kits','ui'].forEach(k => { if (!o[k]) o[k] = clone(d[k]); else fill(o[k], d[k]); });
+  if (!hadB && o.robotB.on){   // 舊方案：機器人 B 放在 A 旁邊，放不下就先關閉
+    const sA = o.robot.start, zone = (o.objects || []).find(z => z.kind === 'start' && sA.x >= z.x && sA.x <= z.x + z.w && sA.y >= z.y && sA.y <= z.y + z.h);
+    const ok = x => zone && x - 14 >= zone.x && x + 14 <= zone.x + zone.w && Math.abs(x - sA.x) >= 30;
+    const cand = [sA.x + 36, sA.x - 36].find(ok);
+    if (cand !== undefined){ o.robotB.x = cand; o.robotB.y = sA.y; o.robotB.h = sA.h; } else o.robotB.on = false;
+  }
   // 舊版物資能源場地（v1.6.2 以前的座標）自動換成依規格圖重新布置的場地；自己改過的場地不動
   if (o.game === 'energy' && (o.objects || []).some(ob => ob.type === 'wall' && ob.x === 37 && ob.y === 233 && ob.w === 5)) o.objects = presetEnergy().objects;
   // 舊版 PS3 預設配置（12 鍵官方版、△／○ 組合鍵版）自動換成目前的預設配置；自己改過的配置不動
@@ -1666,7 +1693,7 @@ function buildSeg(S, from, s){
   const pad = Math.hypot(S.robot.w, S.robot.l) / 2 + 1;
   const xs = [from.x, to.x].concat(seg.curve ? [seg.ctrl.x] : []), ys = [from.y, to.y].concat(seg.curve ? [seg.ctrl.y] : []);
   const bx0 = Math.min(...xs) - pad, bx1 = Math.max(...xs) + pad, by0 = Math.min(...ys) - pad, by1 = Math.max(...ys) + pad;
-  const solids = S.objects.filter(o => o.solid && o.x <= bx1 && o.x + o.w >= bx0 && o.y <= by1 && o.y + o.h >= by0);
+  const solids = solidObjs(S).filter(o => o.x <= bx1 && o.x + o.w >= bx0 && o.y <= by1 && o.y + o.h >= by0);
   seg.hits = []; seg.hitIds = new Set(); seg.oob = false;
   for (let i = 0; i <= nS; i++){
     const p = segPoint(seg, i / nS), poly = robotPoly(S, p.x, p.y, p.h);
@@ -1710,7 +1737,7 @@ function poseClear(S, x, y, h){
   const poly = robotPoly(S, x, y, h);
   if (poly.some(c => c.x < 0 || c.y < 0 || c.x > S.field.W || c.y > S.field.H)) return false;
   const r = Math.hypot(S.robot.w, S.robot.l) / 2 + 1;
-  return !S.objects.some(o => o.solid && o.x <= x + r && o.x + o.w >= x - r && o.y <= y + r && o.y + o.h >= y - r && polysHit(poly, rectPoly(o)));
+  return !solidObjs(S).some(o => o.x <= x + r && o.x + o.w >= x - r && o.y <= y + r && o.y + o.h >= y - r && polysHit(poly, rectPoly(o)));
 }
 function detourVia(S, s){   // 用格點 A* 找繞行路線，再精簡成最少的繞行點；回傳繞行點陣列（找不到回傳 null）
   const ctx = moveCtx(S, s.id); if (!ctx) return null;
@@ -1758,19 +1785,160 @@ function detourVia(S, s){   // 用格點 A* 找繞行路線，再精簡成最少
   }
   return vias.length ? vias : null;
 }
+/* ---------- 自動規劃最佳路徑：夾取物資 → 放到目標（例如齒輪 → 觸發閘門裝置） ---------- */
+function astarXY(S, a, b, h){   // 車頭固定 h，從 a 到 b 的最短無碰撞路線（5 cm 格點 A*，再拉直）；回傳 a 之後的各點，含 b
+  if (!poseClear(S, b.x, b.y, h)) return null;
+  const mk = (x, y) => ({id:'ap', type:'move', x, y, h, curve:false, bulge:0, vm:'', a:'', ad:'', stopCm:0});
+  const clear = (p, q) => segClear(S, {x:p.x, y:p.y, h}, mk(q.x, q.y));
+  if (clear(a, b)) return [{x:b.x, y:b.y}];
+  const G = 5, nx = Math.floor(S.field.W / G), ny = Math.floor(S.field.H / G);
+  const key = (i, j) => i * 1000 + j, fc = new Map();
+  const free = (i, j) => { const k = key(i, j); if (!fc.has(k)) fc.set(k, i >= 0 && j >= 0 && i <= nx && j <= ny && poseClear(S, i * G, j * G, h)); return fc.get(k); };
+  const hd = (i, j) => Math.hypot(i * G - b.x, j * G - b.y);
+  const open = [], came = new Map(), gs = new Map();
+  const si = Math.round(a.x / G), sj = Math.round(a.y / G);
+  for (let di = -2; di <= 2; di++) for (let dj = -2; dj <= 2; dj++){
+    const i = si + di, j = sj + dj; if (!free(i, j)) continue;
+    const q = {x:i * G, y:j * G}; if (!clear(a, q)) continue;
+    const g0 = Math.hypot(q.x - a.x, q.y - a.y); gs.set(key(i, j), g0); came.set(key(i, j), null); open.push({i, j, f:g0 + hd(i, j)});
+  }
+  let goal = null, n = 0;
+  while (open.length && n < 9000){
+    n++;
+    let bi = 0; for (let k = 1; k < open.length; k++) if (open[k].f < open[bi].f) bi = k;
+    const c = open.splice(bi, 1)[0], ck = key(c.i, c.j), cg = gs.get(ck);
+    if (hd(c.i, c.j) <= 12 && clear({x:c.i * G, y:c.j * G}, b)){ goal = ck; break; }
+    for (let di = -1; di <= 1; di++) for (let dj = -1; dj <= 1; dj++){
+      if (!di && !dj) continue;
+      const i = c.i + di, j = c.j + dj; if (!free(i, j)) continue;
+      if (di && dj && (!free(c.i + di, c.j) || !free(c.i, c.j + dj))) continue;
+      const k = key(i, j), g = cg + G * Math.hypot(di, dj);
+      if (gs.has(k) && gs.get(k) <= g) continue;
+      gs.set(k, g); came.set(k, ck); open.push({i, j, f:g + hd(i, j)});
+    }
+  }
+  if (goal === null) return null;
+  const pts = []; for (let k = goal; k !== null && k !== undefined; k = came.get(k)) pts.unshift({x:Math.floor(k / 1000) * G, y:(k % 1000) * G});
+  const path = [a, ...pts, b], out = [];
+  let cur = 0;
+  while (cur < path.length - 1){
+    let nxt = cur + 1;
+    for (let k = path.length - 1; k > cur + 1; k--) if (clear(path[cur], path[k])){ nxt = k; break; }
+    out.push({x:path[nxt].x, y:path[nxt].y}); cur = nxt;
+  }
+  return out;
+}
+function rotClear(S, p, h1){   // 原地旋轉到 h1 會不會撞到
+  const dh = normDeg(h1 - p.h), n = Math.max(1, Math.ceil(Math.abs(dh) / 5));
+  for (let i = 0; i <= n; i++) if (!poseClear(S, p.x, p.y, p.h + dh * i / n)) return false;
+  return true;
+}
+function planLeg(S, from, to){   // 一段路：需要轉向時，先原地轉再走，或先走到再轉；回傳各路徑點姿態
+  const dh = normDeg(to.h - from.h);
+  if (Math.abs(dh) < 0.5){ const r = astarXY(S, from, to, from.h); return r && r.map(q => ({x:q.x, y:q.y, h:to.h})); }
+  if (rotClear(S, from, to.h)){ const r = astarXY(S, from, to, to.h); if (r) return [{x:from.x, y:from.y, h:to.h}, ...r.map(q => ({x:q.x, y:q.y, h:to.h}))]; }
+  const r2 = astarXY(S, from, to, from.h);
+  if (r2 && rotClear(S, {x:to.x, y:to.y, h:from.h}, to.h)) return [...r2.map(q => ({x:q.x, y:q.y, h:from.h})), {x:to.x, y:to.y, h:to.h}];
+  return null;
+}
+function legLen(from, poses){ let L = 0, p = from; for (const q of poses){ L += Math.hypot(q.x - p.x, q.y - p.y) + Math.abs(normDeg(q.h - p.h)) * 0.15; p = q; } return L; }
+function bestApproach(S, from, target, off, tol){   // 讓夾爪中心落在 target（容許 tol cm 內）的最佳車子姿態（試每 15° 車頭 × 手臂旋轉範圍）
+  const A = S.kits.arm || {}, pmin = Math.max(-45, num(A.panMin, 55) - 90), pmax = Math.min(45, num(A.panMax, 125) - 90);
+  const cands = [];
+  const T = Math.max(0, num(tol, 0)), offs = [];
+  for (let dx = -T; dx <= T + 1e-9; dx += 1) for (let dy = -T; dy <= T + 1e-9; dy += 1) if (Math.hypot(dx, dy) <= T + 1e-9) offs.push([dx, dy]);
+  if (!offs.length) offs.push([0, 0]);
+  for (let h = -180; h < 180; h += 15) for (let pn = Math.ceil(pmin / 5) * 5; pn <= pmax; pn += 5) for (const [dx, dy] of offs){
+    const F = fwdVec(h + pn), x = Math.round((target.x + dx - F.x * off) * 10) / 10, y = Math.round((target.y + dy - F.y * off) * 10) / 10;
+    if (!poseClear(S, x, y, h)) continue;
+    const miss = Math.hypot(dx, dy);
+    cands.push({x, y, h:h === -180 ? 180 : h, pan:pn, miss, est:Math.hypot(x - from.x, y - from.y) + Math.abs(normDeg(h - from.h)) * 0.15 + Math.abs(pn) * 0.5 + miss * 8});
+  }
+  cands.sort((p, q) => p.est - q.est);
+  let best = null;
+  for (const c of cands.slice(0, 16)){
+    const leg = planLeg(S, from, c); if (!leg) continue;
+    const cost = legLen(from, leg) + Math.abs(c.pan) * 0.5 + c.miss * 8;
+    if (!best || cost < best.cost) best = {pose:c, leg, cost};
+  }
+  return best;
+}
+function minReach(S, target, tol){   // 這個目標（容許 tol cm）至少要多長的夾爪距離才放得到
+  const A = S.kits.arm || {}, pmin = Math.max(-45, num(A.panMin, 55) - 90), pmax = Math.min(45, num(A.panMax, 125) - 90);
+  const T = Math.max(0, num(tol, 0)), offs = [];
+  for (let dx = -T; dx <= T + 1e-9; dx += 0.5) for (let dy = -T; dy <= T + 1e-9; dy += 0.5) if (Math.hypot(dx, dy) <= T + 1e-9) offs.push([dx, dy]);
+  for (let off = Math.ceil(num(S.robot.clawOff, 15)); off <= 45; off++)
+    for (let h = -180; h < 180; h += 5) for (let pn = Math.ceil(pmin / 5) * 5; pn <= pmax; pn += 5) for (const [dx, dy] of offs){
+      const F = fwdVec(h + pn); if (poseClear(S, target.x + dx - F.x * off, target.y + dy - F.y * off, h)) return off;
+    }
+  return null;
+}
+function autoPlan(S){   // 回傳 {steps, msgs}
+  const sA = S.robot.start, msgs = [];
+  const zone = S.objects.find(z => z.kind === 'start' && sA.x >= z.x && sA.x <= z.x + z.w && sA.y >= z.y && sA.y <= z.y + z.h);
+  const team = zone ? zone.team : '';
+  const near = list => list.sort((p, q) => Math.hypot(center(p).x - sA.x, center(p).y - sA.y) - Math.hypot(center(q).x - sA.x, center(q).y - sA.y))[0];
+  const gear = near(S.objects.filter(o => o.type === 'item' && o.color === 'gear' && (!team || o.team === team)));
+  const trig = near(S.objects.filter(o => o.type === 'trigger' && (!team || o.team === team)));
+  if (!gear) return {steps:null, msgs:['找不到本方的黃色齒輪物資']};
+  const off = num(S.robot.clawOff, 20), sec = Math.max(0, Math.round(num(S.arm.sec, 1)));
+  const mv = q => ({id:uid(), type:'move', x:Math.round(q.x * 10) / 10, y:Math.round(q.y * 10) / 10, h:q.h, curve:false, bulge:0, vm:'', a:'', ad:'', stopCm:0});
+  const panStep = d => ({id:uid(), type:'pan', deg:90 + d, sec});
+  const st = k => ({clawOpen:{type:'claw', close:false, sec}, clawClose:{type:'claw', close:true, sec},
+    lower:{type:'lift', deg:num(S.arm.liftDown, 0), sec}, lift:{type:'lift', deg:num(S.arm.liftUp, 65), sec}, place:{type:'lift', deg:num(S.arm.liftPlace, 20), sec}})[k];
+  const newStep = k => Object.assign({id:uid()}, st(k));
+  const steps = [];
+  let from = {x:num(sA.x), y:num(sA.y), h:num(sA.h)};
+  const g = bestApproach(S, from, center(gear), off, 0);
+  if (!g) return {steps:null, msgs:['找不到能夾到齒輪的位置或路線（可能被隔板或機器人 B 擋住）']};
+  const gl = g.leg;
+  gl.slice(0, -1).forEach(q => steps.push(mv(q)));
+  steps.push(newStep('clawOpen'), newStep('lower'));
+  if (g.pose.pan) steps.push(panStep(g.pose.pan));
+  steps.push(mv(gl[gl.length - 1]), newStep('clawClose'), newStep('lift'));
+  if (g.pose.pan) steps.push(panStep(0));
+  msgs.push(`夾取：車頭 ${g.pose.h}°${g.pose.pan ? '、手臂旋轉 ' + (90 + g.pose.pan) + '°' : ''}，路線 ${gl.length} 個點`);
+  from = gl[gl.length - 1];
+  if (!trig){ msgs.push('找不到本方的觸發閘門裝置，只規劃夾取'); return {steps, msgs}; }
+  const tol = Math.max(0, num(S.robot.placeTol, 2));
+  const pl = bestApproach(S, from, center(trig), off, tol);
+  if (!pl){
+    const need = minReach(S, center(trig), tol), need0 = tol > 0 ? minReach(S, center(trig), tol + 1) : null;
+    msgs.push(need ? `放置：觸發閘門裝置緊貼牆角，夾爪中心離車心 ${off} cm、容許誤差 ${tol} cm 放不到，至少需要 ${need} cm` + (need0 && need0 <= off ? `；若容許誤差放寬到 ${tol + 1} cm 就放得到` : '') + '。請量實際手臂伸出距離，到「參數 → 夾爪中心離車心」修改後再規劃一次' : '放置：觸發閘門裝置附近空間不足，車子無法靠近');
+    return {steps, msgs};
+  }
+  const pg = pl.leg;
+  pg.slice(0, -1).forEach(q => steps.push(mv(q)));
+  if (pl.pose.pan) steps.push(panStep(pl.pose.pan));
+  steps.push(mv(pg[pg.length - 1]), newStep('place'), newStep('clawOpen'), newStep('lift'));
+  if (pl.pose.pan) steps.push(panStep(0));
+  msgs.push(`放置：車頭 ${pl.pose.h}°${pl.pose.pan ? '、手臂旋轉 ' + (90 + pl.pose.pan) + '°' : ''}，路線 ${pg.length} 個點` + (pl.pose.miss > 0.05 ? `，夾爪中心離觸發裝置中心 ${fmt(pl.pose.miss)} cm（容許 ${tol} cm 內）` : '，夾爪對準觸發裝置中心'));
+  return {steps, msgs};
+}
 function hitNames(S, seg){
-  const names = [...new Set([...seg.hitIds].map(id => (S.objects.find(o => o.id === id) || {}).label || '障礙物'))];
+  const all = solidObjs(S);
+  const names = [...new Set([...seg.hitIds].map(id => (all.find(o => o.id === id) || {}).label || '障礙物'))];
   if (seg.oob) names.push('場地邊界');
   return names;
 }
-function clawPoint(S, p){ const F = fwdVec(p.h); return {x:p.x + F.x * S.robot.clawOff, y:p.y + F.y * S.robot.clawOff}; }
+function clawPoint(S, p, pan){ const F = fwdVec(p.h + (num(pan, 90) - 90)); return {x:p.x + F.x * S.robot.clawOff, y:p.y + F.y * S.robot.clawOff}; }   // pan：手臂旋轉角（90＝正前方，大於 90 往左）
+function polyWH(x, y, h, w, l){ const R = rightVec(h), F = fwdVec(h); return [[-w/2,-l/2],[w/2,-l/2],[w/2,l/2],[-w/2,l/2]].map(([bx, by]) => ({x:x + bx*R.x + by*F.x, y:y + bx*R.y + by*F.y})); }
+function robotBPoly(S){ const B = S.robotB; return polyWH(num(B.x), num(B.y), num(B.h), num(B.w, 28), num(B.l, 28)); }
+function solidObjs(S){   // 障礙物＋機器人 B（手動）的出發位置
+  const out = S.objects.filter(o => o.solid);
+  if (S.robotB && S.robotB.on){
+    const P = robotBPoly(S), xs = P.map(c => c.x), ys = P.map(c => c.y);
+    out.push({id:'robotB', type:'robotB', x:Math.min(...xs), y:Math.min(...ys), w:Math.max(...xs) - Math.min(...xs), h:Math.max(...ys) - Math.min(...ys), solid:true, label:'機器人 B（手動）出發位置'});
+  }
+  return out;
+}
 
 /* ================= 模擬 ================= */
 /* 撞牆校正／超音波接近的模擬：沿機身方向一步一步前進，直到碰到牆或前方距離到達 */
 function pushPose(S, p, dir, untilFn, maxCm){
   const F = fwdVec(p.h), R = rightVec(p.h);
   const v = dir === 'fwd' ? F : dir === 'back' ? {x:-F.x, y:-F.y} : dir === 'right' ? R : {x:-R.x, y:-R.y};
-  const solids = S.objects.filter(o => o.solid);
+  const solids = solidObjs(S);
   let last = Object.assign({}, p), found = false;
   for (let d = 0.5; d <= maxCm; d += 0.5){
     const q = {x:p.x + v.x * d, y:p.y + v.y * d, h:p.h};
@@ -1794,7 +1962,7 @@ function simulate(S){
   let p = Object.assign({}, S.robot.start);
   const res = {pose:[], segs:[], pseudo:[], timeline:[], total:0, notes:[], clawClosed:false, triggerDone:false, multiGrab:false, doubleClose:false,
     neutralShooter:false, crossLine:false, placed:[], grabbed:[], durations:{}, noWall:[], noTarget:[]};
-  let clawClosed = false, holding = [];
+  let clawClosed = false, holding = [], pan = 90;
   const items = S.objects.filter(o => o.type === 'item');
   for (const s of S.steps){
     res.pose.push({id:s.id, before:Object.assign({}, p)});
@@ -1817,7 +1985,7 @@ function simulate(S){
       p = Object.assign({}, seg.to);
     } else if (s.type === 'distMove'){
       const from = Object.assign({}, p), cm = Math.max(0, num(s.cm, 0));
-      const so = S.objects.filter(o => o.solid);
+      const so = solidObjs(S);
       const blockedAt = q => frontBlocked(S, q, so, cm);
       let r;
       if (blockedAt(p)) r = pushPose(S, p, 'back', (q, sol) => hitsAny(S, q, sol) || !blockedAt(q), 250);   // 太近：後退到剛好不擋
@@ -1850,7 +2018,7 @@ function simulate(S){
     } else {
       if (s.type === 'claw'){
         dur = sec + 0.15;
-        const cp = clawPoint(S, p);
+        const cp = clawPoint(S, p, pan);
         if (s.close){
           if (clawClosed) res.doubleClose = true;
           const got = items.filter(o => !holding.includes(o.id) && Math.hypot(center(o).x - cp.x, center(o).y - cp.y) <= 4.5);
@@ -1869,7 +2037,7 @@ function simulate(S){
           }
           holding = []; clawClosed = false;
         }
-      } else if (['lift','pan','gunPan','gunHead'].includes(s.type)){ dur = sec + 0.15; }
+      } else if (['lift','pan','gunPan','gunHead'].includes(s.type)){ dur = sec + 0.15; if (s.type === 'pan') pan = num(s.deg, 90); }
       else if (s.type === 'gimbal'){ dur = 0.4; }
       else if (s.type === 'align'){ dur = 1.5 + num(s.confirm, 1); if (s.reset) p = {x:num(s.rx), y:num(s.ry), h:num(s.rh)}; }
       else if (s.type === 'turn'){ const dh = Math.abs(normDeg(num(s.h) - p.h)); dur = 0.3 + dh / 120; p = {x:p.x, y:p.y, h:num(s.h)}; }
@@ -2064,6 +2232,14 @@ function ruleChecks(S, sim){
   const LB = stepLabels(S);
   const sizeOk = S.robot.w <= R.maxW && S.robot.l <= R.maxL;
   push(sizeOk ? 'ok' : 'bad', `車體 ${S.robot.w}×${S.robot.l} cm（${R.name}上限 ${R.maxW}×${R.maxL} cm${/Shooter/.test(S.rtype) ? '、高 20 cm' : ''}）`);
+  if (S.robotB && S.robotB.on){
+    const sA = S.robot.start, zone = S.objects.find(z => z.kind === 'start' && sA.x >= z.x && sA.x <= z.x + z.w && sA.y >= z.y && sA.y <= z.y + z.h);
+    const PA = robotPoly(S, sA.x, sA.y, sA.h), PB = robotBPoly(S);
+    const inZone = P => zone && P.every(c => c.x >= zone.x - 0.01 && c.x <= zone.x + zone.w + 0.01 && c.y >= zone.y - 0.01 && c.y <= zone.y + zone.h + 0.01);
+    if (polysHit(PA, PB)) push('bad', '機器人 A 與 B 的出發位置重疊，請拖曳分開');
+    else if (!zone) push('warn', '機器人 A 不在出發區內');
+    else push(inZone(PA) && inZone(PB) ? 'ok' : 'warn', inZone(PA) && inZone(PB) ? `A（自動）與 B（手動）都在${zone.label || '出發區'}內、沒有重疊` : '機器人 A 或 B 有部分超出出發區，請調整位置');
+  }
   const hitSegs = sim.segs.filter(s => s.hits.length);
   if (!sim.segs.length) push('warn', '尚未規劃任何移動');
   else if (hitSegs.length){
@@ -2297,6 +2473,15 @@ function drawPath(){
   }
   // 起點
   drawRobot(S.robot.start, {stroke:gear, lw:2, dash:[5, 3], fill:gear, alpha:sel && sel.kind === 'start' ? .25 : .08});
+  if (S.robotB && S.robotB.on){   // 機器人 B（手動）出發位置
+    const B = S.robotB, P = robotBPoly(S), col = '#7A3FB0';
+    ctx.save(); polyPath(P); ctx.fillStyle = col; ctx.globalAlpha = sel && sel.kind === 'startB' ? .28 : .12; ctx.fill(); ctx.globalAlpha = 1;
+    ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.setLineDash([5, 3]); ctx.stroke(); ctx.setLineDash([]);
+    const c = toS(num(B.x), num(B.y)), F = fwdVec(num(B.h)), fr = toS(num(B.x) + F.x * num(B.l, 28) / 2, num(B.y) + F.y * num(B.l, 28) / 2);
+    ctx.beginPath(); ctx.moveTo(c.x, c.y); ctx.lineTo(fr.x, fr.y); ctx.stroke();
+    ctx.fillStyle = col; ctx.font = 'bold 12px "Noto Sans TC",sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('B 手動', c.x, c.y + 10);
+    ctx.restore();
+  }
   // 路徑點
   let idx = 0;
   const SHORT = {claw:null, lift:null, pan:'轉爪', turn:'轉正', align:'IR', wait:'等', fire:'射', code:'碼', wall:'撞牆', approach:'接近', fireN:'連射', gunPan:'砲台', gunHead:'仰角', gimbal:'雲台', distMove:'測距'};
@@ -2551,6 +2736,9 @@ cv.addEventListener('pointerdown', e => {
     if (polysHit(robotPoly(S, S.robot.start.x, S.robot.start.y, S.robot.start.h), [{x:w.x-.1,y:w.y-.1},{x:w.x+.1,y:w.y-.1},{x:w.x+.1,y:w.y+.1},{x:w.x-.1,y:w.y+.1}])){
       snapshot(); sel = {kind:'start'}; drag = {kind:'start', dx:w.x - S.robot.start.x, dy:w.y - S.robot.start.y}; draw(); return;
     }
+    if (S.robotB && S.robotB.on && polysHit(robotBPoly(S), [{x:w.x-.1,y:w.y-.1},{x:w.x+.1,y:w.y-.1},{x:w.x+.1,y:w.y+.1},{x:w.x-.1,y:w.y+.1}])){
+      snapshot(); sel = {kind:'startB'}; drag = {kind:'startB', dx:w.x - num(S.robotB.x), dy:w.y - num(S.robotB.y)}; draw(); return;
+    }
     const o = hitObject(w);
     if (o){ snapshot(); sel = {kind:'obj', id:o.id}; drag = {kind:'obj', obj:o, dx:w.x - o.x, dy:w.y - o.y}; renderObjects(); draw(); return; }
     sel = null; renderObjects(); renderSteps(); draw(); return;
@@ -2581,6 +2769,7 @@ cv.addEventListener('pointermove', e => {
   if (drag.kind === 'pan'){ view.ox = drag.ox + sx - drag.sx; view.oy = drag.oy + sy - drag.sy; draw(); return; }
   if (drag.kind === 'wp'){ drag.step.x = sp.x; drag.step.y = sp.y; drag.moved = true; recompute(); return; }
   if (drag.kind === 'start'){ const p = snapPt({x:w.x - drag.dx, y:w.y - drag.dy}); S.robot.start.x = p.x; S.robot.start.y = p.y; drag.moved = true; recompute(); return; }
+  if (drag.kind === 'startB'){ const p = snapPt({x:w.x - drag.dx, y:w.y - drag.dy}); S.robotB.x = p.x; S.robotB.y = p.y; drag.moved = true; recompute(); return; }
   if (drag.kind === 'obj'){ const p = snapPt({x:w.x - drag.dx, y:w.y - drag.dy}); drag.obj.x = p.x; drag.obj.y = p.y; drag.moved = true; recompute(); return; }
   if (drag.kind === 'newwall'){ drag.cur = sp; draw(); }
 });
@@ -2639,6 +2828,7 @@ document.addEventListener('keydown', e => {
     const d = k === 'q' ? 15 : -15;
     if (sel.kind === 'step'){ const s = S.steps.find(x => x.id === sel.id); if (s && s.type === 'move'){ snapshot(); s.h = normDeg(num(s.h) + d); if (s.h === -180) s.h = 180; changed(true); } }
     else if (sel.kind === 'start'){ snapshot(); S.robot.start.h = normDeg(S.robot.start.h + d); changed(true); }
+    else if (sel.kind === 'startB'){ snapshot(); S.robotB.h = normDeg(num(S.robotB.h) + d); changed(true); }
   } else if ((e.key === 'Delete' || e.key === 'Backspace') && sel){
     snapshot();
     if (sel.kind === 'obj') S.objects = S.objects.filter(o => o.id !== sel.id);
@@ -2788,6 +2978,29 @@ $$('[data-add]').forEach(b => b.onclick = () => {
   snapshot(); insertSteps([s]); changed(true);
 });
 /* 快速範本：與程式產生器「競賽自動化」相同的組合，加在選取的路徑點之後 */
+function swapAB(){
+  if (!S.robotB) return;
+  snapshot();
+  const a = S.robot.start, b = S.robotB;
+  if (!b.on) b.on = true;
+  [a.x, b.x] = [b.x, a.x]; [a.y, b.y] = [b.y, a.y]; [a.h, b.h] = [b.h, a.h];
+  changed(true); bindAll(document);
+  toast(S.steps.length ? '已交換 A（自動）與 B（手動）位置；路線是依舊位置規劃的，請再按「自動規劃最佳路徑」' : '已交換 A（自動）與 B（手動）位置');
+}
+$('#swapAB').onclick = swapAB;
+$('#swapAB2').onclick = swapAB;
+$('#autoPlanBtn').onclick = () => {
+  if (S.steps.length && !confirm('自動規劃會取代目前所有步驟（可用「復原」找回），確定？')) return;
+  toast('自動規劃中…');
+  setTimeout(() => {
+    const r = autoPlan(S);
+    if (!r.steps){ toast(r.msgs.join('；')); return; }
+    snapshot(); S.steps = r.steps; sel = null; changed(true);
+    const sim2 = simulate(S), hits = sim2.segs.filter(g => g.hits.length).length;
+    $('aside.right [data-tab=paneCheck]').click();
+    toast(r.msgs.join('；') + (hits ? `；仍有 ${hits} 段碰撞` : '；全程無碰撞') + (sim2.triggerDone ? '；模擬：齒輪放上觸發裝置' : ''));
+  }, 40);
+};
 $('#tplSel').onchange = e => {
   const k = e.target.value; e.target.value = ''; if (!k) return;
   const mv = selMove();
