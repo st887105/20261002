@@ -177,7 +177,7 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
 <body>
 <div class="app">
 <header>
-  <div class="brand"><h1>TU:bit V2 2026全國競賽路徑規劃器</h1><span class="ver" id="ver" title="更新紀錄">v1.7.2</span><a class="ver" href="../competition.html" title="回競賽專區">← 競賽專區</a><a class="ver" href="../generator.html#race" title="程式產生器：競賽自動化">程式產生器</a></div>
+  <div class="brand"><h1>TU:bit V2 2026全國競賽路徑規劃器</h1><span class="ver" id="ver" title="更新紀錄">v1.8.0</span><a class="ver" href="../competition.html" title="回競賽專區">← 競賽專區</a><a class="ver" href="../generator.html#race" title="程式產生器：競賽自動化">程式產生器</a></div>
   <div class="hgroup">
     <select id="gameSel" aria-label="競賽項目">
       <option value="energy">物資能源爭霸戰 300×300</option>
@@ -422,6 +422,7 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
 </dialog>
 <dialog id="logDlg">
   <h3 style="margin-top:0">更新紀錄</h3>
+  <p><b>v1.8.0</b>（2026-10-05）新增「現場微調與校正」（程式產生器、路徑規劃器共用，數值存在 ESP32 快閃記憶體 Preferences，斷電不會消失，比賽現場不用改程式）：① IR 校正模式：開機按住控制板 A，依序把前（33）、後（32）、左（35／34）、右（39／36）面放在離牆 10 cm，每面按 A 取 20 次平均存成 IR 目標值（B 跳過）；② BNO 校正模式：開機按住 B，靜置顯示角度與每分鐘漂移，A＝目前方向設為 0°，B＝離開；③ 現場微調：PS3 手動模式按住 START＋L1／L2 前後、R1／R2 雲台（手臂或砲台旋轉），START＋SELECT 歸零，可設定每按一下幾 cm／幾度，套用在夾取點、放置點或兩者（trimBefore／trimAfter，夾好或放好後自動復原）；單按 START 放開才啟動自動，按住 START 的組合鍵不會誤啟動。</p>
   <p><b>v1.7.2</b>（2026-10-05）勾選 PS3／V7RC 時，自動／手動鍵改成該遙控的預設（PS3：START／SELECT），不再沿用上一種遙控的按鍵。</p>
   <p><b>v1.7.1</b>（2026-10-05）修正 BNO055 開機偵測：BNO055 上電約 0.65 秒後才回應，原本只檢查一次可能誤判「沒有 BNO055」而略過初始化，改為最多重試 1.5 秒。</p>
   <p><b>v1.7.0</b>（2026-10-05）自動化定點移動：新增「BNO 精準定點」（預設開啟，需勾 BNO055）——每個路徑點改用 <code>goTo()</code> 以起點為原點的座標前往，新版 MTC V3 用陀螺儀鎖定方向，到點更準；校正、撞牆、超音波等改變位置的步驟後自動 <code>setPos()</code> 同步座標。新增「感測距離移動」步驟（太遠前進、太近後退，停在目標距離）。預設動作為零：新方案沒有步驟，範例路線改放在「快速範本」。與程式產生器的「設定原點、前往定點＋到點動作、指定距離、感測距離移動」共用同一套寫法。</p>
@@ -447,7 +448,7 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
 <script>
 'use strict';
 /* ================= 基本工具 ================= */
-const VERSION = 'v1.7.2';
+const VERSION = 'v1.8.0';
 const STORE_KEY = 'tubit-planner-v1';
 const uid = () => Math.random().toString(36).slice(2, 9);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -770,6 +771,7 @@ const GEN = (function () {
     mode: { on: false, autoKey: 'ps3:start', manKey: 'ps3:select', after: 'stay', oled: true, rumble: true },
     auto: { speed: 100 },   // 自動移動速度 %（AUTO_SPEED）
     gimbal: { pin: 'S0', center: 90, trim: 0, min: 0, max: 180 },   // 水平雲台：腳位、回正角度、微調、可轉範圍
+    tune: { on: false, apply: 'grab', fwdStep: 1, panStep: 1 },   // 現場微調與校正（存在 ESP32 快閃記憶體）
     ir: { f: '33', b: '32', lf: '35', lb: '34', rf: '39', rb: '36', tf: 25, tb: 25, tlf: 25, tlb: 25, trf: 25, trb: 25 }
   });
   // ATARM.h 與 PPGUN.h 都定義了 panPin、panDeg，同一支程式同時 include 會編譯失敗，所以兩者互斥
@@ -829,6 +831,11 @@ const GEN = (function () {
   function gimbalClash(need) {   // 雲台腳位是否已被手臂／發射器使用
     const K = state.kits, p = gimbalCfg().pin;
     return (need.arm && [K.arm.pan, K.arm.lift, K.arm.claw].includes(p)) || (need.gun && [K.gun.pan, K.gun.head, K.gun.shoot].includes(p));
+  }
+  function trimOn(kind) {   // 現場微調是否套用在夾取（grab）／放置（place）
+    const T = state.kits.tune || {};
+    if (!T.on || state.level === 'basic') return false;
+    return (T.apply || 'grab') === 'both' || (T.apply || 'grab') === kind;
   }
   let speedHit = false;   // 有 MTC 自動移動時，產生 AUTO_SPEED 整體速度調整
   function mtcLine(x, y, r, vm, a) {
@@ -928,8 +935,8 @@ const GEN = (function () {
         const AK = state.kits.arm || {}, dn = clampInt(AK.down, 0, 180, 0), up = clampInt(AK.up, 0, 180, 65);
         const deg = clampInt(a.deg, 0, 180, 0);
         const T = {
-          grab: ['ATARM_ClawCtrl(false,1);   // 到點：張開', 'ATARM_LiftSet(' + dn + ',1);   // 下降', 'ATARM_ClawCtrl(true,1);   // 合爪夾取', 'ATARM_LiftSet(' + up + ',1);   // 抬升'],
-          place: ['ATARM_LiftSet(' + (deg || dn) + ',1);   // 到點：下降到放置高度', 'ATARM_ClawCtrl(false,1);   // 張開放下', 'ATARM_LiftSet(' + up + ',1);   // 抬升'],
+          grab: ['ATARM_ClawCtrl(false,1);   // 到點：張開', 'ATARM_LiftSet(' + dn + ',1);   // 下降'].concat(trimOn('grab') ? ['trimBefore();   // 套用現場微調'] : [], ['ATARM_ClawCtrl(true,1);   // 合爪夾取', 'ATARM_LiftSet(' + up + ',1);   // 抬升'], trimOn('grab') ? ['trimAfter();   // 微調復原'] : []),
+          place: (trimOn('place') ? ['trimBefore();   // 套用現場微調'] : []).concat(['ATARM_LiftSet(' + (deg || dn) + ',1);   // 到點：下降到放置高度', 'ATARM_ClawCtrl(false,1);   // 張開放下', 'ATARM_LiftSet(' + up + ',1);   // 抬升'], trimOn('place') ? ['trimAfter();   // 微調復原'] : []),
           open: ['ATARM_ClawCtrl(false,1);   // 到點：開爪'],
           close: ['ATARM_ClawCtrl(true,1);   // 到點：合爪'],
           lift: ['ATARM_LiftSet(' + deg + ',1);   // 到點：手臂升降到 ' + deg + '°']
@@ -976,14 +983,18 @@ const GEN = (function () {
         L.push(ind + 'ATARM_ClawCtrl(false,1);   // 張開');
         L.push(ind + 'ATARM_LiftSet(' + clampInt(a.down, 0, 180, 0) + ',1);   // 降到夾取高度');
         if (num(a.fwdCm, 0) !== 0) { need.mtc = true; L.push(ind + mtcLine(0, a.fwdCm, 0, 400, 600) + '   // 前進到物資'); }
+        if (trimOn('grab')) L.push(ind + 'trimBefore();   // 套用現場微調（前後、雲台）');
         L.push(ind + 'ATARM_ClawCtrl(true,1);   // 夾緊');
         L.push(ind + 'ATARM_LiftSet(' + clampInt(a.up, 0, 180, 65) + ',1);   // 抬升');
+        if (trimOn('grab')) L.push(ind + 'trimAfter();   // 微調復原');
       } else if (a.type === 'place') {
         need.arm = true;
         L.push(ind + '// 放置組合');
+        if (trimOn('place')) L.push(ind + 'trimBefore();   // 套用現場微調（前後、雲台）');
         L.push(ind + 'ATARM_LiftSet(' + clampInt(a.down, 0, 180, 20) + ',1);   // 降到放置高度');
         L.push(ind + 'ATARM_ClawCtrl(false,1);   // 張開');
         L.push(ind + 'ATARM_LiftSet(' + clampInt(a.up, 0, 180, 65) + ',1);   // 抬升');
+        if (trimOn('place')) L.push(ind + 'trimAfter();   // 微調復原');
         if (num(a.backCm, 0) > 0) { need.mtc = true; L.push(ind + mtcLine(0, -num(a.backCm, 0), 0, 400, 600) + '   // 後退'); }
       } else if (a.type === 'bnoShow') {
         need.bno = true; need.oled = true;
@@ -1083,6 +1094,8 @@ const GEN = (function () {
     normalizeMode();
     speedHit = false;
     const need = {};
+    const TU = Object.assign({ on: false, apply: 'grab', fwdStep: 1, panStep: 1 }, state.kits.tune || {});
+    if (TU.on && state.level !== 'basic') { need.tune = true; need.mtc = true; need.oled = true; }
     const K = state.kits;
     const setupBody = state.trig.setup.on ? genActions(state.trig.setup.acts, '  ', need) : [];
     const loopBody = [];
@@ -1213,7 +1226,7 @@ const GEN = (function () {
     if (modeOn) {
       const after = { stay: 0, repeat: 1, back: 2 }[M.after] || 0;
       if (M.oled) need.oled = true;
-      const autoC = keyCond(M.autoKey), manC = keyCond(M.manKey);
+      const autoC = need.tune && M.autoKey === 'ps3:start' ? 'startClick()' : keyCond(M.autoKey), manC = keyCond(M.manKey);
       const rum = M.rumble && (need.ps3 || remote === 'ps3') ? '    Ps3.setRumble(100, 300);' : null;
       rcDefs.push('', '// ===== 一鍵自動／手動模式 =====');
       rcDefs.push('const int AUTO_AFTER = ' + after + ';   // 自動流程做完後：0＝停在自動（AUTO OK）等按手動鍵　1＝重複執行直到按手動鍵　2＝立刻回手動');
@@ -1227,6 +1240,7 @@ const GEN = (function () {
       acts.forEach(a => { genActions([a], '  ', need).forEach(l => rcFns.push(l)); rcFns.push('  if (abortAuto()) return;'); });
       if (!acts.length) rcFns.push('  // 還沒有自動動作：在「一鍵自動模式流程」加入動作');
       rcFns.push('}');
+      if (need.tune && (K.on.ps3 || remote === 'ps3')) loopHead.push('  if (!autoMode) tuneKeys();   // 手動模式：按住 START＋L1／L2／R1／R2 現場微調');
       loopHead.push('  if (!autoMode && autoKey()) {   // 一鍵切換到自動', '    autoMode = true;', '    autoDone = false;');
       if (rum) loopHead.push(rum);
       if (M.oled) loopHead.push('    showMode();');
@@ -1250,6 +1264,7 @@ const GEN = (function () {
     const uname = 'ultrasonic_' + trig + '_' + echo;
     const inc = ['#include <Arduino.h>', '#include <TuBitCore.h>', '#include <Wire.h>'];
     if (need.mtc) inc.push('#include <TuMTC.h>');
+    if (need.tune) inc.push('#include <Preferences.h>');
     if (need.ir) inc.push('#include <TuIRAlign.h>');
     if (need.ps3) inc.push('#include <Ps3Controller.h>');
     if (need.v7rc) inc.push('#include <V7RC_' + v7mode + '.h>');
@@ -1341,7 +1356,7 @@ const GEN = (function () {
     }
     if (need.turn) {
       helpers.push('', 'double headingErr(double target) {   // 目標角與 BNO 角度差，換算到 -180~180',
-        '  double e = target - bno.orientationZ;', '  while (e > 180) e -= 360;', '  while (e < -180) e += 360;', '  return e;', '}',
+        (need.tune ? '  double e = target - (bno.orientationZ - bnoZero);   // bnoZero：BNO 校正模式設定的 0°' : '  double e = target - bno.orientationZ;'), '  while (e > 180) e -= 360;', '  while (e < -180) e += 360;', '  return e;', '}',
         '', 'void turnTo(double deg, double tol, unsigned long timeoutMs) {   // BNO 轉正（改寫自轉正.tb，係數 -1.65）',
         '  if (!bnoOK) return;   // 沒有 BNO055 就不轉正', '  tubit.resetEnc();', '  tubit.stopAllMotors();', '  unsigned long t0 = millis();',
         '  while (fabs(headingErr(deg)) > tol && millis() - t0 < timeoutMs) {',
@@ -1349,6 +1364,7 @@ const GEN = (function () {
         '  tubit.resetEnc();', '  tubit.stopAllMotors();', '}');
     }
     const setups = ['  tubit.init();'];
+    if (need.tune) setups.push('  tuneLoad();   // 讀取現場微調與 IR 校正值（存在快閃記憶體）');
     if (need.oled) setups.push('  display.begin(0x3C, true);');
     if (need.zh) setups.push('  u8g2.begin(display);');
     if (need.bno) setups.push('  bnoOK = bnoFound();', '  if (bnoOK) bno.start();   // 找到 BNO055 才啟動', '  else Serial.println("BNO055 not found (I2C 0x28): check SDA/SCL/VIN/GND");');
@@ -1366,7 +1382,8 @@ const GEN = (function () {
       const I = K.ir, pin = v => (IR_PINS.includes(String(v)) ? String(v) : '33');
       setups.push('  tuirAlign();   // 初始化 IR 靠牆校正模式 麥克納姆輪 MTC');
       setups.push('  tuirAlign().setPins(' + ['f', 'b', 'lf', 'lb', 'rf', 'rb'].map(k => pin(I[k])).join(',') + ');   // 前 後 左前 左後 右前 右後');
-      setups.push('  tuirAlign().setTargets(' + ['tf', 'tb', 'tlf', 'tlb', 'trf', 'trb'].map(k => plain(num(I[k], 25))).join(',') + ');   // 貼牆時各感測器的目標值');
+      if (need.tune) setups.push('  tuirAlign().setTargets(irT[0],irT[1],irT[2],irT[3],irT[4],irT[5]);   // 目標值：IR 校正模式量到的數值（沒量過就用預設）');
+      else setups.push('  tuirAlign().setTargets(' + ['tf', 'tb', 'tlf', 'tlb', 'trf', 'trb'].map(k => plain(num(I[k], 25))).join(',') + ');   // 貼牆時各感測器的目標值');
     }
     if (need.gun) setups.push('  PPGUN_INIT(' + K.gun.pan + ',' + K.gun.head + ',' + K.gun.shoot + ');   // 旋轉, 上下, 發射');
     if (need.arm) {
@@ -1378,6 +1395,110 @@ const GEN = (function () {
     if (need.gimbal && !gimbalClash(need)) setups.push('  gimbalTo(GIMBAL_CENTER);   // 水平雲台回正（含微調）');
     if (need.servoPins) [...need.servoPins].filter(pn => !((need.arm || need.gun) && pn === 'S0') && !(need.gimbal && pn === gimbalCfg().pin)).forEach(pn => setups.push('  tubit.setServoAngle(' + pn + ', 90);   // 累加調整的起點'));
 
+    if (need.tune) {
+      const I = K.ir || {}, irDef = ['tf', 'tb', 'tlf', 'tlb', 'trf', 'trb'].map(k => plain(num(I[k], 25))).join(',');
+      const fs = Math.max(0.1, num(TU.fwdStep, 1)), ps = Math.max(0.1, num(TU.panStep, 1));
+      const panAdd = need.arm ? 'ATARM_PanAdd' : (need.gun ? 'PPGUN_PanAdd' : '');
+      const T = ['', '// ===== 現場微調與校正：數值存在 ESP32 快閃記憶體，斷電不會消失，不用在現場改程式 =====',
+        'Preferences tunePrefs;',
+        'float TRIM_FWD = 0;   // 前後微調 cm：手動模式按住 START＋L1（前）／L2（後）',
+        'float TRIM_PAN = 0;   // 雲台微調 °：手動模式按住 START＋R1（左）／R2（右）',
+        'const float TRIM_FWD_STEP = ' + plain(fs) + ';   // 每按一下前後幾公分',
+        'const float TRIM_PAN_STEP = ' + plain(ps) + ';   // 每按一下雲台幾度'];
+      if (need.ir) T.push('int irT[6] = {' + irDef + '};   // IR 目標值（前 後 左前 左後 右前 右後），IR 校正模式量測後更新');
+      if (need.bno) T.push('double bnoZero = 0;   // BNO 0° 的位置（BNO 校正模式按 A 設定）');
+      T.splice(0, T.length).forEach(l => def.push(l));   // 全域變數放在宣告區（headingErr 等函式會用到）
+      T.push('', 'void tuneLoad() {   // 開機讀取微調值', '  tunePrefs.begin("tubit", true);', '  TRIM_FWD = tunePrefs.getFloat("fwd", 0);', '  TRIM_PAN = tunePrefs.getFloat("pan", 0);');
+      if (need.ir) T.push('  for (int i = 0; i < 6; i++) irT[i] = tunePrefs.getInt((String("ir") + i).c_str(), irT[i]);');
+      if (need.bno) T.push('  bnoZero = tunePrefs.getDouble("bz", 0);');
+      T.push('  tunePrefs.end();', '}', '', 'void tuneSave() {   // 儲存微調值', '  tunePrefs.begin("tubit", false);', '  tunePrefs.putFloat("fwd", TRIM_FWD);', '  tunePrefs.putFloat("pan", TRIM_PAN);');
+      if (need.ir) T.push('  for (int i = 0; i < 6; i++) tunePrefs.putInt((String("ir") + i).c_str(), irT[i]);');
+      if (need.bno) T.push('  tunePrefs.putDouble("bz", bnoZero);');
+      T.push('  tunePrefs.end();', '}', '',
+        'void tuneShow(const char *msg) {   // OLED／序列埠顯示目前微調值',
+        '  Serial.printf("TRIM FWD %.1f cm  PAN %.1f deg  %s\\n", TRIM_FWD, TRIM_PAN, msg);',
+        '  display.clearDisplay();', '  display.setFont();', '  display.setTextSize(1);', '  display.setTextColor(SH110X_WHITE);', '  display.setCursor(0, 0);',
+        '  display.println("TRIM  START+L/R");', '  display.print("FWD ");', '  display.print(TRIM_FWD, 1);', '  display.println(" cm");',
+        '  display.print("PAN ");', '  display.print(TRIM_PAN, 1);', '  display.println(" deg");', '  display.println(msg);', '  display.display();', '}', '',
+        'void trimBefore() {   // 到夾取／放置點：先套用微調');
+      T.push('  if (TRIM_FWD != 0) ' + (need.goto ? 'goDist(0, TRIM_FWD, 300, 400);' : 'mtc.moveSCurve(0, TRIM_FWD, 0, 300, 400, -400, 0, 0);') + '   // 前後微調');
+      if (panAdd) T.push('  if (TRIM_PAN != 0) ' + panAdd + '(TRIM_PAN);   // 雲台微調');
+      T.push('}', '', 'void trimAfter() {   // 夾好／放好後復原，後面的路線不受影響');
+      if (panAdd) T.push('  if (TRIM_PAN != 0) ' + panAdd + '(-TRIM_PAN);');
+      T.push('  if (TRIM_FWD != 0) ' + (need.goto ? 'goDist(0, -TRIM_FWD, 300, 400);' : 'mtc.moveSCurve(0, -TRIM_FWD, 0, 300, 400, -400, 0, 0);'), '}');
+      if (need.ps3) {
+        T.push('', 'bool startHeld = false, startCombo = false;',
+          'bool startClick() {   // START 放開才算「按一下」；按住 START 時按過 L1／L2／R1／R2／SELECT 是微調，不會啟動自動',
+          '  bool s = Ps3.isConnected() && Ps3.data.button.start;',
+          '  if (s) {', '    startHeld = true;',
+          '    if (Ps3.data.button.l1 || Ps3.data.button.l2 || Ps3.data.button.r1 || Ps3.data.button.r2 || Ps3.data.button.select) startCombo = true;',
+          '    return false;', '  }',
+          '  if (startHeld) {', '    startHeld = false;', '    bool go = !startCombo;', '    startCombo = false;', '    return go;', '  }',
+          '  return false;', '}', '',
+          'bool pL1 = false, pL2 = false, pR1 = false, pR2 = false, pSel = false;',
+          'void tuneKeys() {   // 手動模式：按住 START＋L1／L2 前後微調、R1／R2 雲台微調、SELECT 歸零',
+          '  if (!Ps3.isConnected()) return;',
+          '  bool st = Ps3.data.button.start;',
+          '  bool l1 = st && Ps3.data.button.l1, l2 = st && Ps3.data.button.l2, r1 = st && Ps3.data.button.r1, r2 = st && Ps3.data.button.r2, sl = st && Ps3.data.button.select;',
+          '  bool changed = false;',
+          '  if (l1 && !pL1) { TRIM_FWD += TRIM_FWD_STEP; changed = true; }',
+          '  if (l2 && !pL2) { TRIM_FWD -= TRIM_FWD_STEP; changed = true; }',
+          '  if (r1 && !pR1) { TRIM_PAN += TRIM_PAN_STEP; changed = true; }',
+          '  if (r2 && !pR2) { TRIM_PAN -= TRIM_PAN_STEP; changed = true; }',
+          '  if (sl && !pSel) { TRIM_FWD = 0; TRIM_PAN = 0; changed = true; }',
+          '  pL1 = l1; pL2 = l2; pR1 = r1; pR2 = r2; pSel = sl;',
+          '  if (changed) {', '    tuneSave();', '    tuneShow("SAVED");', '    Ps3.setRumble(60, 120);', '  }', '}');
+      }
+      if (need.ir) {
+        T.push('', 'int irRead(int i) {   // 讀第 i 顆 IR 濾波值（0 前 1 後 2 左前 3 左後 4 右前 5 右後）',
+          '  tuirAlign().readAllIR_();',
+          '  switch (i) {', '    case 0: return tuirAlign().getFilteredUP();', '    case 1: return tuirAlign().getFilteredBK();', '    case 2: return tuirAlign().getFilteredLU();',
+          '    case 3: return tuirAlign().getFilteredLB();', '    case 4: return tuirAlign().getFilteredRU();', '  }', '  return tuirAlign().getFilteredRB();', '}', '',
+          'void irCalMode() {   // IR 校正模式：把車子某一面放在離牆 10 cm，按 A 記錄；依序 前→後→左→右，按 B 跳過',
+          '  const char *side[4] = {"FRONT 33", "BACK 32", "LEFT 35/34", "RIGHT 39/36"};',
+          '  const int first[4] = {0, 1, 2, 4}, cnt[4] = {1, 1, 2, 2};',
+          '  int s = 0;',
+          '  while (tubit.readButton(Button_A)) delay(10);   // 等放開 A',
+          '  while (s < 4) {',
+          '    display.clearDisplay();', '    display.setFont();', '    display.setTextSize(1);', '    display.setTextColor(SH110X_WHITE);', '    display.setCursor(0, 0);',
+          '    display.println("IR CAL: 10cm to wall");', '    display.print("SIDE ");', '    display.println(side[s]);',
+          '    const char *nm[6] = {"F33 ", "B32 ", "LF35", "LB34", "RF39", "RB36"};',
+          '    for (int i = 0; i < 6; i++) {', '      display.print(nm[i]);', '      display.print(" ");', '      display.print(irRead(i));', '      display.print(" T");', '      display.println(irT[i]);', '    }',
+          '    display.display();',
+          '    if (tubit.readButton(Button_A)) {   // 記錄：取 20 次平均',
+          '      for (int k = 0; k < cnt[s]; k++) {', '        long sum = 0;', '        for (int n = 0; n < 20; n++) { sum += irRead(first[s] + k); delay(10); }', '        irT[first[s] + k] = sum / 20;', '      }',
+          '      Serial.printf("IR %s saved\\n", side[s]);', '      s++;', '      while (tubit.readButton(Button_A)) delay(10);', '    }',
+          '    if (tubit.readButton(Button_B)) {   // 跳過這一面', '      s++;', '      while (tubit.readButton(Button_B)) delay(10);', '    }',
+          '    delay(80);', '  }',
+          '  tuneSave();',
+          '  tuirAlign().setTargets(irT[0], irT[1], irT[2], irT[3], irT[4], irT[5]);',
+          '  Serial.printf("setTargets(%d,%d,%d,%d,%d,%d)\\n", irT[0], irT[1], irT[2], irT[3], irT[4], irT[5]);',
+          '  tuneShow("IR SAVED");', '  delay(1500);', '}');
+      }
+      if (need.bno) {
+        T.push('', 'void bnoCalMode() {   // BNO 校正模式：靜置看漂移；A＝把目前方向設為 0°，B＝離開',
+          '  while (tubit.readButton(Button_B)) delay(10);',
+          '  double z0 = bno.orientationZ;', '  unsigned long t0 = millis();',
+          '  while (true) {',
+          '    double sec = (millis() - t0) / 1000.0;',
+          '    double drift = sec > 1 ? (bno.orientationZ - z0) / sec * 60.0 : 0;   // 每分鐘漂移幾度',
+          '    display.clearDisplay();', '    display.setFont();', '    display.setTextSize(1);', '    display.setTextColor(SH110X_WHITE);', '    display.setCursor(0, 0);',
+          '    display.println(bnoOK ? "BNO CAL (keep still)" : "NO BNO055 (I2C 0x28)");',
+          '    display.print("HEAD ");', '    display.println(bno.orientationZ - bnoZero, 1);',
+          '    display.print("DRIFT ");', '    display.print(drift, 2);', '    display.println(" deg/min");',
+          '    display.println(sec < 10 ? "measuring..." : (fabs(drift) < 0.5 ? "STABLE OK" : "MOVING? wait"));',
+          '    display.println("A=ZERO  B=EXIT");', '    display.display();',
+          '    if (tubit.readButton(Button_A)) {', '      bnoZero = bno.orientationZ;', '      tuneSave();', '      z0 = bno.orientationZ;', '      t0 = millis();', '      while (tubit.readButton(Button_A)) delay(10);', '    }',
+          '    if (tubit.readButton(Button_B)) break;',
+          '    delay(100);', '  }',
+          '  while (tubit.readButton(Button_B)) delay(10);', '}');
+      }
+      T.forEach(l => helpers.push(l));
+      if (need.ir) setups.push('  if (tubit.readButton(Button_A)) irCalMode();   // 開機時按住控制板 A：IR 校正模式');
+      if (need.bno) setups.push('  if (tubit.readButton(Button_B)) bnoCalMode();   // 開機時按住控制板 B：BNO 校正模式');
+      setups.push('  tuneShow("READY");   // 開機顯示目前微調值');
+      setups.push('  delay(800);');
+    }
     const head = ['// generated by OpenBlock'];
     if (conflict) head.push('// ⚠ 同時用了手臂與發射器動作：ATARM.h 與 PPGUN.h 不能放在同一支程式，請刪除其中一種動作');
     if (rcConflict) head.push('// ⚠ 同時用了 PS3 與 V7RC：一支程式只用一種遙控方式，請刪除其中一種');
@@ -1880,7 +2001,14 @@ function planActs(S){
       out.push({type:'group', label:`===== ${LB[i]} 移動到 (${fmt(to.x)}, ${fmt(to.y)}) 車頭 ${fmt(to.h)}° =====`, acts});
       p = to;
     } else {
-      const acts = stepToActs(S, s, p);
+      let acts = stepToActs(S, s, p);
+      const T = S.kits.tune || {};
+      if (T.on && s.type === 'claw' && S.kits.on.arm){   // 現場微調：夾取（夾緊時有夾到物資）／放置（張開時放到放置區）
+        const isGrab = s.close && sim0.grabbed.some(g => g.step === s.id), isPlace = !s.close && sim0.placed.some(g => g.step === s.id);
+        const ap = T.apply || 'grab';
+        if ((isGrab && (ap === 'grab' || ap === 'both')) || (isPlace && (ap === 'place' || ap === 'both')))
+          acts = [{type:'raw', lines:['trimBefore();   // 套用現場微調（前後、雲台）']}, ...acts, {type:'raw', lines:['trimAfter();   // 微調復原']}];
+      }
       const ps = sim0.pose[i];
       const before = Object.assign({}, p);
       if (ps) p = Object.assign({}, ps.after);
@@ -2828,6 +2956,12 @@ function renderKits(){
       </details></div>`;
   });
   const M = K.mode;
+  { const T = K.tune || {};
+    h += `<div class="kbox"><h4>現場微調與校正</h4><label class="chk"><input type="checkbox" data-bind="kits.tune.on"> 啟用（比賽現場不用改程式）</label>`;
+    if (T.on) h += `<label class="f" style="margin-top:6px"><span>微調套用在</span>${sel('kits.tune.apply', [['grab', '夾取點'], ['place', '放置點'], ['both', '夾取點與放置點']])}</label>
+      <div class="row" style="margin-top:6px">${nin('前後每按一下 cm', 'kits.tune.fwdStep', 'step="0.5" min="0.1"')}${nin('雲台每按一下 °', 'kits.tune.panStep', 'step="0.5" min="0.1"')}</div>`;
+    h += `<p class="hint">① IR 校正：開機按住控制板 A，依序把前、後、左、右面放在離牆 10 cm，每面按 A 記錄（B 跳過）。② BNO 校正：開機按住 B，靜置看漂移，A＝設為 0°、B＝離開。③ 現場微調（PS3 手動模式）：按住 START＋L1／L2 前後、R1／R2 雲台，START＋SELECT 歸零；單按 START 放開才啟動自動。數值存在 ESP32，斷電不會消失。</p></div>`;
+  }
   h += `<div class="kbox"><h4>自動移動速度</h4><label class="f"><span>速度 %（10～200，100＝原規劃速度）</span><input type="number" min="10" max="200" step="10" data-bind="kits.auto.speed"></label>
     <p class="hint">規劃好路線後整體調快或調慢：所有路徑移動（含弧線、測距中斷）都乘上這個比例；程式碼裡是 <code>AUTO_SPEED</code>，燒錄前也能直接改。撞牆校正與超音波接近的 PWM 不受影響。上方工具列也可以快速切換。</p></div>`;
   h += `<div class="kbox"><h4>一鍵自動／手動模式</h4><label class="chk"><input type="checkbox" data-bind="kits.mode.on"> 開啟（路徑變成「一鍵自動模式流程」）</label>`;
