@@ -326,7 +326,7 @@
     ultra: { trig: 23, echo: 15 },
     ps3: { mac: '20:00:00:00:63:93', stick: 'move', dpad: 'none', speed: 128, turn: 128, dead: 8, aim: 0.3, map: [] },
     v7rc: { mode: 'BT', name: 'MTC_ARM_U01', ssid: 'V7RC_AP', pass: '12345678', ch: '1', stick: 'move', dpad: 'turn', speed: 250, turn: 180, dead: 20, aim: 0.45, map: [] },
-    mode: { on: false, autoKey: 'ps3:start', manKey: 'ps3:select', after: 'stay', oled: true, rumble: true },
+    mode: { on: false, autoKey: 'ps3:start', manKey: 'ps3:select', after: 'stay', oled: true, rumble: true, side: false },   // side：出發前按 SELECT 選紅／藍方，再按 START 自動
     auto: { speed: 100 },   // 自動移動速度 %（AUTO_SPEED）
     bnoTurn: { k: 1.25 },   // BNO 轉正係數（取自校正.tb：bnoMoveClosed(0,0,(目標角-目前角)×1.25,目前角)）
     gimbal: { pin: 'S0', center: 90, trim: 0, min: 0, max: 180 },   // 水平雲台：腳位、回正角度、微調、可轉範圍
@@ -856,15 +856,37 @@
       rcFns.push('}');
     }
     if (modeOn) {
-      const after = { stay: 0, repeat: 1, back: 2 }[M.after] || 0;
+      const sideOn = !!M.side && M.autoKey === 'ps3:start' && M.manKey === 'ps3:select' && (need.ps3 || remote === 'ps3');   // 選邊模式（只支援 PS3：SELECT 選邊、START 自動）
+      const after = sideOn ? 2 : ({ stay: 0, repeat: 1, back: 2 }[M.after] || 0);
+      const blueActs = sideOn && state.trig.AUTO_BLUE && state.trig.AUTO_BLUE.on ? state.trig.AUTO_BLUE.acts : null;
       if (M.oled) need.oled = true;
       const autoC = need.tune && M.autoKey === 'ps3:start' ? 'startClick()' : keyCond(M.autoKey), manC = keyCond(M.manKey);
       const rum = M.rumble && (need.ps3 || remote === 'ps3') ? '    Ps3.setRumble(100, 300);' : null;
       rcDefs.push('', '// ===== 一鍵自動／手動模式 =====');
-      rcDefs.push('const int AUTO_AFTER = ' + after + ';   // 自動流程做完後：0＝停在自動（AUTO OK）等按手動鍵　1＝重複執行直到按手動鍵　2＝立刻回手動');
+      rcDefs.push('const int AUTO_AFTER = ' + after + ';   // 自動流程做完後：0＝停在自動（AUTO OK）等按手動鍵　1＝重複執行直到按手動鍵　2＝立刻回手動' + (sideOn ? '（選邊模式固定為 2：做完自動回手動）' : ''));
+      if (sideOn) rcDefs.push('bool sideBlue = false;   // 這一場從哪一方出發：false＝紅方、true＝藍方', 'bool sideArmed = false;   // 按過 SELECT 選邊才可以按 START 啟動自動；只按 SELECT 不會啟動');
       rcDefs.push('bool autoMode = false;   // 目前是否為自動模式', 'bool autoDone = false;   // 自動流程是否已跑完');
       rcFns.push('', 'bool autoKey() {   // 切到自動模式的按鍵', '  return ' + autoC + ';', '}', '', 'bool manualKey() {   // 切回手動模式的按鍵', '  return ' + manC + ';', '}');
       rcFns.push('', 'bool abortAuto() {   // 自動途中按手動鍵就中止（每個動作做完檢查一次）', '  if (manualKey()) {', '    autoMode = false;', '    tubit.stopAllMotors();', '    return true;', '  }', '  return false;', '}');
+      if (sideOn) {
+        const si = M.sideInfo || {};
+        rcFns.push('', 'bool selHeld = false, selCombo = false;',
+          'bool selectClick() {   // SELECT 放開才算「按一下」；按住 START 時的 SELECT 是微調歸零，不算選邊',
+          '  bool s = Ps3.isConnected() && Ps3.data.button.select;',
+          '  if (s) {', '    selHeld = true;', '    if (Ps3.data.button.start) selCombo = true;', '    return false;', '  }',
+          '  if (selHeld) {', '    selHeld = false;', '    bool go = !selCombo;', '    selCombo = false;', '    return go;', '  }',
+          '  return false;', '}', '',
+          'void sideReset() {   // 自動結束（做完或中止）：要再選一次邊才能再自動；按著的 SELECT 放開時不算選邊',
+          '  sideArmed = false;', '  selHeld = Ps3.isConnected() && Ps3.data.button.select;', '  selCombo = selHeld;', '}', '',
+          'void showSide() {   // 顯示選到的出發方',
+          '  Serial.println(sideArmed ? (sideBlue ? "SIDE BLUE  START=GO" : "SIDE RED  START=GO") : "PRESS SELECT FIRST (RED/BLUE)");');
+        if (M.oled) rcFns.push('  display.clearDisplay();', '  display.setFont();', '  display.setTextColor(SH110X_WHITE);', '  display.setTextSize(2);', '  display.setCursor(0, 0);',
+          '  display.println(sideArmed ? (sideBlue ? "BLUE" : "RED") : "SIDE?");', '  display.setTextSize(1);',
+          '  display.println(sideArmed ? (sideBlue ? "' + (si.blue || 'BLUE START') + '" : "' + (si.red || 'RED START') + '") : "PRESS SELECT FIRST");',
+          '  display.println(sideArmed ? "START = GO AUTO" : "");', '  display.println("SELECT = RED / BLUE");', '  display.display();');
+        if (rum) rcFns.push('  if (sideArmed) {   // 震動提示：紅方 1 下、藍方 2 下', '    Ps3.setRumble(100, 150);', '    if (sideBlue) {', '      delay(300);', '      Ps3.setRumble(100, 150);', '    }', '  }');
+        rcFns.push('}');
+      }
       if (M.oled) rcFns.push('', 'void showMode() {   // OLED 顯示目前模式', '  display.clearDisplay();', '  display.setFont();', '  display.setTextSize(2);', '  display.setTextColor(SH110X_WHITE);',
         '  display.setCursor(0, 20);', '  display.print(autoMode ? (autoDone ? "AUTO OK" : "AUTO") : "MANUAL");', '  display.display();', '}');
       rcFns.push('', 'void runAuto() {   // 一鍵自動流程', '  if (abortAuto()) return;');
@@ -872,16 +894,29 @@
       acts.forEach(a => { genActions([a], '  ', need).forEach(l => rcFns.push(l)); rcFns.push('  if (abortAuto()) return;'); });
       if (!acts.length) rcFns.push('  // 還沒有自動動作：在「一鍵自動模式流程」加入動作');
       rcFns.push('}');
+      if (blueActs) {   // 藍方座標和紅方不對稱：藍方另一條自動流程
+        rcFns.push('', 'void runAutoBlue() {   // 一鍵自動流程（藍方）', '  if (abortAuto()) return;');
+        blueActs.forEach(a => { genActions([a], '  ', need).forEach(l => rcFns.push(l)); rcFns.push('  if (abortAuto()) return;'); });
+        rcFns.push('}');
+      }
       if (need.tune && (K.on.ps3 || remote === 'ps3')) loopHead.push('  if (!autoMode) tuneKeys();   // 手動模式：按住 START＋L1／L2／R1／R2 現場微調');
-      loopHead.push('  if (!autoMode && autoKey()) {   // 一鍵切換到自動', '    autoMode = true;', '    autoDone = false;');
-      if (rum) loopHead.push(rum);
-      if (M.oled) loopHead.push('    showMode();');
+      if (sideOn) loopHead.push('  if (!autoMode && selectClick()) {   // 按 SELECT 選邊：第 1 下＝紅方，再按一下換藍方／紅方（只按 SELECT 不會啟動）',
+        '    sideBlue = sideArmed ? !sideBlue : false;', '    sideArmed = true;', '    showSide();', '  }',
+        '  if (!autoMode && autoKey()) {   // 選好邊再按 START 才進自動', '    if (!sideArmed) {', '      showSide();   // 還沒選邊：提示先按 SELECT', '    } else {', '      autoMode = true;', '      autoDone = false;');
+      else loopHead.push('  if (!autoMode && autoKey()) {   // 一鍵切換到自動', '    autoMode = true;', '    autoDone = false;');
+      const ex = sideOn ? '  ' : '';
+      if (rum) loopHead.push(ex + rum);
+      if (M.oled) loopHead.push(ex + '    showMode();');
+      if (sideOn) loopHead.push('    }');
       loopHead.push('  }', '  if (autoMode && manualKey()) {   // 一鍵切回手動', '    autoMode = false;', '    tubit.stopAllMotors();');
+      if (sideOn) loopHead.push('    sideReset();');
       if (rum) loopHead.push(rum);
       if (M.oled) loopHead.push('    showMode();');
-      loopHead.push('  }', '  if (autoMode) {', '    if (!autoDone) {', '      runAuto();', '      if (!autoMode) {   // 途中按了手動鍵');
+      loopHead.push('  }', '  if (autoMode) {', '    if (!autoDone) {', blueActs ? '      if (sideBlue) runAutoBlue();   // 藍方流程\n      else runAuto();   // 紅方流程' : '      runAuto();' + (sideOn ? '   // 紅藍對稱：兩邊用同一條流程（以出發點為原點）' : ''), '      if (!autoMode) {   // 途中按了手動鍵');
+      if (sideOn) loopHead.push('        sideReset();');
       if (M.oled) loopHead.push('        showMode();');
       loopHead.push('        return;', '      }', '      if (AUTO_AFTER != 1) {   // 1＝重複執行：不標記完成，下一圈再跑一次', '        autoDone = true;', '        tubit.stopAllMotors();', '        if (AUTO_AFTER == 2) autoMode = false;');
+      if (sideOn) loopHead.push('        sideReset();   // 做完自動回手動；下次自動要再按 SELECT 選邊');
       if (M.oled) loopHead.push('        showMode();');
       loopHead.push('      }', '    }', '    return;   // 自動模式中不接受遙控，按手動鍵才切回', '  }');
       if (M.oled) setupBody.push('  showMode();');
@@ -1107,6 +1142,14 @@
           '  tuirAlign().readAllIR_();',
           '  switch (i) {', '    case 0: return tuirAlign().getFilteredUP();', '    case 1: return tuirAlign().getFilteredBK();', '    case 2: return tuirAlign().getFilteredLU();',
           '    case 3: return tuirAlign().getFilteredLB();', '    case 4: return tuirAlign().getFilteredRU();', '  }', '  return tuirAlign().getFilteredRB();', '}', '',
+          'const int IR_SEE_PCT = 35;   // IR 讀數和「離牆 10 cm 目標值」差在 35% 以內，才算看到牆（沒有隔板就不靠牆校正，避免原地亂轉）',
+          'bool irNear(int i) {   // 第 i 顆 IR 是否看到牆（接近校正距離）；夾取物太小，通常只有一顆看得到，兩顆側邊同時看到才是牆',
+          '  int v = 0;',
+          '  for (int n = 0; n < 5; n++) { v += irRead(i); delay(4); }',
+          '  v /= 5;',
+          '  int t = irT[i];',
+          '  return abs(v - t) <= max(3, abs(t) * IR_SEE_PCT / 100);',
+          '}', '',
           'void irCalMode() {   // IR 校正模式：把車子某一面放在離牆 10 cm，按 A 記錄；依序 前→後→左→右，按 B 跳過',
           '  const char *side[4] = {"FRONT 33", "BACK 32", "LEFT 35/34", "RIGHT 39/36"};',
           '  const int first[4] = {0, 1, 2, 4}, cnt[4] = {1, 1, 2, 2};',
