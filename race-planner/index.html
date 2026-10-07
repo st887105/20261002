@@ -177,7 +177,7 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
 <body>
 <div class="app">
 <header>
-  <div class="brand"><h1>TU:bit V2 2026全國競賽路徑規劃器</h1><span class="ver" id="ver" title="更新紀錄">v1.9.14</span><a class="ver" href="../competition.html" title="回競賽專區">← 競賽專區</a><a class="ver" href="../generator.html#race" title="程式產生器：競賽自動化">程式產生器</a></div>
+  <div class="brand"><h1>TU:bit V2 2026全國競賽路徑規劃器</h1><span class="ver" id="ver" title="更新紀錄">v1.9.15</span><a class="ver" href="../competition.html" title="回競賽專區">← 競賽專區</a><a class="ver" href="../generator.html#race" title="程式產生器：競賽自動化">程式產生器</a></div>
   <div class="hgroup">
     <select id="gameSel" aria-label="競賽項目">
       <option value="energy">物資能源爭霸戰 300×300</option>
@@ -414,6 +414,7 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
         <label class="chk" style="flex:1 1 100%" title="車子實際擺放的位置；和實際差幾公分，整條路線就偏幾公分">A 出發點 X <input type="number" step="1" data-bind="robot.start.x" style="width:64px"> Y <input type="number" step="1" data-bind="robot.start.y" style="width:64px"> 車頭 <input type="number" step="90" data-bind="robot.start.h" style="width:60px">°</label>
         <label class="chk" style="flex:1 1 100%" title="手把背面或用 SixaxisPairTool 查到的 MAC；每台車的手把要不同">PS3 手把 MAC <input type="text" data-bind="kits.ps3.mac" placeholder="20:00:00:00:63:93" style="width:150px;font-family:'JetBrains Mono',monospace" aria-label="PS3 手把 MAC"></label>
         <label class="chk" style="flex:1 1 100%" title="空爪動作 0 秒直接到位、夾到後以放置高度搬運、長距離加速、最後短距離慢速到位"><input type="checkbox" data-bind="robot.fastPlan"> 省時規劃（長距離加速、最後慢速到位）</label>
+        <label class="chk" style="flex:1 1 100%" title="繞過隔板的轉角點改成一段弧線，車子不用在轉角停下來；第一次使用請先用軸向測試程式確認弧線方向"><input type="checkbox" data-bind="robot.arcPlan"> 轉角用弧線一次走完（不停車；先用「軸向測試程式」第 4 段確認弧線方向）</label>
         <button class="btn small" data-add="move">移動</button>
         <button class="btn small" data-add="clawOpen">夾爪張開</button>
         <button class="btn small" data-add="clawClose">夾爪夾緊</button>
@@ -466,6 +467,7 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
 </dialog>
 <dialog id="logDlg">
   <h3 style="margin-top:0">更新紀錄</h3>
+  <p><b>v1.9.15</b>（2026-10-07）修正藍方出發時原地快速旋轉：BNO 轉正改以「按 START 出發時的車頭方向」為 0°（setOrigin 記下 headZero），BNO 有地磁時角度是絕對方位，藍方原本會差 180° 而轉半圈；紅藍兩邊一致。加快自動移動：長距離 1500／加速度 3000、最後到位 800／1500（加速度加大，短距離也很快到最高速）；BNO 轉正逾時 3 秒改 1.5 秒；出發時手臂抬起與張爪同時做。轉角用弧線一次走完（參數可取消）：繞隔板的「轉角點 → 下一點」兩段直線，能改成不碰撞的弧線就合成一段，車子不用在轉角停車再起步；軸向測試程式新增第 4 段弧線測試，確認弧線方向。</p>
   <p><b>v1.9.14</b>（2026-10-07）IR 改為「座標為主、IR 為輔」：每個 IR 校正點先讀側邊兩顆（與前／後）IR，都接近離牆 10 cm 的目標值（差 35% 以內，irNear）才靠牆校正；沒有隔板就略過，不會原地快速亂轉。靠牆最多 3 秒，校正後車頭和 BNO 差 8° 以上視為失敗：不重設座標，BNO 轉回原方向照座標繼續。手臂順序改為：出發前抬起手臂＋張開夾爪再移動；到夾取點 旋轉 → 下降 → 合爪 → 抬起（夾著齒輪抬起搬運）；到放置點 旋轉 → 降到放置高度 → 張開 → 抬起。現場前後微調改在手臂下降之前做、抬起之後復原。新增「藍方對應座標」：預設藍方＝紅方 180° 對稱自動換算；取消勾選可自己填藍方 A 出發點、夾取點、放置點實測座標（藍方程式要另外產生，開機畫面只顯示這一方）。新增「出發前選邊」（PS3）：手動模式按 SELECT 選邊（第 1 下紅方、再按換藍方，OLED 顯示 RED／BLUE 與出發點、手把震動 1 下／2 下），選好再按 START 才執行自動；只按 SELECT 不會啟動；自動做完自動回手動，下次要再按 SELECT 選邊。紅藍對稱時兩邊同一條流程，藍方座標自訂時自動多產生 runAutoBlue()。</p>
   <p><b>v1.9.13</b>（2026-10-07）依實測影片修正：IR 校正後最後一段「只直走、不橫移」，左右偏差改用手臂旋轉補（麥克納姆輪橫移最容易打滑，影片中車子少走約 9 cm 而沒夾到）；夾取改為 IR 校正點 (85, 215) 直走 29.8 cm、手臂 62°。IR 靠牆校正成功（沒逾時）才用牆面位置重設座標；沒做過 IR 校正就照原本座標繼續。長距離移動加速為 1200／1500，最後到位 500／700。開機畫面顯示「車子要擺在哪」（紅方 X50 Y280 朝下、藍方 X250 Y20 朝上）以及 BNO OK／NONE、IR CAL OK／NOT CAL，出發點擺錯整條路線都會偏。動作步驟上方新增「A 出發點」欄位；舊方案出發點在 (52~62, 276~290) 時自動改為實測 (50, 280)。</p>
   <p><b>v1.9.12</b>（2026-10-07）產生的程式碼旁新增「開啟兔比積木」連結（https://tubitblock.trgreat.com/ 線上平台）。硬體提醒（程式碼開頭註解、套件設定、賽規檢查）：使用 BNO055 啟動前一定要先歸零方向（車頭擺好再按 START，同積木「BNO 以目前方向設定移動起點」），並列出 BNO 接線 Vin→VCC、GND、SDA、SCL（3vo 不接）；使用手臂或發射器時，控制板「SERVO POWER SELECT」伺服電源跳帽要往上移，插在 1、2。</p>
@@ -507,7 +509,7 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
 <script>
 'use strict';
 /* ================= 基本工具 ================= */
-const VERSION = 'v1.9.14';
+const VERSION = 'v1.9.15';
 const STORE_KEY = 'tubit-planner-v1';
 const uid = () => Math.random().toString(36).slice(2, 9);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -1401,10 +1403,10 @@ const GEN = (function () {
       helpers.push('', '// ===== 定點移動：以「設定定點原點」的位置為 (0,0)，當時車頭方向為 Y＋、右邊為 X＋ =====',
         'double posX = 0, posY = 0;   // 目前位置（cm）',
         'double goHeadDeg = 0;   // 相對原點的車頭角度（右轉＋）',
-        'bool originSet = false;',
+        'bool originSet = false;', ...(useBno ? ['double headZero = 0;   // 出發時 BNO 的角度：之後 BNO 轉正都以「出發時的車頭」為 0°，紅方、藍方出發都一樣，不會原地轉半圈'] : []),
         'void setOrigin() {   // 把這裡設為原點',
         '  posX = 0; posY = 0; goHeadDeg = 0; originSet = true;');
-      if (useBno) helpers.push('  if (bnoOK) mtc.captureBnoStartFrame();   // BNO：固定場地 X／Y 方向');
+      if (useBno) helpers.push('  if (bnoOK) {', '    mtc.captureBnoStartFrame();   // BNO：固定場地 X／Y 方向', '    headZero = bno.orientationZ;   // 記住出發時的車頭方向（BNO 有地磁時角度是絕對方位，藍方會差 180°）', '  }');
       helpers.push('}',
         'void setPos(double x, double y, double h) {   // 校正後重設目前位置與車頭角度',
         '  posX = x; posY = y; goHeadDeg = h;',
@@ -1458,7 +1460,7 @@ const GEN = (function () {
     }
     if (need.turn) {
       helpers.push('', 'double headingErr(double target) {   // 目標角與 BNO 角度差，換算到 -180~180',
-        (need.tune ? '  double e = target - (bno.orientationZ - bnoZero);   // bnoZero：BNO 校正模式設定的 0°' : '  double e = target - bno.orientationZ;'), '  while (e > 180) e -= 360;', '  while (e < -180) e += 360;', '  return e;', '}',
+        (need.goto ? '  double e = target - (bno.orientationZ - headZero);   // 以出發時的車頭為 0°（setOrigin 記下）' : need.tune ? '  double e = target - (bno.orientationZ - bnoZero);   // bnoZero：BNO 校正模式設定的 0°' : '  double e = target - bno.orientationZ;'), '  while (e > 180) e -= 360;', '  while (e < -180) e += 360;', '  return e;', '}',
         '', 'double BNO_TURN_K = ' + plain(num((K.bnoTurn || {}).k, 1.25)) + ';   // BNO 轉正係數（校正.tb 為 1.25；車子轉過頭就調小，轉反方向就改成負數）',
         '', 'void turnTo(double deg, double tol, unsigned long timeoutMs) {   // BNO 轉正（改寫自校正.tb：誤差 × BNO_TURN_K，轉到誤差小於 tol 或逾時）',
         '  if (!bnoOK) return;   // 沒有 BNO055 就不轉正', '  tubit.resetEnc();', '  tubit.stopAllMotors();', '  unsigned long t0 = millis();',
@@ -1688,13 +1690,13 @@ function newState(game, robot, W, H){
   const f = game === 'energy' ? presetEnergy() : game === 'target' ? presetTarget() : presetCustom(W || 200, H || 200);
   const st = {
     v:1, kv:2, game, rtype:robot, field:{W:f.W, H:f.H}, objects:f.objects,
-    robot: {w:20, l:20, clawOff:15, placeTol:2, irGap:10, irCheck:true, fastPlan:true, start: game === 'energy' ? Object.assign({}, START_POS.A) : {x:Math.round(f.W / 2), y:30, h:0}},
+    robot: {w:20, l:20, clawOff:15, placeTol:2, irGap:10, irCheck:true, fastPlan:true, arcPlan:true, start: game === 'energy' ? Object.assign({}, START_POS.A) : {x:Math.round(f.W / 2), y:30, h:0}},
     task: {grab:{x:78, y:172}, place:{x:6, y:103}},   // 自動任務的絕對位置（紅方場地座標）：夾取點、放置點（觸發閘門裝置上）；藍方自動換算 180° 對稱
     robotB: game === 'energy' ? {on:true, x:17, y:280, h:180, w:20, l:20} : {on:false, x:Math.round(f.W / 2) + 16, y:30, h:0, w:24, l:24},   // 同時出發的另一台（手動）
     motion:{vm:600, a:800, ad:800, wheelD:6, bnoGoto:true},
     axes:{frame:'body', map:'xr_yf', invX:false, invY:false, zCW:false, invBulge:false},
     arm:{liftDown:0, liftUp:65, liftPlace:20, sec:1},
-    turn:{tol:1, timeout:3},
+    turn:{tol:1, timeout:1.5},
     kits: defaultKitsFor(robot),
     ui:{grid1:true, ghosts:true, sweep:true, snap:'1', snap90:true, backoff:10, color: game === 'energy' ? 'green' : 'yellow'},
     steps: [],   // 預設動作為零：範例路線在「快速範本」
@@ -1760,6 +1762,7 @@ function upgradeState(o){
   if (o.game === 'energy' && o.robot && o.robot.start){ const a = o.robot.start;
     if (!o.posFix1913 && a.x >= 52 && a.x <= 62 && a.y >= 276 && a.y <= 290){ a.x = 50; a.y = 280; o.steps = []; } else if (!o.posFix1913 && a.x >= 238 && a.x <= 248 && a.y >= 10 && a.y <= 24){ a.x = 250; a.y = 20; o.steps = []; } }
   if (o.game === 'energy') o.posFix1913 = true;
+  if (!o.speedFix1915){ if (o.turn && num(o.turn.timeout, 3) >= 3) o.turn.timeout = 1.5; if (o.robot && o.robot.arcPlan === undefined) o.robot.arcPlan = true; o.speedFix1915 = true; }   // v1.9.15：BNO 轉正逾時 1.5 秒、轉角弧線
   if (o.game === 'energy' && !o.sideFix1914 && o.kits && o.kits.mode){ o.kits.mode.side = true; o.sideFix1914 = true; }   // v1.9.14：預設開啟出發前選邊
   if (o.game === 'energy') syncBlue(o);
   o.v = 1; return o;
@@ -2110,7 +2113,7 @@ function autoPlan(S){   // 回傳 {steps, msgs}
   const off = num(S.robot.clawOff, 20), sec = Math.max(0, Math.round(num(S.arm.sec, 1)));
   const useIR = S.robot.irCheck !== false, fast = S.robot.fastPlan !== false;
   // 省時：長距離移動加快（之後有 IR 校正或最後慢速到位會修正誤差），最後到夾取／放置點的短距離放慢求準
-  const SPD = fast ? {run:{vm:1200, a:1500}, fin:{vm:500, a:700}} : {run:{vm:'', a:''}, fin:{vm:'', a:''}};
+  const SPD = fast ? {run:{vm:1500, a:3000}, fin:{vm:800, a:1500}} : {run:{vm:'', a:''}, fin:{vm:'', a:''}};   // 加速度加大：短距離也很快到最高速
   const mv = (q, fix, kind) => { const v = SPD[kind || 'run']; return {id:uid(), type:'move', x:Math.round(q.x * 10) / 10, y:Math.round(q.y * 10) / 10, h:q.h, curve:false, bulge:0, vm:v.vm, a:v.a, ad:v.a, stopCm:0, fix:!!fix}; };
   const quick = (st0, ms) => fast ? [Object.assign({}, st0, {sec:0}), {id:uid(), type:'wait', ms}] : [st0];   // 空爪的動作用 0 秒直接轉到位，再等伺服到定位
   const panStep = d => ({id:uid(), type:'pan', deg:90 + d, sec});
@@ -2154,7 +2157,7 @@ function autoPlan(S){   // 回傳 {steps, msgs}
   const g = bestApproach(S, from, gPt, off, 0) || bestApproach(S, from, gPt, off, 1);
   if (!g) return {steps:null, msgs:['找不到能夾到齒輪的位置或路線（可能被隔板或機器人 B 擋住）']};
   // 手臂順序：出發先「抬起手臂＋張開夾爪」再移動 → 到夾取點「下降→合爪→抬起」→ 到放置點「旋轉→降到放置高度→張開→抬起」
-  push(quick(newStep('lift'), 300), quick(newStep('clawOpen'), 300));   // 出發區：手臂抬起、爪子張開，移動中不會碰到地面或隔板
+  push(fast ? [Object.assign(newStep('lift'), {sec:0}), Object.assign(newStep('clawOpen'), {sec:0}), {id:uid(), type:'wait', ms:300}] : [newStep('lift'), newStep('clawOpen')]);   // 出發區：手臂抬起、爪子張開同時做，移動中不會碰到地面或隔板
   const gr = goVia(from, g, '夾取', gPt, 1.5, () => {});   // 手臂一路抬著移動到夾取點
   from = gr.pose;
   if (gr.pan) push(panStep(gr.pan));   // 到定位：先旋轉手臂對準
@@ -2185,8 +2188,32 @@ function autoPlan(S){   // 回傳 {steps, msgs}
   if (!fast && pr.pan) push(panStep(0));
   if (fast) msgs.push('省時規劃：空爪動作 0 秒直接到位、長距離加速、最後短距離慢速到位（可在「參數」取消）');
   msgs.push('手臂順序：出發先抬起＋張開 → 夾取點 下降、合爪、抬起 → 放置點 旋轉、降到放置高度、張開、抬起');
+  if (fast && S.robot.arcPlan !== false){ const n = arcMerge(S, steps); if (n) msgs.push(`轉角弧線：${n} 個繞隔板的轉角改成一段弧線一次走完（不停車）；第一次使用請用「軸向測試程式」第 4 段確認弧線方向`); }
   msgs.push(`放置姿態：車頭 ${pl.pose.h}°${pl.pose.pan ? '、手臂旋轉 ' + (90 + pl.pose.pan) + '°' : ''}` + (pl.pose.miss > 0.05 ? `，夾爪中心離放置點 ${fmt(pl.pose.miss)} cm` : '，夾爪對準放置點'));
   return {steps, msgs, usedKits};
+}
+function arcMerge(S, steps){   // 「轉角點 → 下一點」兩段直線改成一段弧線（車頭不變），省下在轉角停車再起步的時間
+  let p = Object.assign({}, S.robot.start), n = 0;
+  for (let i = 0; i < steps.length; i++){
+    const a = steps[i], b = steps[i + 1];
+    if (a.type === 'move' && !a.fix && b && b.type === 'move' && Math.abs(normDeg(a.h - p.h)) < 0.5 && Math.abs(normDeg(b.h - p.h)) < 0.5){
+      const chord = Math.hypot(b.x - p.x, b.y - p.y);
+      // 弧線凸出量從小到大試，取第一個整段不碰撞的
+      let pick = null;
+      for (let k = 2; k <= Math.min(40, chord * 0.45) && !pick; k += 1) for (const sg of [1, -1]){
+        const c = Object.assign({}, b, {curve:true, bulge:sg * k});
+        if (segClear(S, p, c)){ pick = c; break; }
+      }
+      if (pick && Math.abs(pick.bulge) <= chord * 0.45){
+        // 弧線不走 BNO 修正：到點一定 BNO 轉正
+        steps.splice(i, 2, Object.assign(pick, {fix:true, vm:a.vm, a:a.a, ad:a.ad}));
+        n++; p = {x:pick.x, y:pick.y, h:pick.h}; continue;
+      }
+    }
+    if (a.type === 'move') p = {x:a.x, y:a.y, h:a.h};
+    else if (a.type === 'align' && a.reset) p = {x:a.rx, y:a.ry, h:a.rh};
+  }
+  return n;
 }
 function hitNames(S, seg){
   const all = solidObjs(S);
@@ -2553,6 +2580,7 @@ function genTestCode(S){
     '// generated by OpenBlock',
     '// TU:bit V2 軸向測試程式：放在空地，按 A 鍵後依序觀察',
     '// 1. 第一段應「前進 20 cm」  2. 第二段應「右移 20 cm」  3. 第三段應「逆時針轉 90°」',
+    '// 4. 第四段弧線：往右前方（右 30、前 30）走弧線，應「先往前多、後往右」（弧線往左前方凸出）；如果是先往右再往前，請勾選「弧線方向反向」',
     '// 若方向不同，到「參數 > 座標換算」勾選對應的反向或改軸向後再產生程式',
     '#include <Arduino.h>', '#include <TuBitCore.h>', '#include <Wire.h>', '#include <TuMTC.h>', '',
     'TuBitCore tubit;', 'TuMTC mtc(tubit);', '',
@@ -2562,7 +2590,9 @@ function genTestCode(S){
     `    mtc.moveSCurve(20,0,0,${vm},${a},-(${ad}),0,0);   // 測試 2：X = 20`, '    delay(1500);',
     `    mtc.moveSCurve(0,0,90,${vm},${a},-(${ad}),0,0);   // 測試 3：Z = 90`, '    delay(1500);',
     `    mtc.moveSCurve(0,0,(-90),${vm},${a},-(${ad}),0,0);`,
-    `    mtc.moveSCurve((-20),(-20),0,${vm},${a},-(${ad}),0,0);   // 回到原點`,
+    `    mtc.moveSCurve((-20),(-20),0,${vm},${a},-(${ad}),0,0);   // 回到原點`, '    delay(1500);',
+    `    mtc.moveCurveSCurve(30,30,0,${(S.axes.invBulge ? -1 : 1) * 10},${vm},${a},-(${ad}),0,0);   // 測試 4：弧線，應先往前多、後往右（往左前方凸出）`, '    delay(1500);',
+    `    mtc.moveSCurve((-30),(-30),0,${vm},${a},-(${ad}),0,0);   // 回到原點`,
     '  }', '}', '',
   ].join('\n');
 }

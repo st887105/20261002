@@ -2,9 +2,12 @@
 
 TU:bit V2（MTC V2 麥克納姆輪）機器人的教學網站：從安裝 TubitBlock、組裝接線、PS3／V7RC 遙控、手臂與乒乓球發射器，到 2026 全國 AI 智創機器人競賽專區與競賽路徑規劃器。
 
-目前版本：**v1.9.5**（完整更新紀錄見 [CHANGELOG.md](CHANGELOG.md)，網頁標題旁的版本號也可點開查看）
+目前版本：**v1.9.6**（完整更新紀錄見 [CHANGELOG.md](CHANGELOG.md)，網頁標題旁的版本號也可點開查看）
 
 ## 版本更新
+
+### v1.9.6（2026-10-07）
+- 全國賽路徑規劃器 v1.9.15：修正藍方出發原地轉半圈（BNO 以出發時車頭為 0°）；自動移動加速、BNO 轉正逾時縮短、轉角改弧線一次走完。
 
 ### v1.9.5（2026-10-07）
 - 全國賽路徑規劃器 v1.9.14：IR 改為座標為主、IR 為輔（看到牆才靠牆，沒有隔板不亂轉）；手臂順序改為先抬起張開再移動、到點下降合爪抬起、放置先降再張開；新增藍方對應座標可自訂；新增出發前按 SELECT 選紅／藍方、再按 START 自動，做完自動回手動。
@@ -120,7 +123,7 @@ assets/fonts/       u8g2_unifont_t_chinese1.bin：程式產生器產生 OLED 精
 generator.html      程式產生器（基礎篇、進階篇、競賽自動化）
 resources.html      資料下載（官方講義、範例 .tb、雲端備份連結）
 competition.html    競賽專區（2026 全國賽規則重點、計分試算）
-race-planner/       TU:bit V2 2026全國競賽路徑規劃器 v1.9.14（含自己的 README、CHANGELOG）
+race-planner/       TU:bit V2 2026全國競賽路徑規劃器 v1.9.15（含自己的 README、CHANGELOG）
 planner/            舊網址，自動導向程式產生器（競賽自動化）
 assets/site.css     共用樣式（自建輕量 CSS，無框架）
 assets/site.js      共用頁首頁尾、版本號、更新紀錄

@@ -982,10 +982,10 @@
       helpers.push('', '// ===== 定點移動：以「設定定點原點」的位置為 (0,0)，當時車頭方向為 Y＋、右邊為 X＋ =====',
         'double posX = 0, posY = 0;   // 目前位置（cm）',
         'double goHeadDeg = 0;   // 相對原點的車頭角度（右轉＋）',
-        'bool originSet = false;',
+        'bool originSet = false;', ...(useBno ? ['double headZero = 0;   // 出發時 BNO 的角度：之後 BNO 轉正都以「出發時的車頭」為 0°，紅方、藍方出發都一樣，不會原地轉半圈'] : []),
         'void setOrigin() {   // 把這裡設為原點',
         '  posX = 0; posY = 0; goHeadDeg = 0; originSet = true;');
-      if (useBno) helpers.push('  if (bnoOK) mtc.captureBnoStartFrame();   // BNO：固定場地 X／Y 方向');
+      if (useBno) helpers.push('  if (bnoOK) {', '    mtc.captureBnoStartFrame();   // BNO：固定場地 X／Y 方向', '    headZero = bno.orientationZ;   // 記住出發時的車頭方向（BNO 有地磁時角度是絕對方位，藍方會差 180°）', '  }');
       helpers.push('}',
         'void setPos(double x, double y, double h) {   // 校正後重設目前位置與車頭角度',
         '  posX = x; posY = y; goHeadDeg = h;',
@@ -1038,7 +1038,7 @@
     }
     if (need.turn) {
       helpers.push('', 'double headingErr(double target) {   // 目標角與 BNO 角度差，換算到 -180~180',
-        (need.tune ? '  double e = target - (bno.orientationZ - bnoZero);   // bnoZero：BNO 校正模式設定的 0°' : '  double e = target - bno.orientationZ;'), '  while (e > 180) e -= 360;', '  while (e < -180) e += 360;', '  return e;', '}',
+        (need.goto ? '  double e = target - (bno.orientationZ - headZero);   // 以出發時的車頭為 0°（setOrigin 記下）' : need.tune ? '  double e = target - (bno.orientationZ - bnoZero);   // bnoZero：BNO 校正模式設定的 0°' : '  double e = target - bno.orientationZ;'), '  while (e > 180) e -= 360;', '  while (e < -180) e += 360;', '  return e;', '}',
         '', 'double BNO_TURN_K = ' + plain(num((K.bnoTurn || {}).k, 1.25)) + ';   // BNO 轉正係數（校正.tb 為 1.25；車子轉過頭就調小，轉反方向就改成負數）',
         '', 'void turnTo(double deg, double tol, unsigned long timeoutMs) {   // BNO 轉正（改寫自校正.tb：誤差 × BNO_TURN_K，轉到誤差小於 tol 或逾時）',
         '  if (!bnoOK) return;   // 沒有 BNO055 就不轉正', '  tubit.resetEnc();', '  tubit.stopAllMotors();', '  unsigned long t0 = millis();',
