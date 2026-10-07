@@ -772,7 +772,7 @@
       if (key.startsWith('v7:')) { need.v7rc = true; return 'v7rc.connect() && ' + v7Btn(key.slice(3)); }
       return 'false';
     };
-    const mapLines = (rows, btnExpr, ind) => (rows || []).filter(m => MAP_ACTS[m.act]).map(m => {
+    const mapLines = (rows, btnExpr, ind) => (rows || []).filter(m => MAP_ACTS[m.act] && (!MAP_ACTS[m.act].kit || K.on[MAP_ACTS[m.act].kit])).map(m => {   // 按鍵對應要用的套件沒勾就略過（例如勾發射器時不會帶入手臂的按鍵，避免 ATARM.h 與 PPGUN.h 衝突）
       const A = MAP_ACTS[m.act];
       if (A.kit) need[A.kit] = true;
       if (m.act === 'angle') need.mtc = true;
@@ -945,14 +945,14 @@
         'double readTuMtcBnoOrientationZ() {', ' return TuMtcBnoReadyCompat::read(bno, 0) ? bno.orientationZ : NAN;', '}');
       helpers.push('', '// ===== 定點移動：以「設定定點原點」的位置為 (0,0)，當時車頭方向為 Y＋、右邊為 X＋ =====',
         'double posX = 0, posY = 0;   // 目前位置（cm）',
-        'double headDeg = 0;   // 相對原點的車頭角度（右轉＋）',
+        'double goHeadDeg = 0;   // 相對原點的車頭角度（右轉＋）',
         'bool originSet = false;',
         'void setOrigin() {   // 把這裡設為原點',
-        '  posX = 0; posY = 0; headDeg = 0; originSet = true;');
+        '  posX = 0; posY = 0; goHeadDeg = 0; originSet = true;');
       if (useBno) helpers.push('  if (bnoOK) mtc.captureBnoStartFrame();   // BNO：固定場地 X／Y 方向');
       helpers.push('}',
         'void setPos(double x, double y, double h) {   // 校正後重設目前位置與車頭角度',
-        '  posX = x; posY = y; headDeg = h;',
+        '  posX = x; posY = y; goHeadDeg = h;',
         '}',
         'void goTo(double x, double y, double rot, double vm, double a) {   // 前往定點 (x, y)，途中車頭轉 rot 度（右轉＋）',
         '  if (!originSet) setOrigin();',
@@ -961,13 +961,13 @@
         '    mtc.moveSCurveBno(dx, dy, rot, vm, a, -a, 0, 0);   // BNO 精準移動：X／Y 依原點方向固定，陀螺儀修正航向',
         '  } else {');
       const ind2 = useBno ? '    ' : '  ';
-      helpers.push(ind2 + 'double h = headDeg * PI / 180.0;   // 換算成目前車身方向',
+      helpers.push(ind2 + 'double h = goHeadDeg * PI / 180.0;   // 換算成目前車身方向',
         ind2 + 'mtc.moveSCurve(dx * cos(h) - dy * sin(h), dx * sin(h) + dy * cos(h), -rot, vm, a, -a, 0, 0);');
       if (useBno) helpers.push('  }');
-      helpers.push('  posX = x; posY = y; headDeg += rot;', '}',
+      helpers.push('  posX = x; posY = y; goHeadDeg += rot;', '}',
         'void goDist(double bx, double by, double vm, double a) {   // 依目前車頭方向移動（右＋、前＋），並更新位置',
         '  mtc.moveSCurve(bx, by, 0, vm, a, -a, 0, 0);',
-        '  double h = headDeg * PI / 180.0;',
+        '  double h = goHeadDeg * PI / 180.0;',
         '  posX += bx * cos(h) + by * sin(h);',
         '  posY += -bx * sin(h) + by * cos(h);',
         '}');
