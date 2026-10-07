@@ -986,12 +986,19 @@
     if (need.bno) {
       helpers.push('', 'bool bnoFound() {   // 先確認 I2C 位址 0x28 有 BNO055；bno.start() 找不到感測器會一直等，整支程式會卡住',
         '  Wire.begin();',
-        '  for (int i = 0; i < 15; i++) {   // BNO055 上電約 0.65 秒後才回應，最多重試 1.5 秒',
+        '  for (int i = 0; i < 30; i++) {   // BNO055 上電約 0.65 秒後才回應，最多重試 3 秒',
         '    Wire.beginTransmission(0x28);',
         '    if (Wire.endTransmission() == 0) return true;',
         '    delay(100);',
         '  }',
-        '  return false;', '}');
+        '  return false;', '}',
+        '', 'String i2cList() {   // 列出 I2C 上有回應的位址：0x3C＝OLED、0x28＝BNO055；只有 0x29 代表 BNO 的 ADR 腳接到高電位（要接 GND 改回 0x28）',
+        '  String s = "";',
+        '  for (uint8_t a = 1; a < 127; a++) {',
+        '    Wire.beginTransmission(a);',
+        '    if (Wire.endTransmission() == 0) { char b[6]; sprintf(b, "0x%02X ", a); s += b; }',
+        '  }',
+        '  return s.length() ? s : String("none");', '}');
     }
     if (need.turn) {
       helpers.push('', 'double headingErr(double target) {   // 目標角與 BNO 角度差，換算到 -180~180',
@@ -1007,7 +1014,12 @@
     if (need.tune) setups.push('  tuneLoad();   // 讀取現場微調與 IR 校正值（存在快閃記憶體）');
     if (need.oled) setups.push('  display.begin(0x3C, true);');
     if (need.zh) setups.push('  u8g2.begin(display);');
-    if (need.bno) setups.push('  bnoOK = bnoFound();', '  if (bnoOK) bno.start();   // 找到 BNO055 才啟動', '  else Serial.println("BNO055 not found (I2C 0x28): check SDA/SCL/VIN/GND");');
+    if (need.bno) setups.push('  bnoOK = bnoFound();', '  if (bnoOK) bno.start();   // 找到 BNO055 才啟動', '  else {   // 找不到 BNO055：序列埠與 OLED 列出 I2C 上找到的位址，判斷是沒接好還是位址不對',
+      '    String found = i2cList();',
+      '    Serial.println("BNO055 not found (I2C 0x28): check SDA/SCL/VIN/GND");',
+      '    Serial.println("I2C devices: " + found + (found.indexOf("0x29") >= 0 ? " -> BNO at 0x29: connect ADR pin to GND" : ""));',
+      ...(need.oled ? ['    display.clearDisplay();', '    display.setFont();', '    display.setTextSize(1);', '    display.setTextColor(SH110X_WHITE);', '    display.setCursor(0, 0);', '    display.println("NO BNO055 at 0x28");', '    display.println("I2C found:");', '    display.println(found);', '    display.println(found.indexOf("0x29") >= 0 ? "ADR pin -> GND" : "check VIN GND SDA SCL");', '    display.display();', '    delay(3000);'] : []),
+      '  }');
     if (need.bno && need.goto) setups.push('  if (bnoOK) {   // 新版 MTC V3：定點移動用 BNO 修正航向',
       '    unsigned long tuMtcBnoWaitStart = millis();',
       '    while (!TuMtcBnoReadyCompat::read(bno, 0) && millis() - tuMtcBnoWaitStart < 5000UL) delay(20);',

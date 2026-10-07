@@ -177,7 +177,7 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
 <body>
 <div class="app">
 <header>
-  <div class="brand"><h1>TU:bit V2 2026全國競賽路徑規劃器</h1><span class="ver" id="ver" title="更新紀錄">v1.9.8</span><a class="ver" href="../competition.html" title="回競賽專區">← 競賽專區</a><a class="ver" href="../generator.html#race" title="程式產生器：競賽自動化">程式產生器</a></div>
+  <div class="brand"><h1>TU:bit V2 2026全國競賽路徑規劃器</h1><span class="ver" id="ver" title="更新紀錄">v1.9.10</span><a class="ver" href="../competition.html" title="回競賽專區">← 競賽專區</a><a class="ver" href="../generator.html#race" title="程式產生器：競賽自動化">程式產生器</a></div>
   <div class="hgroup">
     <select id="gameSel" aria-label="競賽項目">
       <option value="energy">物資能源爭霸戰 300×300</option>
@@ -400,6 +400,7 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
         <button class="btn small primary" id="autoPlanBtn" style="flex:1 1 70%">自動規劃最佳路徑：夾取齒輪 → 放到觸發閘門裝置</button>
         <button class="btn small" id="swapAB2" title="交換 A（自動）與 B（手動）的出發位置">A ⇄ B 交換位置</button>
         <label class="chk" style="flex:1 1 100%" title="自動規劃時，在夾取與放置前各找一個能讓 IR 對牆的位置：到點 BNO 轉正 → IR 靠牆校正 → 同步座標，再短距離走到定點"><input type="checkbox" data-bind="robot.irCheck"> 自動規劃加入感測校正點（BNO 轉正＋IR 靠牆校正）</label>
+        <label class="chk" style="flex:1 1 100%" title="手把背面或用 SixaxisPairTool 查到的 MAC；每台車的手把要不同">PS3 手把 MAC <input type="text" data-bind="kits.ps3.mac" placeholder="20:00:00:00:63:93" style="width:150px;font-family:'JetBrains Mono',monospace" aria-label="PS3 手把 MAC"></label>
         <label class="chk" style="flex:1 1 100%" title="空爪動作 0 秒直接到位、夾到後以放置高度搬運、長距離加速、最後短距離慢速到位"><input type="checkbox" data-bind="robot.fastPlan"> 省時規劃（長距離加速、最後慢速到位）</label>
         <button class="btn small" data-add="move">移動</button>
         <button class="btn small" data-add="clawOpen">夾爪張開</button>
@@ -452,6 +453,8 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
 </dialog>
 <dialog id="logDlg">
   <h3 style="margin-top:0">更新紀錄</h3>
+  <p><b>v1.9.10</b>（2026-10-07）「動作步驟」上方、自動規劃按鈕旁新增「PS3 手把 MAC」欄位（與「套件與感測器」同步），輸入 20-00-00… 或小寫會自動轉成 20:00:00:… 格式；賽規檢查會提醒格式不對或還是範例值 20:00:00:00:63:93。</p>
+  <p><b>v1.9.9</b>（2026-10-07）BNO055 開機偵測加強：最多等 3 秒；找不到時在序列埠與 OLED 列出 I2C 上有回應的位址（0x3C＝OLED、0x28＝BNO055；只看到 0x29 代表 BNO 的 ADR 腳接到高電位，要接 GND），一眼判斷是沒接好還是位址不對。</p>
   <p><b>v1.9.8</b>（2026-10-07）修正編譯錯誤「redefinition of panPin／panDeg」「conflicting declaration headDeg」：定點移動的車頭變數改名為 goHeadDeg（原本和 PPGUN.h 的砲管仰角 headDeg 同名）；PS3／V7RC 按鍵對應用到沒勾選的套件時自動略過（勾發射器時不再帶入手臂按鍵與 ATARM.h）。自動規劃會自動勾選「手臂 ATARM」（同時取消發射器），按鍵對應換成手臂車配置；勾換手臂／發射器時，按鍵對應也跟著換。賽規檢查：機器人 A 勾了發射器會顯示錯誤。</p>
   <p><b>v1.9.7</b>（2026-10-07）自動車 A 固定在出發區右側：紅方標準出發位置 A（自動）(57, 282) 車頭朝下、B（手動）(17, 280)；藍方 180° 對稱，A (243, 18) 車頭朝上、B (283, 20)，兩方的 A 都在靠場地中間的那一側。「從紅方出發／從藍方出發」改為直接放回該方的標準出發位置並重新規劃（原本是把目前位置鏡像）；畫面加上兩方位置說明。舊方案若 A 在左、B 在右，開啟時自動改回標準位置（只做一次，之後自己交換的位置會保留），請再按「自動規劃最佳路徑」。</p>
   <p><b>v1.9.6</b>（2026-10-07）按「A ⇄ B 交換位置」或「從紅方／藍方出發」後，直接依新出發點重新自動規劃（原本保留舊路線，A 換到左邊時舊路線會穿過 B 車、整段變紅色碰撞）。A 在左側 (17, 280) 時路線改走左側通道：往下 → 橫到 IR 校正點 → 夾取 → 放到觸發裝置，約 23.5 秒、全程無碰撞。提示訊息顯示時間依長度延長（最多 9 秒），自動規劃的說明看得完。</p>
@@ -487,7 +490,7 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
 <script>
 'use strict';
 /* ================= 基本工具 ================= */
-const VERSION = 'v1.9.8';
+const VERSION = 'v1.9.10';
 const STORE_KEY = 'tubit-planner-v1';
 const uid = () => Math.random().toString(36).slice(2, 9);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -1387,12 +1390,19 @@ const GEN = (function () {
     if (need.bno) {
       helpers.push('', 'bool bnoFound() {   // 先確認 I2C 位址 0x28 有 BNO055；bno.start() 找不到感測器會一直等，整支程式會卡住',
         '  Wire.begin();',
-        '  for (int i = 0; i < 15; i++) {   // BNO055 上電約 0.65 秒後才回應，最多重試 1.5 秒',
+        '  for (int i = 0; i < 30; i++) {   // BNO055 上電約 0.65 秒後才回應，最多重試 3 秒',
         '    Wire.beginTransmission(0x28);',
         '    if (Wire.endTransmission() == 0) return true;',
         '    delay(100);',
         '  }',
-        '  return false;', '}');
+        '  return false;', '}',
+        '', 'String i2cList() {   // 列出 I2C 上有回應的位址：0x3C＝OLED、0x28＝BNO055；只有 0x29 代表 BNO 的 ADR 腳接到高電位（要接 GND 改回 0x28）',
+        '  String s = "";',
+        '  for (uint8_t a = 1; a < 127; a++) {',
+        '    Wire.beginTransmission(a);',
+        '    if (Wire.endTransmission() == 0) { char b[6]; sprintf(b, "0x%02X ", a); s += b; }',
+        '  }',
+        '  return s.length() ? s : String("none");', '}');
     }
     if (need.turn) {
       helpers.push('', 'double headingErr(double target) {   // 目標角與 BNO 角度差，換算到 -180~180',
@@ -1408,7 +1418,12 @@ const GEN = (function () {
     if (need.tune) setups.push('  tuneLoad();   // 讀取現場微調與 IR 校正值（存在快閃記憶體）');
     if (need.oled) setups.push('  display.begin(0x3C, true);');
     if (need.zh) setups.push('  u8g2.begin(display);');
-    if (need.bno) setups.push('  bnoOK = bnoFound();', '  if (bnoOK) bno.start();   // 找到 BNO055 才啟動', '  else Serial.println("BNO055 not found (I2C 0x28): check SDA/SCL/VIN/GND");');
+    if (need.bno) setups.push('  bnoOK = bnoFound();', '  if (bnoOK) bno.start();   // 找到 BNO055 才啟動', '  else {   // 找不到 BNO055：序列埠與 OLED 列出 I2C 上找到的位址，判斷是沒接好還是位址不對',
+      '    String found = i2cList();',
+      '    Serial.println("BNO055 not found (I2C 0x28): check SDA/SCL/VIN/GND");',
+      '    Serial.println("I2C devices: " + found + (found.indexOf("0x29") >= 0 ? " -> BNO at 0x29: connect ADR pin to GND" : ""));',
+      ...(need.oled ? ['    display.clearDisplay();', '    display.setFont();', '    display.setTextSize(1);', '    display.setTextColor(SH110X_WHITE);', '    display.setCursor(0, 0);', '    display.println("NO BNO055 at 0x28");', '    display.println("I2C found:");', '    display.println(found);', '    display.println(found.indexOf("0x29") >= 0 ? "ADR pin -> GND" : "check VIN GND SDA SCL");', '    display.display();', '    delay(3000);'] : []),
+      '  }');
     if (need.bno && need.goto) setups.push('  if (bnoOK) {   // 新版 MTC V3：定點移動用 BNO 修正航向',
       '    unsigned long tuMtcBnoWaitStart = millis();',
       '    while (!TuMtcBnoReadyCompat::read(bno, 0) && millis() - tuMtcBnoWaitStart < 5000UL) delay(20);',
@@ -2441,6 +2456,12 @@ function ruleChecks(S, sim){
     if (!(S.kits.tune || {}).on && tg.every(v => v === 25)) push('warn', `IR 目標值還是預設 25：請到「套件與感測器」填入車子離牆 ${fmt(num(S.robot.irGap, 10))} cm 時各 IR 的讀數，或勾選「現場微調與校正」用 IR 校正模式（開機按住 A）在場地上量`);
     else push('ok', `IR 靠牆校正：路徑上的校正點都是以離牆 ${fmt(num(S.robot.irGap, 10))} cm 規劃，IR 目標值要在這個距離量`);
   }
+  if (on.ps3){
+    const mac = String((K.ps3 || {}).mac || '').trim();
+    if (!/^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$/.test(mac)) push('bad', `PS3 手把 MAC「${mac || '空白'}」格式不對：要像 20:00:00:00:63:93（6 組兩位數，用冒號隔開），在「動作步驟」上方或「套件與感測器」修改`);
+    else if (mac.toLowerCase() === '20:00:00:00:63:93') push('warn', 'PS3 手把 MAC 還是範例值 20:00:00:00:63:93：請改成自己手把記住的 MAC，否則手把連不上');
+    else push('ok', `PS3 手把 MAC：${mac}`);
+  }
   if (S.rtype === 'energyA' && on.gun) push('bad', '機器人 A（物資能源）要夾取物資，請在「套件與感測器」勾「手臂 ATARM」，不要勾「乒乓球發射器」（兩個函式庫不能同時使用）；或直接按「自動規劃最佳路徑」會自動換成手臂');
   if (on.bno && !usesBno) push('warn', '有勾選 BNO055，但路徑沒有用到轉正：建議取消勾選。BNO055 沒接好時開機會略過它，但少一個元件就少一個出錯點');
   if (on.bno) push('ok', '開機會先偵測 BNO055（I2C 0x28），找不到就略過，不會卡住整支程式');
@@ -3461,6 +3482,7 @@ document.addEventListener('change', e => {
   else v = el.value;
   if (p === 'field.W' || p === 'field.H') v = clamp(Math.round(v) || 100, 30, 2000);
   if (p === 'kits.auto.speed'){ v = clamp(Math.round(v) || 100, 10, 200); el.value = v; }
+  if (p === 'kits.ps3.mac'){ v = String(v).trim().replace(/[-\s]/g, ':').toUpperCase(); el.value = v; }   // 20-00-00… 或小寫都轉成 20:00:00:…
   setPath(S, p, v);
   if (p.startsWith('kits.')) { kitNoteMsg = ''; if (el.tagName === 'SELECT' || el.type === 'checkbox' || /kits\.(arm|gun|ultra|ir)\./.test(p)) renderKits(); renderSteps(); }
   changed(true);
