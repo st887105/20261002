@@ -165,7 +165,7 @@
   const IR_SINGLE = [['IR_UP', '前'], ['IR_BACK', '後'], ['IR_L', '左'], ['IR_R', '右']];
   // 遙控按鍵對應的動作（按住時每圈執行一次，寫法同官方範例）
   const MAP_ACTS = {
-    liftAdd: { label: '手臂升降累加', kit: 'arm', v: 0.1, code: m => 'ATARM_LiftAdd(' + plain(m.v) + ');' },
+    liftAdd: { label: '手臂升降累加', kit: 'arm', v: 0.3, code: m => 'ATARM_LiftAdd(' + plain(m.v) + ');' },
     panAdd: { label: '手臂旋轉累加', kit: 'arm', v: 0.1, code: m => 'ATARM_PanAdd(' + plain(m.v) + ');' },
     clawClose: { label: '夾爪夾緊', kit: 'arm', t: 0.5, code: m => 'ATARM_ClawCtrl(true,' + plain(m.t) + ');' },
     clawOpen: { label: '夾爪張開', kit: 'arm', t: 0.5, code: m => 'ATARM_ClawCtrl(false,' + plain(m.t) + ');' },
@@ -194,7 +194,7 @@
   // PS3 預設配置（課程版）：方向鍵 ↑↓ 手臂升降／砲管升降、←→ 雲台轉動；△ 開爪（發射車：發射）、○ 合爪；START 自動、SELECT 手動在「一鍵自動／手動」設定
   // V7RC 配置依官方範例（01.MTC_手臂／發射器機器人_V7RC_(藍牙)BLE.tb）
   const OFFICIAL_MAP = {
-    ps3arm: () => [mapRow('up', 'liftAdd', { v: 0.1 }), mapRow('down', 'liftAdd', { v: -0.1 }),
+    ps3arm: () => [mapRow('up', 'liftAdd', { v: 0.3 }), mapRow('down', 'liftAdd', { v: -0.3 }),   // 手臂升降加快（原 0.1）：比賽省時間
       mapRow('left', 'panAdd', { v: 0.1 }), mapRow('right', 'panAdd', { v: -0.1 }),
       mapRow('triangle', 'clawOpen'), mapRow('circle', 'clawClose')],
     ps3gun: () => [mapRow('up', 'headAdd', { v: 0.05 }), mapRow('down', 'headAdd', { v: -0.05 }),
@@ -990,17 +990,20 @@
         'void setPos(double x, double y, double h) {   // 校正後重設目前位置與車頭角度',
         '  posX = x; posY = y; goHeadDeg = h;',
         '}',
-        'void goTo(double x, double y, double rot, double vm, double a) {   // 前往定點 (x, y)，途中車頭轉 rot 度（右轉＋）',
+        'void goTo(double x, double y, double rot, double vm, double a, double d) {   // 前往定點 (x, y)，途中車頭轉 rot 度（右轉＋）；a 加速度、d 減速度（減速慢一點，停得比較準、比較順）',
         '  if (!originSet) setOrigin();',
         '  double dx = x - posX, dy = y - posY;');
       if (useBno) helpers.push('  if (bnoOK) {',
-        '    mtc.moveSCurveBno(dx, dy, rot, vm, a, -a, 0, 0);   // BNO 精準移動：X／Y 依原點方向固定，陀螺儀修正航向',
+        '    mtc.moveSCurveBno(dx, dy, rot, vm, a, -d, 0, 0);   // BNO 精準移動：X／Y 依原點方向固定，陀螺儀邊走邊修正航向',
         '  } else {');
       const ind2 = useBno ? '    ' : '  ';
       helpers.push(ind2 + 'double h = goHeadDeg * PI / 180.0;   // 換算成目前車身方向',
-        ind2 + 'mtc.moveSCurve(dx * cos(h) - dy * sin(h), dx * sin(h) + dy * cos(h), -rot, vm, a, -a, 0, 0);');
+        ind2 + 'mtc.moveSCurve(dx * cos(h) - dy * sin(h), dx * sin(h) + dy * cos(h), -rot, vm, a, -d, 0, 0);');
       if (useBno) helpers.push('  }');
       helpers.push('  posX = x; posY = y; goHeadDeg += rot;', '}',
+        'void goTo(double x, double y, double rot, double vm, double a) {   // 減速度和加速度相同',
+        '  goTo(x, y, rot, vm, a, a);',
+        '}',
         'void goDist(double bx, double by, double vm, double a) {   // 依目前車頭方向移動（右＋、前＋），並更新位置',
         '  mtc.moveSCurve(bx, by, 0, vm, a, -a, 0, 0);',
         '  double h = goHeadDeg * PI / 180.0;',

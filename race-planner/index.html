@@ -177,7 +177,7 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
 <body>
 <div class="app">
 <header>
-  <div class="brand"><h1>TU:bit V2 2026全國競賽路徑規劃器</h1><span class="ver" id="ver" title="更新紀錄">v1.9.15</span><a class="ver" href="../competition.html" title="回競賽專區">← 競賽專區</a><a class="ver" href="../generator.html#race" title="程式產生器：競賽自動化">程式產生器</a></div>
+  <div class="brand"><h1>TU:bit V2 2026全國競賽路徑規劃器</h1><span class="ver" id="ver" title="更新紀錄">v1.9.16</span><a class="ver" href="../competition.html" title="回競賽專區">← 競賽專區</a><a class="ver" href="../generator.html#race" title="程式產生器：競賽自動化">程式產生器</a></div>
   <div class="hgroup">
     <select id="gameSel" aria-label="競賽項目">
       <option value="energy">物資能源爭霸戰 300×300</option>
@@ -467,6 +467,7 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
 </dialog>
 <dialog id="logDlg">
   <h3 style="margin-top:0">更新紀錄</h3>
+  <p><b>v1.9.16</b>（2026-10-07）移動更平順：定點移動 goTo 新增減速度參數，起步加速快、到點減速放慢（長距離 1500／加速 2500／減速 1800；最後到位 800／1500／900），停車不晃、位置更準。手臂邊走邊轉：IR 校正後最後一段直走前先下手臂旋轉指令（手臂抬著，一邊走一邊轉到夾取／放置角度）；夾到齒輪抬起 0.3 秒後，手臂一邊走一邊轉回正前方；放置時降到放置高度改為快速動作，張爪後等 0.3 秒再抬起。手動模式手臂升降加快：PS3 方向鍵 ↑↓ 每次累加 0.1 改為 0.3（舊方案自動更新，可在按鍵對應自行調整）。</p>
   <p><b>v1.9.15</b>（2026-10-07）修正藍方出發時原地快速旋轉：BNO 轉正改以「按 START 出發時的車頭方向」為 0°（setOrigin 記下 headZero），BNO 有地磁時角度是絕對方位，藍方原本會差 180° 而轉半圈；紅藍兩邊一致。加快自動移動：長距離 1500／加速度 3000、最後到位 800／1500（加速度加大，短距離也很快到最高速）；BNO 轉正逾時 3 秒改 1.5 秒；出發時手臂抬起與張爪同時做。轉角用弧線一次走完（參數可取消）：繞隔板的「轉角點 → 下一點」兩段直線，能改成不碰撞的弧線就合成一段，車子不用在轉角停車再起步；軸向測試程式新增第 4 段弧線測試，確認弧線方向。</p>
   <p><b>v1.9.14</b>（2026-10-07）IR 改為「座標為主、IR 為輔」：每個 IR 校正點先讀側邊兩顆（與前／後）IR，都接近離牆 10 cm 的目標值（差 35% 以內，irNear）才靠牆校正；沒有隔板就略過，不會原地快速亂轉。靠牆最多 3 秒，校正後車頭和 BNO 差 8° 以上視為失敗：不重設座標，BNO 轉回原方向照座標繼續。手臂順序改為：出發前抬起手臂＋張開夾爪再移動；到夾取點 旋轉 → 下降 → 合爪 → 抬起（夾著齒輪抬起搬運）；到放置點 旋轉 → 降到放置高度 → 張開 → 抬起。現場前後微調改在手臂下降之前做、抬起之後復原。新增「藍方對應座標」：預設藍方＝紅方 180° 對稱自動換算；取消勾選可自己填藍方 A 出發點、夾取點、放置點實測座標（藍方程式要另外產生，開機畫面只顯示這一方）。新增「出發前選邊」（PS3）：手動模式按 SELECT 選邊（第 1 下紅方、再按換藍方，OLED 顯示 RED／BLUE 與出發點、手把震動 1 下／2 下），選好再按 START 才執行自動；只按 SELECT 不會啟動；自動做完自動回手動，下次要再按 SELECT 選邊。紅藍對稱時兩邊同一條流程，藍方座標自訂時自動多產生 runAutoBlue()。</p>
   <p><b>v1.9.13</b>（2026-10-07）依實測影片修正：IR 校正後最後一段「只直走、不橫移」，左右偏差改用手臂旋轉補（麥克納姆輪橫移最容易打滑，影片中車子少走約 9 cm 而沒夾到）；夾取改為 IR 校正點 (85, 215) 直走 29.8 cm、手臂 62°。IR 靠牆校正成功（沒逾時）才用牆面位置重設座標；沒做過 IR 校正就照原本座標繼續。長距離移動加速為 1200／1500，最後到位 500／700。開機畫面顯示「車子要擺在哪」（紅方 X50 Y280 朝下、藍方 X250 Y20 朝上）以及 BNO OK／NONE、IR CAL OK／NOT CAL，出發點擺錯整條路線都會偏。動作步驟上方新增「A 出發點」欄位；舊方案出發點在 (52~62, 276~290) 時自動改為實測 (50, 280)。</p>
@@ -509,7 +510,7 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
 <script>
 'use strict';
 /* ================= 基本工具 ================= */
-const VERSION = 'v1.9.15';
+const VERSION = 'v1.9.16';
 const STORE_KEY = 'tubit-planner-v1';
 const uid = () => Math.random().toString(36).slice(2, 9);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -668,7 +669,7 @@ const GEN = (function () {
   const IR_SINGLE = [['IR_UP', '前'], ['IR_BACK', '後'], ['IR_L', '左'], ['IR_R', '右']];
   // 遙控按鍵對應的動作（按住時每圈執行一次，寫法同官方範例）
   const MAP_ACTS = {
-    liftAdd: { label: '手臂升降累加', kit: 'arm', v: 0.1, code: m => 'ATARM_LiftAdd(' + plain(m.v) + ');' },
+    liftAdd: { label: '手臂升降累加', kit: 'arm', v: 0.3, code: m => 'ATARM_LiftAdd(' + plain(m.v) + ');' },
     panAdd: { label: '手臂旋轉累加', kit: 'arm', v: 0.1, code: m => 'ATARM_PanAdd(' + plain(m.v) + ');' },
     clawClose: { label: '夾爪夾緊', kit: 'arm', t: 0.5, code: m => 'ATARM_ClawCtrl(true,' + plain(m.t) + ');' },
     clawOpen: { label: '夾爪張開', kit: 'arm', t: 0.5, code: m => 'ATARM_ClawCtrl(false,' + plain(m.t) + ');' },
@@ -697,7 +698,7 @@ const GEN = (function () {
   // PS3 預設配置（課程版）：方向鍵 ↑↓ 手臂升降／砲管升降、←→ 雲台轉動；△ 開爪（發射車：發射）、○ 合爪；START 自動、SELECT 手動在「一鍵自動／手動」設定
   // V7RC 配置依官方範例（01.MTC_手臂／發射器機器人_V7RC_(藍牙)BLE.tb）
   const OFFICIAL_MAP = {
-    ps3arm: () => [mapRow('up', 'liftAdd', { v: 0.1 }), mapRow('down', 'liftAdd', { v: -0.1 }),
+    ps3arm: () => [mapRow('up', 'liftAdd', { v: 0.3 }), mapRow('down', 'liftAdd', { v: -0.3 }),   // 手臂升降加快（原 0.1）：比賽省時間
       mapRow('left', 'panAdd', { v: 0.1 }), mapRow('right', 'panAdd', { v: -0.1 }),
       mapRow('triangle', 'clawOpen'), mapRow('circle', 'clawClose')],
     ps3gun: () => [mapRow('up', 'headAdd', { v: 0.05 }), mapRow('down', 'headAdd', { v: -0.05 }),
@@ -1411,17 +1412,20 @@ const GEN = (function () {
         'void setPos(double x, double y, double h) {   // 校正後重設目前位置與車頭角度',
         '  posX = x; posY = y; goHeadDeg = h;',
         '}',
-        'void goTo(double x, double y, double rot, double vm, double a) {   // 前往定點 (x, y)，途中車頭轉 rot 度（右轉＋）',
+        'void goTo(double x, double y, double rot, double vm, double a, double d) {   // 前往定點 (x, y)，途中車頭轉 rot 度（右轉＋）；a 加速度、d 減速度（減速慢一點，停得比較準、比較順）',
         '  if (!originSet) setOrigin();',
         '  double dx = x - posX, dy = y - posY;');
       if (useBno) helpers.push('  if (bnoOK) {',
-        '    mtc.moveSCurveBno(dx, dy, rot, vm, a, -a, 0, 0);   // BNO 精準移動：X／Y 依原點方向固定，陀螺儀修正航向',
+        '    mtc.moveSCurveBno(dx, dy, rot, vm, a, -d, 0, 0);   // BNO 精準移動：X／Y 依原點方向固定，陀螺儀邊走邊修正航向',
         '  } else {');
       const ind2 = useBno ? '    ' : '  ';
       helpers.push(ind2 + 'double h = goHeadDeg * PI / 180.0;   // 換算成目前車身方向',
-        ind2 + 'mtc.moveSCurve(dx * cos(h) - dy * sin(h), dx * sin(h) + dy * cos(h), -rot, vm, a, -a, 0, 0);');
+        ind2 + 'mtc.moveSCurve(dx * cos(h) - dy * sin(h), dx * sin(h) + dy * cos(h), -rot, vm, a, -d, 0, 0);');
       if (useBno) helpers.push('  }');
       helpers.push('  posX = x; posY = y; goHeadDeg += rot;', '}',
+        'void goTo(double x, double y, double rot, double vm, double a) {   // 減速度和加速度相同',
+        '  goTo(x, y, rot, vm, a, a);',
+        '}',
         'void goDist(double bx, double by, double vm, double a) {   // 依目前車頭方向移動（右＋、前＋），並更新位置',
         '  mtc.moveSCurve(bx, by, 0, vm, a, -a, 0, 0);',
         '  double h = goHeadDeg * PI / 180.0;',
@@ -1762,6 +1766,7 @@ function upgradeState(o){
   if (o.game === 'energy' && o.robot && o.robot.start){ const a = o.robot.start;
     if (!o.posFix1913 && a.x >= 52 && a.x <= 62 && a.y >= 276 && a.y <= 290){ a.x = 50; a.y = 280; o.steps = []; } else if (!o.posFix1913 && a.x >= 238 && a.x <= 248 && a.y >= 10 && a.y <= 24){ a.x = 250; a.y = 20; o.steps = []; } }
   if (o.game === 'energy') o.posFix1913 = true;
+  if (!o.liftFix1916 && o.kits && o.kits.ps3 && Array.isArray(o.kits.ps3.map)){ o.kits.ps3.map.forEach(m => { if (m.act === 'liftAdd' && Math.abs(num(m.v, 0)) === 0.1) m.v = m.v > 0 ? 0.3 : -0.3; }); o.liftFix1916 = true; }   // v1.9.16：手動手臂升降加快
   if (!o.speedFix1915){ if (o.turn && num(o.turn.timeout, 3) >= 3) o.turn.timeout = 1.5; if (o.robot && o.robot.arcPlan === undefined) o.robot.arcPlan = true; o.speedFix1915 = true; }   // v1.9.15：BNO 轉正逾時 1.5 秒、轉角弧線
   if (o.game === 'energy' && !o.sideFix1914 && o.kits && o.kits.mode){ o.kits.mode.side = true; o.sideFix1914 = true; }   // v1.9.14：預設開啟出發前選邊
   if (o.game === 'energy') syncBlue(o);
@@ -2113,8 +2118,9 @@ function autoPlan(S){   // 回傳 {steps, msgs}
   const off = num(S.robot.clawOff, 20), sec = Math.max(0, Math.round(num(S.arm.sec, 1)));
   const useIR = S.robot.irCheck !== false, fast = S.robot.fastPlan !== false;
   // 省時：長距離移動加快（之後有 IR 校正或最後慢速到位會修正誤差），最後到夾取／放置點的短距離放慢求準
-  const SPD = fast ? {run:{vm:1500, a:3000}, fin:{vm:800, a:1500}} : {run:{vm:'', a:''}, fin:{vm:'', a:''}};   // 加速度加大：短距離也很快到最高速
-  const mv = (q, fix, kind) => { const v = SPD[kind || 'run']; return {id:uid(), type:'move', x:Math.round(q.x * 10) / 10, y:Math.round(q.y * 10) / 10, h:q.h, curve:false, bulge:0, vm:v.vm, a:v.a, ad:v.a, stopCm:0, fix:!!fix}; };
+  // 平順又準：起步加速快、到點減速放慢一點（減速度小於加速度），停車不晃、位置比較準
+  const SPD = fast ? {run:{vm:1500, a:2500, ad:1800}, fin:{vm:800, a:1500, ad:900}} : {run:{vm:'', a:'', ad:''}, fin:{vm:'', a:'', ad:''}};
+  const mv = (q, fix, kind) => { const v = SPD[kind || 'run']; return {id:uid(), type:'move', x:Math.round(q.x * 10) / 10, y:Math.round(q.y * 10) / 10, h:q.h, curve:false, bulge:0, vm:v.vm, a:v.a, ad:v.ad, stopCm:0, fix:!!fix}; };
   const quick = (st0, ms) => fast ? [Object.assign({}, st0, {sec:0}), {id:uid(), type:'wait', ms}] : [st0];   // 空爪的動作用 0 秒直接轉到位，再等伺服到定位
   const panStep = d => ({id:uid(), type:'pan', deg:90 + d, sec});
   const st = k => ({clawOpen:{type:'claw', close:false, sec}, clawClose:{type:'claw', close:true, sec},
@@ -2158,13 +2164,16 @@ function autoPlan(S){   // 回傳 {steps, msgs}
   if (!g) return {steps:null, msgs:['找不到能夾到齒輪的位置或路線（可能被隔板或機器人 B 擋住）']};
   // 手臂順序：出發先「抬起手臂＋張開夾爪」再移動 → 到夾取點「下降→合爪→抬起」→ 到放置點「旋轉→降到放置高度→張開→抬起」
   push(fast ? [Object.assign(newStep('lift'), {sec:0}), Object.assign(newStep('clawOpen'), {sec:0}), {id:uid(), type:'wait', ms:300}] : [newStep('lift'), newStep('clawOpen')]);   // 出發區：手臂抬起、爪子張開同時做，移動中不會碰到地面或隔板
-  const gr = goVia(from, g, '夾取', gPt, 1.5, () => {});   // 手臂一路抬著移動到夾取點
+  const preTurn = pan => { if (fast && pan) push(Object.assign(panStep(pan), {sec:0})); };   // 省時：最後一段直走前先下旋轉指令，手臂抬著一邊走一邊轉
+  const gr = goVia(from, g, '夾取', gPt, 1.5, preTurn);   // 手臂一路抬著移動到夾取點
   from = gr.pose;
-  if (gr.pan) push(panStep(gr.pan));   // 到定位：先旋轉手臂對準
+  if (gr.pan && !fast) push(panStep(gr.pan));   // 到定位：先旋轉手臂對準
   push(quick(newStep('lower'), 400));   // 張開的爪子往下罩住齒輪
   push(fast ? quick(newStep('clawClose'), 300) : newStep('clawClose'));   // 合爪夾取
-  push(newStep('lift'));   // 夾著齒輪抬起，搬運時不拖地
-  if (gr.pan) push(panStep(0));
+  if (fast){
+    push(quick(newStep('lift'), 300));   // 夾著齒輪抬起（等 0.3 秒離地）
+    if (gr.pan) push(Object.assign(panStep(0), {sec:0}));   // 手臂轉回正前方：0 秒指令，伺服在車子移動時一邊轉
+  } else { push(newStep('lift')); if (gr.pan) push(panStep(0)); }
   msgs.push(`夾取姿態：車頭 ${gr.pose.h}°${gr.pan ? '、手臂旋轉 ' + (90 + gr.pan) + '°' : ''}`);
   // ---- 2. 放到觸發閘門裝置 ----
   if (!pPt){ msgs.push('找不到本方的觸發閘門裝置，只規劃夾取'); return {steps, msgs, usedKits}; }
@@ -2180,13 +2189,13 @@ function autoPlan(S){   // 回傳 {steps, msgs}
     return {steps, msgs, usedKits};
   }
   if (tol > tol0 + 1e-9 && trig) msgs.push(`放置：觸發裝置是 ${fmt(trig.w)}×${fmt(trig.h)} cm 的實體方塊、緊貼牆角，夾爪中心最多只能伸到車頭前 ${fmt(off - num(S.robot.l, 20) / 2)} cm，容許誤差 ${fmt(tol0)} cm 放不到；已自動放寬到 ${fmt(tol)} cm（齒輪 ${fmt(itemSz)} cm，偏 ${fmt(tolMax)} cm 以內仍完全在裝置上）`);
-  const pr = goVia(from, pl, '放置', pPt, tol, () => {});   // 先移動到放置點
+  const pr = goVia(from, pl, '放置', pPt, tol, preTurn);   // 移動到放置點（省時：最後一段一邊走一邊轉手臂）
   from = pr.pose; pl.pose = Object.assign({}, pl.pose, {pan:pr.pan, miss:pr.pose.miss !== undefined ? pr.pose.miss : pl.pose.miss, h:pr.pose.h});
-  if (pr.pan) push(panStep(pr.pan));   // 到定位後再旋轉手臂（雲台）
-  push(newStep('place'));   // 先下降到放置高度（夾著齒輪，慢慢降）
+  if (pr.pan && !fast) push(panStep(pr.pan));   // 到定位後再旋轉手臂（雲台）
+  push(fast ? quick(newStep('place'), 350) : newStep('place'));   // 下降到放置高度
   push(quick(newStep('clawOpen'), 300), quick(newStep('lift'), 300));   // 張開放下齒輪、空爪抬起；手臂旋轉留給手動階段調整
   if (!fast && pr.pan) push(panStep(0));
-  if (fast) msgs.push('省時規劃：空爪動作 0 秒直接到位、長距離加速、最後短距離慢速到位（可在「參數」取消）');
+  if (fast) msgs.push('省時規劃：長距離加速、到點減速放慢（平順又準）；手臂旋轉在最後一段一邊走一邊轉、夾到後一邊走一邊轉回正前方（可在「參數」取消）');
   msgs.push('手臂順序：出發先抬起＋張開 → 夾取點 下降、合爪、抬起 → 放置點 旋轉、降到放置高度、張開、抬起');
   if (fast && S.robot.arcPlan !== false){ const n = arcMerge(S, steps); if (n) msgs.push(`轉角弧線：${n} 個繞隔板的轉角改成一段弧線一次走完（不停車）；第一次使用請用「軸向測試程式」第 4 段確認弧線方向`); }
   msgs.push(`放置姿態：車頭 ${pl.pose.h}°${pl.pose.pan ? '、手臂旋轉 ' + (90 + pl.pose.pan) + '°' : ''}` + (pl.pose.miss > 0.05 ? `，夾爪中心離放置點 ${fmt(pl.pose.miss)} cm` : '，夾爪對準放置點'));
@@ -2445,8 +2454,8 @@ function planActs(S){
     if (s.type === 'move' && G && !(s.curve && Math.abs(num(s.bulge)) > 0.01) && !(num(s.stopCm) > 0 && S.kits.on.ultra)){
       const to = {x:num(s.x), y:num(s.y), h:num(s.h)};
       const q = startFrame(S, to), rot = normDeg(-(to.h - p.h));
-      const vm = Math.abs(num(s.vm, S.motion.vm) || S.motion.vm), a = Math.abs(num(s.a, S.motion.a) || S.motion.a);
-      const acts = [{type:'raw', need:{goto:true, mtc:true, speed:true}, lines:[`goTo(${g1(q.x)}, ${g1(q.y)}, ${g1(rot)}, autoV(${vm}), autoV(${a}));   // 定點座標 (${fmt(q.x)}, ${fmt(q.y)})${rot ? '，車頭' + (rot > 0 ? '右' : '左') + '轉 ' + fmt(Math.abs(rot)) + '°' : ''}`]}];
+      const vm = Math.abs(num(s.vm, S.motion.vm) || S.motion.vm), a = Math.abs(num(s.a, S.motion.a) || S.motion.a), ad = Math.abs(num(s.ad, a) || a);
+      const acts = [{type:'raw', need:{goto:true, mtc:true, speed:true}, lines:[`goTo(${g1(q.x)}, ${g1(q.y)}, ${g1(rot)}, autoV(${vm}), autoV(${a})${ad !== a ? `, autoV(${ad})` : ''});   // 定點座標 (${fmt(q.x)}, ${fmt(q.y)})${rot ? '，車頭' + (rot > 0 ? '右' : '左') + '轉 ' + fmt(Math.abs(rot)) + '°' : ''}`]}];
       if (s.fix) acts.push(...(S.kits.on.bno ? [{type:'bnoTurn', deg:bnoTarget(S, to.h), tol:num(S.turn.tol, 1), timeout:num(S.turn.timeout, 3)}] : []));
       out.push({type:'group', label:`===== ${LB[i]} 前往 (${fmt(to.x)}, ${fmt(to.y)}) 車頭 ${fmt(to.h)}° =====`, acts});
       p = to; return;
@@ -2490,7 +2499,7 @@ function planActs(S){
         else if (isPlace && (ap === 'place' || ap === 'both')){
           // 放置：張開後先把手臂抬起，再復原微調，避免雲台轉回時爪子掃到剛放好的齒輪
           const up = Math.max(...S.steps.slice(i + 1).filter(x => x.type === 'lift').map(x => num(x.deg)).concat([num(S.arm.liftUp, 65)]));
-          acts = [...tb, ...acts, ...wait, {type:'raw', need:{arm:true}, lines:[`ATARM_LiftSet(${Math.round(up)},0);   // 先抬起手臂`, 'delay(300);', 'trimAfter();   // 微調復原']}];
+          acts = [...tb, ...acts, ...(num(s.sec, 1) < 1 ? [{type:'raw', lines:['delay(300);   // 等夾爪張開，齒輪放穩再抬']}] : []), {type:'raw', need:{arm:true}, lines:[`ATARM_LiftSet(${Math.round(up)},0);   // 先抬起手臂`, 'delay(300);', 'trimAfter();   // 微調復原']}];
         }
       }
       const ps = sim0.pose[i];
