@@ -177,7 +177,7 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
 <body>
 <div class="app">
 <header>
-  <div class="brand"><h1>TU:bit V2 2026全國競賽路徑規劃器</h1><span class="ver" id="ver" title="更新紀錄">v1.9.10</span><a class="ver" href="../competition.html" title="回競賽專區">← 競賽專區</a><a class="ver" href="../generator.html#race" title="程式產生器：競賽自動化">程式產生器</a></div>
+  <div class="brand"><h1>TU:bit V2 2026全國競賽路徑規劃器</h1><span class="ver" id="ver" title="更新紀錄">v1.9.12</span><a class="ver" href="../competition.html" title="回競賽專區">← 競賽專區</a><a class="ver" href="../generator.html#race" title="程式產生器：競賽自動化">程式產生器</a></div>
   <div class="hgroup">
     <select id="gameSel" aria-label="競賽項目">
       <option value="energy">物資能源爭霸戰 300×300</option>
@@ -265,7 +265,7 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
           <label class="f"><span>放置點 Y</span><input type="number" step="0.5" data-bind="task.place.y"></label>
         </div>
         <div class="row"><button class="btn small" data-side="red">從紅方出發</button><button class="btn small" data-side="blue">從藍方出發</button></div>
-        <p class="hint">按下會把 A、B 放回標準出發位置並重新規劃：紅方 A（自動）(57, 282) 車頭朝下、B（手動）(17, 280)；藍方 A (243, 18) 車頭朝上、B (283, 20)。兩方的 A 都在出發區靠場地中間的那一側。</p>
+        <p class="hint">按下會把 A、B 放回標準出發位置並重新規劃：紅方 A（自動）(50, 280) 車頭朝下（車身靠出發區最外側，規格圖距左 50、距上 20）、B（手動）(17, 280)；藍方 A (250, 20) 車頭朝上、B (283, 20)。兩方的 A 都在 B 靠場地中間的那一側。</p>
         <p class="hint">夾取點＝夾爪要對準的齒輪中心，放置點＝齒輪要放上觸發閘門裝置的位置（放上去才會開啟自動倉儲閘門）。位置一律用紅方座標填寫，從藍方出發時自動換成 180° 對稱位置。程式以出發點為原點、BNO 鎖定方向、IR 依牆面校正，<b>紅藍兩邊燒同一支程式即可</b>，只要車子擺在對稱的出發位置。</p>
       </div>
       <div class="sec"><h3>另一台機器人（同時出發、手動）</h3>
@@ -431,6 +431,7 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
         <button class="btn primary" id="copyCode">複製程式碼</button>
         <button class="btn" id="testCodeBtn">軸向測試程式</button>
         <a class="btn" href="https://tubitblock.trgreat.com/arduino-ide.html" target="_blank" rel="noopener">開啟兔比 Arduino IDE</a>
+        <a class="btn" href="https://tubitblock.trgreat.com/" target="_blank" rel="noopener" title="兔比積木線上平台：用積木寫程式、燒錄">開啟兔比積木</a>
       </div>
       <pre id="code"></pre>
     </div>
@@ -453,6 +454,8 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
 </dialog>
 <dialog id="logDlg">
   <h3 style="margin-top:0">更新紀錄</h3>
+  <p><b>v1.9.12</b>（2026-10-07）產生的程式碼旁新增「開啟兔比積木」連結（https://tubitblock.trgreat.com/ 線上平台）。硬體提醒（程式碼開頭註解、套件設定、賽規檢查）：使用 BNO055 啟動前一定要先歸零方向（車頭擺好再按 START，同積木「BNO 以目前方向設定移動起點」），並列出 BNO 接線 Vin→VCC、GND、SDA、SCL（3vo 不接）；使用手臂或發射器時，控制板「SERVO POWER SELECT」伺服電源跳帽要往上移，插在 1、2。</p>
+  <p><b>v1.9.11</b>（2026-10-07）依實測修正出發點：紅方 A（自動）車身靠出發區最外側 (50, 280)（規格圖距左 50、距上 20），藍方對稱 (250, 20)；舊標準位置 (57, 282) 自動更正。放置順序改為：移動到放置點 → 旋轉手臂（雲台）→ 張開夾爪（原本是先轉手臂再移動）。IR 靠牆校正保護：沒做過 IR 校正模式（開機按住 A）時，自動流程略過 IR 靠牆校正，避免用預設目標值 25 把車子轉歪（實測影片中車子在第一個校正點轉了約 90°）；IR 校正值存檔時一併記錄「已校正」。</p>
   <p><b>v1.9.10</b>（2026-10-07）「動作步驟」上方、自動規劃按鈕旁新增「PS3 手把 MAC」欄位（與「套件與感測器」同步），輸入 20-00-00… 或小寫會自動轉成 20:00:00:… 格式；賽規檢查會提醒格式不對或還是範例值 20:00:00:00:63:93。</p>
   <p><b>v1.9.9</b>（2026-10-07）BNO055 開機偵測加強：最多等 3 秒；找不到時在序列埠與 OLED 列出 I2C 上有回應的位址（0x3C＝OLED、0x28＝BNO055；只看到 0x29 代表 BNO 的 ADR 腳接到高電位，要接 GND），一眼判斷是沒接好還是位址不對。</p>
   <p><b>v1.9.8</b>（2026-10-07）修正編譯錯誤「redefinition of panPin／panDeg」「conflicting declaration headDeg」：定點移動的車頭變數改名為 goHeadDeg（原本和 PPGUN.h 的砲管仰角 headDeg 同名）；PS3／V7RC 按鍵對應用到沒勾選的套件時自動略過（勾發射器時不再帶入手臂按鍵與 ATARM.h）。自動規劃會自動勾選「手臂 ATARM」（同時取消發射器），按鍵對應換成手臂車配置；勾換手臂／發射器時，按鍵對應也跟著換。賽規檢查：機器人 A 勾了發射器會顯示錯誤。</p>
@@ -490,7 +493,7 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
 <script>
 'use strict';
 /* ================= 基本工具 ================= */
-const VERSION = 'v1.9.10';
+const VERSION = 'v1.9.12';
 const STORE_KEY = 'tubit-planner-v1';
 const uid = () => Math.random().toString(36).slice(2, 9);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -1461,14 +1464,14 @@ const GEN = (function () {
         'float TRIM_PAN = 0;   // 雲台微調 °：手動模式按住 START＋R1（左）／R2（右）',
         'const float TRIM_FWD_STEP = ' + plain(fs) + ';   // 每按一下前後幾公分',
         'const float TRIM_PAN_STEP = ' + plain(ps) + ';   // 每按一下雲台幾度'];
-      if (need.ir) T.push('int irT[6] = {' + irDef + '};   // IR 目標值（前 後 左前 左後 右前 右後），IR 校正模式量測後更新');
+      if (need.ir) T.push('int irT[6] = {' + irDef + '};   // IR 目標值（前 後 左前 左後 右前 右後），IR 校正模式量測後更新', 'bool irSaved = false;   // 是否做過 IR 校正模式（沒做過就略過自動流程的 IR 靠牆校正，避免用錯的目標值把車子轉歪）');
       if (need.bno) T.push('double bnoZero = 0;   // BNO 0° 的位置（BNO 校正模式按 A 設定）');
       T.splice(0, T.length).forEach(l => def.push(l));   // 全域變數放在宣告區（headingErr 等函式會用到）
       T.push('', 'void tuneLoad() {   // 開機讀取微調值', '  tunePrefs.begin("tubit", true);', '  TRIM_FWD = tunePrefs.getFloat("fwd", 0);', '  TRIM_PAN = tunePrefs.getFloat("pan", 0);');
-      if (need.ir) T.push('  for (int i = 0; i < 6; i++) irT[i] = tunePrefs.getInt((String("ir") + i).c_str(), irT[i]);');
+      if (need.ir) T.push('  for (int i = 0; i < 6; i++) irT[i] = tunePrefs.getInt((String("ir") + i).c_str(), irT[i]);', '  irSaved = tunePrefs.getBool("irok", false);');
       if (need.bno) T.push('  bnoZero = tunePrefs.getDouble("bz", 0);');
       T.push('  tunePrefs.end();', '}', '', 'void tuneSave() {   // 儲存微調值', '  tunePrefs.begin("tubit", false);', '  tunePrefs.putFloat("fwd", TRIM_FWD);', '  tunePrefs.putFloat("pan", TRIM_PAN);');
-      if (need.ir) T.push('  for (int i = 0; i < 6; i++) tunePrefs.putInt((String("ir") + i).c_str(), irT[i]);');
+      if (need.ir) T.push('  for (int i = 0; i < 6; i++) tunePrefs.putInt((String("ir") + i).c_str(), irT[i]);', '  tunePrefs.putBool("irok", irSaved);');
       if (need.bno) T.push('  tunePrefs.putDouble("bz", bnoZero);');
       T.push('  tunePrefs.end();', '}', '',
         'void tuneShow(const char *msg) {   // OLED／序列埠顯示目前微調值',
@@ -1526,6 +1529,7 @@ const GEN = (function () {
           '      Serial.printf("IR %s saved\\n", side[s]);', '      s++;', '      while (tubit.readButton(Button_A)) delay(10);', '    }',
           '    if (tubit.readButton(Button_B)) {   // 跳過這一面', '      s++;', '      while (tubit.readButton(Button_B)) delay(10);', '    }',
           '    delay(80);', '  }',
+          '  irSaved = true;   // 做過 IR 校正，自動流程才會用 IR 靠牆校正',
           '  tuneSave();',
           '  tuirAlign().setTargets(irT[0], irT[1], irT[2], irT[3], irT[4], irT[5]);',
           '  Serial.printf("setTargets(%d,%d,%d,%d,%d,%d)\\n", irT[0], irT[1], irT[2], irT[3], irT[4], irT[5]);',
@@ -1556,6 +1560,8 @@ const GEN = (function () {
       setups.push('  delay(800);');
     }
     const head = ['// generated by OpenBlock'];
+    if (need.bno) head.push('// ⚠ BNO055：啟動前先把車子擺好方向再按啟動鍵，程式會以「啟動當下的車頭方向」歸零（同積木「BNO 以目前方向設定移動起點」），擺歪了整條路線都會歪');
+    if (need.arm || need.gun) head.push('// ⚠ 使用' + (need.arm ? '手臂 ATARM' : '發射器 PPGUN') + '：控制板「SERVO POWER SELECT」伺服電源跳帽要往上移，插在 1、2，伺服馬達才有足夠電力');
     if (conflict) head.push('// ⚠ 同時用了手臂與發射器動作：ATARM.h 與 PPGUN.h 不能放在同一支程式，請刪除其中一種動作');
     if (rcConflict) head.push('// ⚠ 同時用了 PS3 與 V7RC：一支程式只用一種遙控方式，請刪除其中一種');
     const out = head.concat(inc, [''], def, rcDefs, helpers, rcFns, ['', 'void setup() {'], setups, [''], setupBody, ['}', '', 'void loop() {'], loopBody, ['}', '']);
@@ -1591,7 +1597,7 @@ function defaultKitsFor(robot){
 function demoSteps(){   // 範例：A（自動）在出發區右側，往下走右側通道夾取齒輪
   const mv = (x, y, h) => ({id:uid(), type:'move', x, y, h, curve:false, bulge:0, vm:'', a:'', ad:'', stopCm:0});
   return [
-    mv(57, 215, 180),
+    mv(50, 215, 180),
     {id:uid(), type:'claw', close:false, sec:1},
     {id:uid(), type:'lift', deg:0, sec:1},
     mv(78, 187, 180),
@@ -1601,7 +1607,7 @@ function demoSteps(){   // 範例：A（自動）在出發區右側，往下走�
 }
 function presetCustom(W, H){ return {W, H, objects:[]}; }
 /* 物資能源標準出發位置：紅方 A（自動）在出發區右側、B（手動）在左側；藍方為 180° 對稱（A 一樣在靠場地中間那一側） */
-const START_POS = {A:{x:57, y:282, h:180}, B:{x:17, y:280, h:180}};
+const START_POS = {A:{x:50, y:280, h:180}, B:{x:17, y:280, h:180}};   // A：車身靠出發區最外側，規格圖「距左 50、距上 20」
 function startPos(side, who, W = 300, H = 300){
   const p = START_POS[who];
   return side === 'blue' ? {x:W - p.x, y:H - p.y, h:0} : {x:p.x, y:p.y, h:p.h};
@@ -1660,7 +1666,7 @@ function upgradeState(o){
   if (o.robot && o.robot.w === 28 && o.robot.l === 28 && o.robot.clawOff === 20){ o.robot.w = 20; o.robot.l = 20; o.robot.clawOff = 15; }
   if (o.robotB && o.robotB.w === 28 && o.robotB.l === 28){ o.robotB.w = 20; o.robotB.l = 20; }
   const hadB = !!o.robotB;
-  if (o.game === 'energy' && o.robot && o.robot.start && o.robot.start.x === 53 && o.robot.start.y === 280 && o.robot.start.h === 180){ o.robot.start.x = 57; o.robot.start.y = 282; }   // v1.9.4：預設自動出發點改為實測 (57, 282)
+  if (o.game === 'energy' && o.robot && o.robot.start && o.robot.start.x === 53 && o.robot.start.y === 280 && o.robot.start.h === 180){ o.robot.start.x = 50; o.robot.start.y = 280; }   // v1.9.4（v1.9.11 起為 (50, 280)）：預設自動出發點改為實測 (57, 282)
   ['robot','robotB','motion','axes','arm','turn','kits','ui','task'].forEach(k => { if (!o[k]) o[k] = clone(d[k]); else fill(o[k], d[k]); });
   if (!hadB && o.robotB.on){   // 舊方案：機器人 B 放在 A 旁邊，放不下就先關閉
     const sA = o.robot.start, zone = (o.objects || []).find(z => z.kind === 'start' && sA.x >= z.x && sA.x <= z.x + z.w && sA.y >= z.y && sA.y <= z.y + z.h);
@@ -1679,6 +1685,9 @@ function upgradeState(o){
     if (!aInner){ const side = blue ? 'blue' : 'red'; Object.assign(o.robot.start, startPos(side, 'A')); Object.assign(o.robotB, startPos(side, 'B')); o.steps = []; }
   }
   if (o.game === 'energy') o.posFix197 = true;
+  // v1.9.11：實測出發點改為 (50, 280)（藍方 (250, 20)）；還是舊標準位置 (57, 282) 時自動更正
+  if (o.game === 'energy' && o.robot && o.robot.start){ const a = o.robot.start;
+    if (a.x === 57 && a.y === 282){ a.x = 50; a.y = 280; o.steps = []; } else if (a.x === 243 && a.y === 18){ a.x = 250; a.y = 20; o.steps = []; } }
   o.v = 1; return o;
 }
 
@@ -2068,7 +2077,8 @@ function autoPlan(S){   // 回傳 {steps, msgs}
     return {steps, msgs, usedKits};
   }
   if (tol > tol0 + 1e-9 && trig) msgs.push(`放置：觸發裝置是 ${fmt(trig.w)}×${fmt(trig.h)} cm 的實體方塊、緊貼牆角，夾爪中心最多只能伸到車頭前 ${fmt(off - num(S.robot.l, 20) / 2)} cm，容許誤差 ${fmt(tol0)} cm 放不到；已自動放寬到 ${fmt(tol)} cm（齒輪 ${fmt(itemSz)} cm，偏 ${fmt(tolMax)} cm 以內仍完全在裝置上）`);
-  from = goVia(from, pl, '放置', () => { if (pl.pose.pan) push(panStep(pl.pose.pan)); });
+  from = goVia(from, pl, '放置', () => {});   // 先移動到放置點
+  if (pl.pose.pan) push(panStep(pl.pose.pan));   // 到定位後再旋轉手臂（雲台），再張開夾爪
   if (fast) push(quick(newStep('clawOpen'), 300), quick(newStep('lift'), 300));   // 放開齒輪、空爪抬起；手臂旋轉留給手動階段調整
   else { push(newStep('place'), newStep('clawOpen'), newStep('lift')); if (pl.pose.pan) push(panStep(0)); }
   if (fast) msgs.push('省時規劃：空爪動作 0 秒直接到位、夾到後直接以放置高度搬運、長距離加速、最後短距離慢速到位（可在「參數」取消）');
@@ -2352,6 +2362,11 @@ function planActs(S){
       if (G && (moved || resync) && S.steps.some(x => x.type === 'move')){
         const q = startFrame(S, p); acts.push({type:'raw', need:{goto:true}, lines:[`setPos(${g1(q.x)}, ${g1(q.y)}, ${g1(q.h)});   // ${resync ? 'IR 靠牆校正完成：用牆面位置重設定點座標，消除前面累積的誤差' : '位置已改變，同步定點座標'}`]});
       }
+      if (s.type === 'align' && S.kits.on.ir){   // IR 沒校正過就不做靠牆校正（錯的目標值會把車子轉歪）
+        const I = S.kits.ir || {}, dflt = ['tf','tb','tlf','tlb','trf','trb'].every(k => num(I[k], 25) === 25);
+        if ((S.kits.tune || {}).on) acts = [{type:'raw', lines:['if (irSaved) {   // 做過 IR 校正模式（開機按住 A）才靠牆校正；沒做過就略過，照 BNO／編碼器繼續走']}, ...acts, {type:'raw', lines:['}']}];
+        else if (dflt) acts = [{type:'raw', lines:['// IR 靠牆校正略過：IR 目標值還是預設 25（請在「套件與感測器」填離牆 10 cm 的讀數，或開啟「現場微調與校正」用 IR 校正模式量）']}];
+      }
       out.push({type:'group', label:`${LB[i]} ${stepDesc(S, s)}`, acts});
     }
   });
@@ -2462,6 +2477,8 @@ function ruleChecks(S, sim){
     else if (mac.toLowerCase() === '20:00:00:00:63:93') push('warn', 'PS3 手把 MAC 還是範例值 20:00:00:00:63:93：請改成自己手把記住的 MAC，否則手把連不上');
     else push('ok', `PS3 手把 MAC：${mac}`);
   }
+  if (on.arm || on.gun) push('warn', `硬體：使用${on.arm ? '手臂' : '發射器'}時，控制板「SERVO POWER SELECT」伺服電源跳帽要往上移，插在 1、2`);
+  if (on.bno) push('warn', 'BNO055：啟動前先歸零方向——車子擺在出發點、車頭朝向出發方向再按 START（程式以啟動當下的方向當 0°）');
   if (S.rtype === 'energyA' && on.gun) push('bad', '機器人 A（物資能源）要夾取物資，請在「套件與感測器」勾「手臂 ATARM」，不要勾「乒乓球發射器」（兩個函式庫不能同時使用）；或直接按「自動規劃最佳路徑」會自動換成手臂');
   if (on.bno && !usesBno) push('warn', '有勾選 BNO055，但路徑沒有用到轉正：建議取消勾選。BNO055 沒接好時開機會略過它，但少一個元件就少一個出錯點');
   if (on.bno) push('ok', '開機會先偵測 BNO055（I2C 0x28），找不到就略過，不會卡住整支程式');
@@ -3348,6 +3365,8 @@ function renderKits(){
   const tin = (label, path) => `<label class="f"><span>${label}</span><input type="text" data-bind="${path}"></label>`;
   let h = `<p class="hint" style="margin-top:0">套件、腳位、初始化與程式寫法和課程網站 <a href="../generator.html#race" target="_blank" rel="noopener">程式產生器</a> 相同（依兔比積木擴充原始碼）。手臂與發射器、PS3 與 V7RC 只能各選一種。</p>`;
   if (kitNoteMsg) h += `<p class="note">${kitNoteMsg}</p>`;
+  if (on.arm || on.gun) h += `<p class="note">⚠ 使用${on.arm ? '手臂' : '發射器'}：控制板「SERVO POWER SELECT」伺服電源跳帽要<b>往上移，插在 1、2</b>，伺服馬達才有足夠電力。</p>`;
+  if (on.bno) h += `<p class="note">⚠ BNO055：<b>啟動前一定要先歸零方向</b>——車子擺在出發點、車頭朝向出發方向再按 START，程式以這一刻的方向當 0°（同積木「BNO 以目前方向設定移動起點」）。接線 Vin→VCC、GND→GND、SDA→SDA、SCL→SCL，3vo 不接。</p>`;
   h += `<table class="kit"><thead><tr><th>使用</th><th>套件</th><th>初始化／腳位</th></tr></thead><tbody>` +
     GEN.KIT_KEYS.map(k => `<tr><td><input type="checkbox" data-kit="${k}" ${on[k] ? 'checked' : ''} aria-label="${GEN.KITS[k].label}"></td>
       <td>${GEN.KITS[k].label}${lv[k] ? `<br><span class="lv ${lv[k][0]}">${lv[k][1]}</span>` : ''}</td><td><small>${kitInit(k)}</small></td></tr>`).join('') + '</tbody></table>';
