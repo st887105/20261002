@@ -177,7 +177,7 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
 <body>
 <div class="app">
 <header>
-  <div class="brand"><h1>TU:bit V2 2026全國競賽路徑規劃器</h1><span class="ver" id="ver" title="更新紀錄">v1.9.19</span><a class="ver" href="../competition.html" title="回競賽專區">← 競賽專區</a><a class="ver" href="../generator.html#race" title="程式產生器：競賽自動化">程式產生器</a></div>
+  <div class="brand"><h1>TU:bit V2 2026全國競賽路徑規劃器</h1><span class="ver" id="ver" title="更新紀錄">v1.9.20</span><a class="ver" href="../competition.html" title="回競賽專區">← 競賽專區</a><a class="ver" href="../generator.html#race" title="程式產生器：競賽自動化">程式產生器</a></div>
   <div class="hgroup">
     <select id="gameSel" aria-label="競賽項目">
       <option value="energy">物資能源爭霸戰 300×300</option>
@@ -247,6 +247,7 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
           <label class="f"><span>輪徑 cm</span><input type="number" step="0.1" data-bind="motion.wheelD"></label>
           <label class="f"><span>放置容許誤差 cm</span><input type="number" step="0.5" min="0" max="5" data-bind="robot.placeTol"></label>
           <label class="f"><span>IR 校正距離 cm</span><input type="number" step="0.5" min="3" max="30" data-bind="robot.irGap" title="IR 校正模式量的距離（車子離牆幾公分時記錄目標值）"></label>
+          <label class="f"><span>IR 靠牆最多移動 cm</span><input type="number" step="0.5" min="1" max="10" data-bind="robot.irMaxCm" title="自動流程用 IR 靠牆時，最多往牆邊（或離牆）移動幾公分；超過還沒到目標值就不相信 IR、退回原位"></label>
         </div>
       </div>
       <div class="sec"><h3>起始姿態</h3>
@@ -471,6 +472,7 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
 </dialog>
 <dialog id="logDlg">
   <h3 style="margin-top:0">更新紀錄</h3>
+  <p><b>v1.9.20</b>（2026-10-12）依實測影片修正：IR 靠牆校正改為「限距校正」。原本 alignBlocking 在黑色隔板讀數到不了目標值時會一直往牆推（影片中把隔板推歪），再用錯的位置重設座標，後面整條路線都偏掉。現在每顆（組）IR 每次只走 0.5 cm、最多走 4 cm（參數「IR 靠牆最多移動 cm」），讀數跨過離牆目標值才算成功，而且只修正「垂直牆面」那個方向的座標；走到上限還沒到就退回原位、照座標繼續。需要做過 IR 校正的第 5 步「沒有牆」才會啟用（用來判斷讀數靠近牆是變大還是變小）。校正點不再呼叫 alignBlocking 原地旋轉，車頭方向全程交給 BNO（移動中修正＋到點轉正）。</p>
   <p><b>v1.9.19</b>（2026-10-09）場地外框是鋁擠條、高度低於 IR 感測器，預設不再拿外框當 IR 校正面（參數「場地外框可當 IR 校正面」可開）；只用隔板、倉儲牆、放置盒校正。放置改為從盒子側邊靠近：先到 (37.5, 115) 車頭朝左，左側 IR 對倉儲牆 10 cm 校正上下位置與車頭，再到盒子右側前 10 cm 用前方 IR 校正左右距離，最後直走到盒子前 1 cm 張爪（夾爪中心 (10, 106)）；兩個方向都由 IR 校正，不再靠外框。規劃時優先選「側邊 IR 能校正左右位置」的盒子面。IR 校正新增第 5 步「OPEN：沒有牆」：車子四周 40 cm 內沒有東西時按 A，記錄沒有牆的讀數；結束顯示每顆 IR 的「有牆／沒牆」讀數差（OK／LOW）。黑色隔板反光弱，讀數差太小（LOW）的 IR 自動流程不會用，照座標走，避免沒看到牆卻去靠牆而原地亂轉；判斷看到牆改為「讀數比較接近有牆而不是沒牆」。IR 校正距離跟規劃器的「IR 離牆距離」一致（黑色隔板在 10 cm 讀數差不夠時，可改 5～6 cm 重新規劃與校正）。BNO 轉正整體調整：容許誤差 1° 改 1.5°（舊方案自動更新）；到側邊 IR 校正點前不先 BNO 轉正（兩顆側邊 IR 靠牆會把車頭校正平行，失敗才 BNO 轉回）；夾取原地轉向後不轉正、直走到點才轉正一次。全程 BNO 轉正由 9 次減為 6 次，模擬估算約 19.5 秒。IR 校正需要 FRONT、BACK、LEFT 三面，RIGHT 可按 B 跳過。</p>
   <p><b>v1.9.18</b>（2026-10-09）省時：出發時手臂抬起、張爪不再等待，車子起步時同時動作；夾到齒輪抬起後 0.2 秒就出發；IR 靠牆校正確認時間 0.5 秒改 0.3 秒；「原地轉向＋一段直線」能安全時改成一邊走一邊轉（有轉角點的路段保留弧線不停車）。模擬估算約 18.9 秒。評估放置盒側邊靠近：(20, 102) 車身會壓到放置盒與倉儲牆；可行的側邊位置是 (25, 106) 車頭朝左，但要多轉 90° 並多走約 27 cm，準確度與上方靠近相當，維持從盒子上方正面靠近。</p>
   <p><b>v1.9.17</b>（2026-10-09）自動規劃改為「手臂不旋轉」：夾取時先在 IR 校正點原地轉向，車頭正對齒輪再直直前進，到點 下降→合爪→抬起；放置時車頭正對放置盒（高 8 cm），手臂抬著不下降、直接張爪，減少手臂旋轉造成的誤差（參數可取消）。放置盒正面靠近＋前方 IR 輔助：先到側邊 IR 校正點校正左右位置，再停在盒子前 10 cm，前方 IR 看到盒子才校正前後距離（沒看到就照座標），再直走到盒子前 1 cm 張爪；新增參數「放置時車頭離盒子 cm」「夾爪中心離盒邊至少 cm」。IR 校正的 FRONT（前）面現在會用到，要量 10 cm 按 A。路線重新最佳化：夾取改為原地小角度轉向後直走（不橫移、不轉手臂），放置走最短的盒子正面，紅藍兩邊模擬都無碰撞、齒輪放上觸發裝置。</p>
@@ -517,7 +519,7 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
 <script>
 'use strict';
 /* ================= 基本工具 ================= */
-const VERSION = 'v1.9.19';
+const VERSION = 'v1.9.20';
 const STORE_KEY = 'tubit-planner-v1';
 const uid = () => Math.random().toString(36).slice(2, 9);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -1439,6 +1441,34 @@ const GEN = (function () {
         '  posX += bx * cos(h) + by * sin(h);',
         '  posY += -bx * sin(h) + by * cos(h);',
         '}');
+      if (need.ir && need.tune) helpers.push('',
+        '// ===== IR 限距靠牆：每次只走 0.5 cm、最多走 maxCm，讀數跨過「離牆目標值」就停；走到上限還沒跨過就不相信 IR（黑色隔板反光弱，不會一直推牆） =====',
+        'int irAvg(int a, int b) {   // 一顆或兩顆 IR 的平均讀數（b < 0 只用一顆）',
+        '  long v = 0;',
+        '  for (int n = 0; n < 4; n++) { v += irRead(a) + (b >= 0 ? irRead(b) : 0); delay(3); }',
+        '  return v / (b >= 0 ? 8 : 4);',
+        '}',
+        'bool irStepTo(int a, int b, double bx, double by, double maxCm) {   // (bx, by)：車身座標中「朝牆」的方向；成功＝真的停在離牆目標距離',
+        '  if (!irSaved || irO[a] < 0 || !irContrastOk(a) || (b >= 0 && !irContrastOk(b))) return false;   // 沒量過「沒有牆」就不知道讀數往哪邊變，不動',
+        '  int t = b >= 0 ? (irT[a] + irT[b]) / 2 : irT[a];',
+        '  int sgn = irT[a] > irO[a] ? 1 : -1;   // 靠近牆時讀數變大（1）或變小（-1）',
+        '  int e0 = (t - irAvg(a, b)) * sgn;   // > 0：離牆太遠，要靠近',
+        '  if (e0 == 0) return true;',
+        '  double step = e0 > 0 ? 0.5 : -0.5, moved = 0;',
+        '  while (fabs(moved + step) <= maxCm) {',
+        '    goDist(bx * step, by * step, 250, 400);',
+        '    moved += step;',
+        '    int e = (t - irAvg(a, b)) * sgn;',
+        '    if (e == 0 || (e > 0) != (e0 > 0)) return true;   // 跨過目標值：到了',
+        '  }',
+        '  goDist(-bx * moved, -by * moved, 250, 400);   // 走到上限還沒到：退回原位，照座標繼續',
+        '  return false;',
+        '}',
+        'void irFix(double nx, double ny, double cx, double cy) {   // IR 校正成功：只修正「垂直牆面」那個方向的座標，另一個方向照舊',
+        '  double d = (cx - posX) * nx + (cy - posY) * ny;',
+        '  posX += d * nx;',
+        '  posY += d * ny;',
+        '}');
     }
     if (speedHit || need.speed) {
       const sp = clampInt((K.auto || {}).speed, 10, 200, 100);
@@ -1713,7 +1743,7 @@ function newState(game, robot, W, H){
   const f = game === 'energy' ? presetEnergy() : game === 'target' ? presetTarget() : presetCustom(W || 200, H || 200);
   const st = {
     v:1, kv:2, game, rtype:robot, field:{W:f.W, H:f.H}, objects:f.objects,
-    robot: {w:20, l:20, clawOff:15, placeTol:2, irGap:10, irCheck:true, fastPlan:true, arcPlan:true, panLock:true, boxGap:1, boxMargin:2, start: game === 'energy' ? Object.assign({}, START_POS.A) : {x:Math.round(f.W / 2), y:30, h:0}},
+    robot: {w:20, l:20, clawOff:15, placeTol:2, irGap:10, irCheck:true, fastPlan:true, arcPlan:true, panLock:true, boxGap:1, boxMargin:2, irMaxCm:4, start: game === 'energy' ? Object.assign({}, START_POS.A) : {x:Math.round(f.W / 2), y:30, h:0}},
     task: {grab:{x:78, y:172}, place:{x:6, y:103}},   // 自動任務的絕對位置（紅方場地座標）：夾取點、放置點（觸發閘門裝置上）；藍方自動換算 180° 對稱
     robotB: game === 'energy' ? {on:true, x:17, y:280, h:180, w:20, l:20} : {on:false, x:Math.round(f.W / 2) + 16, y:30, h:0, w:24, l:24},   // 同時出發的另一台（手動）
     motion:{vm:600, a:800, ad:800, wheelD:6, bnoGoto:true},
@@ -1787,6 +1817,7 @@ function upgradeState(o){
   if (o.game === 'energy') o.posFix1913 = true;
   if (o.robot && o.robot.panLock === undefined){ o.robot.panLock = true; o.robot.boxGap = 1; o.robot.boxMargin = 2; }   // v1.9.17：手臂不旋轉、放置盒正面靠近
   if (!o.liftFix1916 && o.kits && o.kits.ps3 && Array.isArray(o.kits.ps3.map)){ o.kits.ps3.map.forEach(m => { if (m.act === 'liftAdd' && Math.abs(num(m.v, 0)) === 0.1) m.v = m.v > 0 ? 0.3 : -0.3; }); o.liftFix1916 = true; }   // v1.9.16：手動手臂升降加快
+  if (o.robot && o.robot.irMaxCm === undefined) o.robot.irMaxCm = 4;   // v1.9.20：IR 限距靠牆
   if (!o.turnFix1919){ if (o.turn && num(o.turn.tol, 1) === 1) o.turn.tol = 1.5; o.turnFix1919 = true; if (o.field && o.field.borderIR === undefined) o.field.borderIR = false; }   // v1.9.19：BNO 轉正容許 1.5°、場地外框（鋁擠條）不當 IR 校正面
   if (!o.speedFix1915){ if (o.turn && num(o.turn.timeout, 3) >= 3) o.turn.timeout = 1.5; if (o.robot && o.robot.arcPlan === undefined) o.robot.arcPlan = true; o.speedFix1915 = true; }   // v1.9.15：BNO 轉正逾時 1.5 秒、轉角弧線
   if (o.game === 'energy' && !o.sideFix1914 && o.kits && o.kits.mode){ o.kits.mode.side = true; o.sideFix1914 = true; }   // v1.9.14：預設開啟出發前選邊
@@ -2610,12 +2641,16 @@ function planActs(S){
           const sees = [...IDX[s.main], ...IDX[s.sub]].map(k => `irNear(${k})`).join(' && ') || 'true';
           const D = bnoTarget(S, s.rh), useB = !!S.kits.on.bno, to = Math.round(Math.min(3, num(s.timeout, 8)) * 1000);
           const tTol = num(S.turn.tol, 1), tTo = Math.round(num(S.turn.timeout, 3) * 1000);
-          acts = [{type:'raw', need:Object.assign({ir:true, mtc:true, goto:true}, useB ? {bno:true, turn:true} : {}), lines:[
-            `if (irSaved && ${sees}) {   // IR 輔助：做過 IR 校正、而且 ${[s.main, s.sub].filter(k => k !== 'IR_NONE').map(k => IR_NAMES[k]).join('＋')} IR 都看到${s.main === 'IR_NONE' ? '前方的盒子／牆（距離接近 10 cm）' : '牆'}，才校正${s.main === 'IR_NONE' ? '前後距離' : '（夾取物太小只會讓一顆看到，不會誤判）'}`,
-            `  if (tuirAlign().alignBlocking(${s.main},${s.sub},${to}UL,${Math.round(num(s.confirm, 1) * 1000)}UL)${useB ? ` && fabs(headingErr(${D})) < 8` : ''}) {   // 最多 ${to / 1000} 秒${useB ? '；校正後車頭和 BNO 差 8° 以上視為失敗' : ''}`,
-            `    setPos(${g1(q.x)}, ${g1(q.y)}, ${g1(q.h)});   // 校正成功：用牆面位置重設定點座標，消除前面累積的誤差`,
-            ...(useB ? ['  } else {', `    turnTo(${D}, ${tTol}, ${tTo});   // 校正失敗：BNO 轉回原本車頭方向，照座標繼續走`, '  }'] : ['  }']),
-            '}   // 沒看到牆／沒做過 IR 校正：不靠牆、不重設座標，照原本的定點座標（BNO＋編碼器）繼續走']}];
+          // 限距 IR 校正：每顆（組）IR 只沿「朝牆」方向最多走 irMaxCm，跨過目標值才修正那個方向的座標；黑色隔板讀數不對時不會一直推牆
+          const SENS = {IR_L:[2, 3, -1, 0, '左側'], IR_R:[4, 5, 1, 0, '右側'], IR_UP:[0, -1, 0, 1, '前方'], IR_BACK:[1, -1, 0, -1, '後方']};
+          const hr = num(q.h) * Math.PI / 180, mx = Math.max(1, num(S.robot.irMaxCm, 4));
+          const stepLines = [s.main, s.sub].filter(k => SENS[k]).map(k => { const [a, b, bx, by, nm] = SENS[k];
+            const nx = Math.round((bx * Math.cos(hr) + by * Math.sin(hr)) * 1e4) / 1e4, ny = Math.round((-bx * Math.sin(hr) + by * Math.cos(hr)) * 1e4) / 1e4;
+            return `  if (irStepTo(${a}, ${b}, ${bx}, ${by}, ${mx})) irFix(${nx}, ${ny}, ${g1(q.x)}, ${g1(q.y)});   // ${nm} IR：最多走 ${mx} cm 到離牆目標距離，成功才修正這個方向的座標`; });
+          acts = [{type:'raw', need:{ir:true, mtc:true, goto:true}, lines:[
+            `if (irSaved && ${sees}) {   // IR 輔助：做過 IR 校正、而且 ${[s.main, s.sub].filter(k => k !== 'IR_NONE').map(k => IR_NAMES[k]).join('＋')} IR 都看到${s.main === 'IR_NONE' ? '前方的盒子／牆' : '牆'}才校正；沒看到就照座標（BNO＋編碼器）走`,
+            ...stepLines,
+            '}']}];
         }
         else if ((S.kits.tune || {}).on) acts = [{type:'raw', lines:['if (irSaved) {   // 做過 IR 校正模式（開機按住 A）才靠牆校正；沒做過就略過，照 BNO／編碼器繼續走']}, ...acts, {type:'raw', lines:['}']}];
         else if (dflt) acts = [{type:'raw', lines:['// IR 靠牆校正略過：IR 目標值還是預設 25（請在「套件與感測器」填離牆 10 cm 的讀數，或開啟「現場微調與校正」用 IR 校正模式量）']}];
