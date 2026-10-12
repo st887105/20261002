@@ -177,7 +177,7 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
 <body>
 <div class="app">
 <header>
-  <div class="brand"><h1>TU:bit V2 2026全國競賽路徑規劃器</h1><span class="ver" id="ver" title="更新紀錄">v1.9.20</span><a class="ver" href="../competition.html" title="回競賽專區">← 競賽專區</a><a class="ver" href="../generator.html#race" title="程式產生器：競賽自動化">程式產生器</a></div>
+  <div class="brand"><h1>TU:bit V2 2026全國競賽路徑規劃器</h1><span class="ver" id="ver" title="更新紀錄">v1.9.24</span><a class="ver" href="../competition.html" title="回競賽專區">← 競賽專區</a><a class="ver" href="../generator.html#race" title="程式產生器：競賽自動化">程式產生器</a></div>
   <div class="hgroup">
     <select id="gameSel" aria-label="競賽項目">
       <option value="energy">物資能源爭霸戰 300×300</option>
@@ -247,6 +247,7 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
           <label class="f"><span>輪徑 cm</span><input type="number" step="0.1" data-bind="motion.wheelD"></label>
           <label class="f"><span>放置容許誤差 cm</span><input type="number" step="0.5" min="0" max="5" data-bind="robot.placeTol"></label>
           <label class="f"><span>IR 校正距離 cm</span><input type="number" step="0.5" min="3" max="30" data-bind="robot.irGap" title="IR 校正模式量的距離（車子離牆幾公分時記錄目標值）"></label>
+          <label class="f"><span>路線離隔板至少 cm</span><input type="number" step="0.5" min="0" max="10" data-bind="robot.barrierGap" title="自動規劃時路線和迷宮隔板保持的距離；實際隔板位置、出發擺放都有誤差，太貼會撞到隔板"></label>
           <label class="f"><span>IR 靠牆最多移動 cm</span><input type="number" step="0.5" min="1" max="10" data-bind="robot.irMaxCm" title="自動流程用 IR 靠牆時，最多往牆邊（或離牆）移動幾公分；超過還沒到目標值就不相信 IR、退回原位"></label>
         </div>
       </div>
@@ -472,6 +473,10 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
 </dialog>
 <dialog id="logDlg">
   <h3 style="margin-top:0">更新紀錄</h3>
+  <p><b>v1.9.24</b>（2026-10-12）依實測影片與老師畫的路線改為「出發校正」：出發後先到 (60, 254)，用右側 IR 找出發區旁的直隔板，最多橫移 20 cm（先 2 cm 一步，跨過目標再 0.5 cm 精修）停在離牆 10 cm，擺車左右偏了也能修正；再原地左轉約 12° 讓車頭正對齒輪，直直前進 69 cm 夾取（不再繞到 L 形隔板旁）。夾到後右轉、左側 IR 對倉儲牆校正、前方 IR 對放置盒校正後放置。</p>
+  <p><b>v1.9.23</b>（2026-10-12）比賽用預設：機器人 A 預設就勾好 PS3（本隊手把 MAC 10:00:00:02:22:35）、一鍵自動＋出發前選邊、IR、BNO、手臂、現場微調；舊方案打開時自動補齊這些設定，出發點不是標準位置就改回 (50, 280)／(250, 20) 並自動重新規劃，產生的程式就是要燒錄的比賽版本。</p>
+  <p><b>v1.9.22</b>（2026-10-12）賽規檢查新增：機器人 A 沒勾 PS3 或沒開一鍵自動模式時顯示紅色錯誤（程式不會連 PS3，只能按控制板 A 跑自動）；A 出發點和標準位置差 2 cm 以上時提醒「實際擺車要和規劃器一樣」，並說明紅方擺車對齊方式（車子右側對齊出發區下方直隔板的延長線、車尾離場地邊 10 cm）。</p>
+  <p><b>v1.9.21</b>（2026-10-12）依第二段實測影片修正：路線離迷宮隔板至少 4 cm（參數「路線離隔板至少 cm」）。原本規劃只檢查車身「不重疊」，第一段經過 L 形隔板末端時間距接近 0，車子出發位置或隔板位置差幾公分就撞上；夾完往放置點的路線也貼著 T 形隔板。現在規劃時把隔板外擴 4 cm，排不出路線才逐步縮小。轉角弧線預設關閉：影片中夾完後的弧線往錯的方向彎、撞到 T 形隔板，表示這台車的弧線方向和規劃器相反或尚未確認；改回直線分段（多停一次但不會撞），用「軸向測試程式」第 4 段確認方向後再開。BNO 轉正誤差設定小於 1° 的舊方案自動改為 1.5°。</p>
   <p><b>v1.9.20</b>（2026-10-12）依實測影片修正：IR 靠牆校正改為「限距校正」。原本 alignBlocking 在黑色隔板讀數到不了目標值時會一直往牆推（影片中把隔板推歪），再用錯的位置重設座標，後面整條路線都偏掉。現在每顆（組）IR 每次只走 0.5 cm、最多走 4 cm（參數「IR 靠牆最多移動 cm」），讀數跨過離牆目標值才算成功，而且只修正「垂直牆面」那個方向的座標；走到上限還沒到就退回原位、照座標繼續。需要做過 IR 校正的第 5 步「沒有牆」才會啟用（用來判斷讀數靠近牆是變大還是變小）。校正點不再呼叫 alignBlocking 原地旋轉，車頭方向全程交給 BNO（移動中修正＋到點轉正）。</p>
   <p><b>v1.9.19</b>（2026-10-09）場地外框是鋁擠條、高度低於 IR 感測器，預設不再拿外框當 IR 校正面（參數「場地外框可當 IR 校正面」可開）；只用隔板、倉儲牆、放置盒校正。放置改為從盒子側邊靠近：先到 (37.5, 115) 車頭朝左，左側 IR 對倉儲牆 10 cm 校正上下位置與車頭，再到盒子右側前 10 cm 用前方 IR 校正左右距離，最後直走到盒子前 1 cm 張爪（夾爪中心 (10, 106)）；兩個方向都由 IR 校正，不再靠外框。規劃時優先選「側邊 IR 能校正左右位置」的盒子面。IR 校正新增第 5 步「OPEN：沒有牆」：車子四周 40 cm 內沒有東西時按 A，記錄沒有牆的讀數；結束顯示每顆 IR 的「有牆／沒牆」讀數差（OK／LOW）。黑色隔板反光弱，讀數差太小（LOW）的 IR 自動流程不會用，照座標走，避免沒看到牆卻去靠牆而原地亂轉；判斷看到牆改為「讀數比較接近有牆而不是沒牆」。IR 校正距離跟規劃器的「IR 離牆距離」一致（黑色隔板在 10 cm 讀數差不夠時，可改 5～6 cm 重新規劃與校正）。BNO 轉正整體調整：容許誤差 1° 改 1.5°（舊方案自動更新）；到側邊 IR 校正點前不先 BNO 轉正（兩顆側邊 IR 靠牆會把車頭校正平行，失敗才 BNO 轉回）；夾取原地轉向後不轉正、直走到點才轉正一次。全程 BNO 轉正由 9 次減為 6 次，模擬估算約 19.5 秒。IR 校正需要 FRONT、BACK、LEFT 三面，RIGHT 可按 B 跳過。</p>
   <p><b>v1.9.18</b>（2026-10-09）省時：出發時手臂抬起、張爪不再等待，車子起步時同時動作；夾到齒輪抬起後 0.2 秒就出發；IR 靠牆校正確認時間 0.5 秒改 0.3 秒；「原地轉向＋一段直線」能安全時改成一邊走一邊轉（有轉角點的路段保留弧線不停車）。模擬估算約 18.9 秒。評估放置盒側邊靠近：(20, 102) 車身會壓到放置盒與倉儲牆；可行的側邊位置是 (25, 106) 車頭朝左，但要多轉 90° 並多走約 27 cm，準確度與上方靠近相當，維持從盒子上方正面靠近。</p>
@@ -519,7 +524,7 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
 <script>
 'use strict';
 /* ================= 基本工具 ================= */
-const VERSION = 'v1.9.20';
+const VERSION = 'v1.9.24';
 const STORE_KEY = 'tubit-planner-v1';
 const uid = () => Math.random().toString(36).slice(2, 9);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -1454,12 +1459,16 @@ const GEN = (function () {
         '  int sgn = irT[a] > irO[a] ? 1 : -1;   // 靠近牆時讀數變大（1）或變小（-1）',
         '  int e0 = (t - irAvg(a, b)) * sgn;   // > 0：離牆太遠，要靠近',
         '  if (e0 == 0) return true;',
-        '  double step = e0 > 0 ? 0.5 : -0.5, moved = 0;',
-        '  while (fabs(moved + step) <= maxCm) {',
-        '    goDist(bx * step, by * step, 250, 400);',
-        '    moved += step;',
+        '  double dir = e0 > 0 ? 1 : -1, step = maxCm > 6 ? 2 : 0.5, moved = 0;   // 找得遠（出發校正）先 2 cm 一步，跨過目標值再 0.5 cm 一步退回來',
+        '  while (fabs(moved + dir * step) <= maxCm) {',
+        '    goDist(bx * dir * step, by * dir * step, 250, 400);',
+        '    moved += dir * step;',
         '    int e = (t - irAvg(a, b)) * sgn;',
-        '    if (e == 0 || (e > 0) != (e0 > 0)) return true;   // 跨過目標值：到了',
+        '    if (e == 0) return true;',
+        '    if ((e > 0) != (e0 > 0)) {   // 跨過目標值',
+        '      if (step <= 0.5) return true;   // 0.5 cm 精度：到了',
+        '      step = 0.5; dir = -dir; e0 = e;   // 2 cm 走過頭：改 0.5 cm 往回找',
+        '    }',
         '  }',
         '  goDist(-bx * moved, -by * moved, 250, 400);   // 走到上限還沒到：退回原位，照座標繼續',
         '  return false;',
@@ -1690,12 +1699,17 @@ const GEN = (function () {
 })();
 
 /* 各機器人預設套件（與程式產生器相同的 kits 結構） */
+const TEAM_PS3_MAC = '10:00:00:02:22:35';   // 本隊機器人 A 的 PS3 手把 MAC（換手把時改這裡）
 function defaultKitsFor(robot){
   const K = GEN.defaultKits();
   const shooter = /Shooter/.test(robot);
   K.on.bno = true;
   if (shooter){ K.on.gun = true; } else { K.on.arm = true; }
-  if (robot === 'energyA') K.on.ir = true;
+  if (robot === 'energyA'){   // 比賽用預設（與目前燒錄的程式相同）：IR、現場微調、PS3（本隊手把）、一鍵自動＋出發前選邊
+    K.on.ir = true;
+    K.tune.on = true;
+    K.ps3.mac = TEAM_PS3_MAC;
+  }
   if (robot !== 'customArm' && robot !== 'customShooter'){
     K.on.ps3 = true;
     K.ps3.map = shooter ? GEN.OFFICIAL_MAP.ps3gun() : GEN.OFFICIAL_MAP.ps3arm();
@@ -1743,7 +1757,7 @@ function newState(game, robot, W, H){
   const f = game === 'energy' ? presetEnergy() : game === 'target' ? presetTarget() : presetCustom(W || 200, H || 200);
   const st = {
     v:1, kv:2, game, rtype:robot, field:{W:f.W, H:f.H}, objects:f.objects,
-    robot: {w:20, l:20, clawOff:15, placeTol:2, irGap:10, irCheck:true, fastPlan:true, arcPlan:true, panLock:true, boxGap:1, boxMargin:2, irMaxCm:4, start: game === 'energy' ? Object.assign({}, START_POS.A) : {x:Math.round(f.W / 2), y:30, h:0}},
+    robot: {w:20, l:20, clawOff:15, placeTol:2, irGap:10, irCheck:true, fastPlan:true, arcPlan:false, panLock:true, boxGap:1, boxMargin:2, irMaxCm:4, barrierGap:4, start: game === 'energy' ? Object.assign({}, START_POS.A) : {x:Math.round(f.W / 2), y:30, h:0}},
     task: {grab:{x:78, y:172}, place:{x:6, y:103}},   // 自動任務的絕對位置（紅方場地座標）：夾取點、放置點（觸發閘門裝置上）；藍方自動換算 180° 對稱
     robotB: game === 'energy' ? {on:true, x:17, y:280, h:180, w:20, l:20} : {on:false, x:Math.round(f.W / 2) + 16, y:30, h:0, w:24, l:24},   // 同時出發的另一台（手動）
     motion:{vm:600, a:800, ad:800, wheelD:6, bnoGoto:true},
@@ -1818,6 +1832,18 @@ function upgradeState(o){
   if (o.robot && o.robot.panLock === undefined){ o.robot.panLock = true; o.robot.boxGap = 1; o.robot.boxMargin = 2; }   // v1.9.17：手臂不旋轉、放置盒正面靠近
   if (!o.liftFix1916 && o.kits && o.kits.ps3 && Array.isArray(o.kits.ps3.map)){ o.kits.ps3.map.forEach(m => { if (m.act === 'liftAdd' && Math.abs(num(m.v, 0)) === 0.1) m.v = m.v > 0 ? 0.3 : -0.3; }); o.liftFix1916 = true; }   // v1.9.16：手動手臂升降加快
   if (o.robot && o.robot.irMaxCm === undefined) o.robot.irMaxCm = 4;   // v1.9.20：IR 限距靠牆
+  if (o.robot && o.robot.barrierGap === undefined) o.robot.barrierGap = 4;   // v1.9.21：路線離隔板至少 4 cm
+  if (o.game === 'energy' && o.rtype === 'energyA' && o.kits && !o.compFix1923){   // v1.9.23：比賽用設定一次補齊（PS3、一鍵自動＋選邊、IR、BNO、手臂、現場微調、標準出發點）
+    const K = o.kits; K.on = K.on || {};
+    K.on.ps3 = true; K.on.v7rc = false; K.on.ir = true; K.on.bno = true; K.on.arm = true; K.on.gun = false;
+    K.mode = Object.assign({}, K.mode, {on:true, side:true, autoKey:'ps3:start', manKey:'ps3:select', oled:true});
+    K.tune = Object.assign({}, K.tune, {on:true});
+    if (K.ps3 && (!K.ps3.mac || K.ps3.mac === '20:00:00:00:63:93')) K.ps3.mac = TEAM_PS3_MAC;
+    const a = o.robot && o.robot.start, W = (o.field || {}).W || 300, H = (o.field || {}).H || 300;
+    if (a){ const blue = num(a.y) < H / 2, std = blue ? {x:W - 50, y:H - 280, h:0} : {x:50, y:280, h:180}; if (Math.hypot(num(a.x) - std.x, num(a.y) - std.y) > 2){ Object.assign(a, std); o.steps = []; } }
+    o.compFix1923 = true;
+  }
+  if (o.robot && !o.arcFix1921){ o.robot.arcPlan = false; o.arcFix1921 = true; if (o.turn && num(o.turn.tol, 1.5) < 1) o.turn.tol = 1.5; }   // v1.9.21：弧線方向未在實車確認前預設不用（影片中弧線往錯的方向彎，撞到 T 形隔板）；BNO 轉正誤差小於 1° 會在原地來回修正，改 1.5°
   if (!o.turnFix1919){ if (o.turn && num(o.turn.tol, 1) === 1) o.turn.tol = 1.5; o.turnFix1919 = true; if (o.field && o.field.borderIR === undefined) o.field.borderIR = false; }   // v1.9.19：BNO 轉正容許 1.5°、場地外框（鋁擠條）不當 IR 校正面
   if (!o.speedFix1915){ if (o.turn && num(o.turn.timeout, 3) >= 3) o.turn.timeout = 1.5; if (o.robot && o.robot.arcPlan === undefined) o.robot.arcPlan = true; o.speedFix1915 = true; }   // v1.9.15：BNO 轉正逾時 1.5 秒、轉角弧線
   if (o.game === 'energy' && !o.sideFix1914 && o.kits && o.kits.mode){ o.kits.mode.side = true; o.sideFix1914 = true; }   // v1.9.14：預設開啟出發前選邊
@@ -2075,7 +2101,7 @@ function minReach(S, target, tol){   // 這個目標（容許 tol cm）至少要
   return null;
 }
 /* ---------- 感測輔助：IR 靠牆校正點（左右兩顆 IR 對齊牆面＋前後 IR 量距離） ---------- */
-function irSolids(S){ return solidObjs(S).filter(o => o.type !== 'robotB'); }   // 機器人 B 會移動，不當校正牆
+function irSolids(S){ return solidObjs(S, true).filter(o => o.type !== 'robotB'); }   // 機器人 B 會移動，不當校正牆
 function rayHit(S, o0, d, solids, max){   // 從 o0 沿 d 方向找第一個擋到的東西；回傳 {dist, obj}（場地邊框 obj＝'border'）
   for (let t = 0; t <= max; t += 0.25){
     const p = {x:o0.x + d.x * t, y:o0.y + d.y * t};
@@ -2158,7 +2184,20 @@ function straightFromCp(S, cp, target, tol){   // IR 校正後只直走（前進
   return {pose:Object.assign(pose, {pan:best.pan, miss:best.miss}), d:best.d};
 }
 const IR_SIDE_NAME = {IR_L:'左側', IR_R:'右側'}, IR_SUB_NAME = {IR_UP:'＋前方', IR_BACK:'＋後方', IR_NONE:''};
-function autoPlan(S){   // 回傳 {steps, msgs}
+function autoPlan(S){   // 回傳 {steps, msgs}；路線離隔板至少 barrierGap cm，排不出來就逐步縮小
+  const want = Math.max(0, num(S.robot.barrierGap, 4));
+  let last = null;
+  for (const pad of [...new Set([want, Math.round(want / 2 * 2) / 2, 0])]){
+    S._pad = pad;
+    try { last = autoPlanCore(S); } finally { delete S._pad; }
+    if (last.ok){
+      last.msgs.unshift(pad > 0 ? `路線離隔板至少 ${fmt(pad)} cm（實際隔板與車子位置有誤差，不貼著隔板走）` : '路線無法和隔板保持距離，已用最小間距規劃（請檢查隔板位置）');
+      return last;
+    }
+  }
+  return last;
+}
+function autoPlanCore(S){
   const sA = S.robot.start, msgs = [];
   const zone = S.objects.find(z => z.kind === 'start' && sA.x >= z.x && sA.x <= z.x + z.w && sA.y >= z.y && sA.y <= z.y + z.h);
   const team = zone ? zone.team : '';
@@ -2231,7 +2270,29 @@ function autoPlan(S){   // 回傳 {steps, msgs}
   };
   const alignAt = cp => ({id:uid(), type:'align', main:cp.main, sub:cp.sub, timeout:8, confirm:fast ? 0.3 : 1, reset:true, rx:cp.x, ry:cp.y, rh:cp.h});
   let gp = null;
-  if (useIR){
+  // 出發校正：出發後先用側邊 IR 找旁邊的隔板（擺車偏幾公分也能修正），再原地轉向、車頭正對齒輪直走夾取
+  if (useIR && S.robot.startIR !== false){
+    let best = null;
+    for (const c of irCheckpoints(S, from, 45)){
+      if (Math.abs(normDeg(c.h - from.h)) > 0.5 || !['IR_L', 'IR_R'].includes(c.main)) continue;
+      const leg = planLeg(S, from, c); if (!leg || leg.length > 3) continue;
+      const fa = faceApproach(S, c, gPt, off); if (!fa) continue;
+      const cost = legLen(from, leg) * 3 + fa.d + Math.abs(normDeg(fa.pose.h - c.h)) * 0.15;   // 越早校正越好：擺車誤差還沒造成碰撞前就修正
+      if (!best || cost < best.cost) best = {c, fa, leg, cost};
+    }
+    if (best){
+      const {c, fa, leg} = best, seek = Math.max(6, num(S.robot.startSeekCm, 20));
+      leg.forEach(q => steps.push(mv(q, false)));
+      steps.push({id:uid(), type:'align', main:c.main, sub:c.sub, timeout:8, confirm:fast ? 0.3 : 1, reset:true, rx:c.x, ry:c.y, rh:c.h, seek});
+      usedKits.ir = true;
+      const turn = normDeg(fa.pose.h - c.h);
+      if (Math.abs(turn) > 0.5) steps.push(mv({x:c.x, y:c.y, h:fa.pose.h}, false, 'fin'));
+      steps.push(mv(fa.pose, true, 'fin'));
+      msgs.push(`出發校正：先到 (${fmt(c.x)}, ${fmt(c.y)}) 用${IR_SIDE_NAME[c.main]} IR 找出發區旁的隔板（最多橫移 ${fmt(seek)} cm 到離牆 ${fmt(num(S.robot.irGap, 10))} cm，擺車偏了也能修正），${Math.abs(turn) > 0.5 ? `原地${turn > 0 ? '左' : '右'}轉 ${fmt(Math.abs(turn))}° 讓車頭正對齒輪，` : ''}再直直前進 ${fmt(fa.d)} cm 夾取`);
+      gp = fa.pose;
+    }
+  }
+  if (useIR && !gp){
     const b = bestCheckpoint(S, from, g.pose);
     const fa = b && faceApproach(S, b.cp, gPt, off);
     if (fa){
@@ -2279,7 +2340,7 @@ function autoPlan(S){   // 回傳 {steps, msgs}
   msgs.push('手臂順序：出發先抬起＋張開 → 夾取點 車頭正對齒輪 下降、合爪、抬起 → 放置點 車頭正對盒子 直接張爪');
   if (fast && S.robot.arcPlan !== false){ const n = arcMerge(S, steps); if (n) msgs.push(`轉角弧線：${n} 個繞隔板的轉角改成一段弧線一次走完（不停車）；第一次使用請用「軸向測試程式」第 4 段確認弧線方向`); }
   msgs.push(`放置姿態：車頭 ${fmt(pa.fin.h)}°、手臂正前方，車頭離盒子 ${fmt(pa.gap)} cm`);
-  return {steps, msgs, usedKits};
+  return {steps, msgs, usedKits, ok:true};
 }
 function faceApproach(S, cp, target, off){   // IR 校正點 cp：原地轉成車頭正對 target，再直走到夾爪中心落在 target
   const dx = target.x - cp.x, dy = target.y - cp.y, D = Math.hypot(dx, dy);
@@ -2353,8 +2414,9 @@ function hitNames(S, seg){
 function clawPoint(S, p, pan){ const F = fwdVec(p.h + (num(pan, 90) - 90)); return {x:p.x + F.x * S.robot.clawOff, y:p.y + F.y * S.robot.clawOff}; }   // pan：手臂旋轉角（90＝正前方，大於 90 往左）
 function polyWH(x, y, h, w, l){ const R = rightVec(h), F = fwdVec(h); return [[-w/2,-l/2],[w/2,-l/2],[w/2,l/2],[-w/2,l/2]].map(([bx, by]) => ({x:x + bx*R.x + by*F.x, y:y + bx*R.y + by*F.y})); }
 function robotBPoly(S){ const B = S.robotB; return polyWH(num(B.x), num(B.y), num(B.h), num(B.w, 28), num(B.l, 28)); }
-function solidObjs(S){   // 障礙物＋機器人 B（手動）的出發位置
-  const out = S.objects.filter(o => o.solid);
+function solidObjs(S, raw){   // 障礙物＋機器人 B（手動）的出發位置；自動規劃時隔板外擴 S._pad cm（實際隔板位置、車子位置都有誤差，路線不要貼著隔板走）
+  const pad = raw ? 0 : num(S._pad, 0);
+  const out = S.objects.filter(o => o.solid).map(o => pad > 0 && /隔板/.test(o.label || '') ? Object.assign({}, o, {x:o.x - pad, y:o.y - pad, w:o.w + 2 * pad, h:o.h + 2 * pad}) : o);
   if (S.robotB && S.robotB.on){
     const P = robotBPoly(S), xs = P.map(c => c.x), ys = P.map(c => c.y);
     out.push({id:'robotB', type:'robotB', x:Math.min(...xs), y:Math.min(...ys), w:Math.max(...xs) - Math.min(...xs), h:Math.max(...ys) - Math.min(...ys), solid:true, label:'機器人 B（手動）出發位置'});
@@ -2643,12 +2705,12 @@ function planActs(S){
           const tTol = num(S.turn.tol, 1), tTo = Math.round(num(S.turn.timeout, 3) * 1000);
           // 限距 IR 校正：每顆（組）IR 只沿「朝牆」方向最多走 irMaxCm，跨過目標值才修正那個方向的座標；黑色隔板讀數不對時不會一直推牆
           const SENS = {IR_L:[2, 3, -1, 0, '左側'], IR_R:[4, 5, 1, 0, '右側'], IR_UP:[0, -1, 0, 1, '前方'], IR_BACK:[1, -1, 0, -1, '後方']};
-          const hr = num(q.h) * Math.PI / 180, mx = Math.max(1, num(S.robot.irMaxCm, 4));
+          const hr = num(q.h) * Math.PI / 180, mx = s.seek ? num(s.seek) : Math.max(1, num(S.robot.irMaxCm, 4));
           const stepLines = [s.main, s.sub].filter(k => SENS[k]).map(k => { const [a, b, bx, by, nm] = SENS[k];
             const nx = Math.round((bx * Math.cos(hr) + by * Math.sin(hr)) * 1e4) / 1e4, ny = Math.round((-bx * Math.sin(hr) + by * Math.cos(hr)) * 1e4) / 1e4;
             return `  if (irStepTo(${a}, ${b}, ${bx}, ${by}, ${mx})) irFix(${nx}, ${ny}, ${g1(q.x)}, ${g1(q.y)});   // ${nm} IR：最多走 ${mx} cm 到離牆目標距離，成功才修正這個方向的座標`; });
           acts = [{type:'raw', need:{ir:true, mtc:true, goto:true}, lines:[
-            `if (irSaved && ${sees}) {   // IR 輔助：做過 IR 校正、而且 ${[s.main, s.sub].filter(k => k !== 'IR_NONE').map(k => IR_NAMES[k]).join('＋')} IR 都看到${s.main === 'IR_NONE' ? '前方的盒子／牆' : '牆'}才校正；沒看到就照座標（BNO＋編碼器）走`,
+            s.seek ? `if (irSaved) {   // 出發校正：牆可能在 ${num(s.seek)} cm 內的任何位置，不先判斷有沒有看到牆，直接往牆邊找（找不到就退回原位）` : `if (irSaved && ${sees}) {   // IR 輔助：做過 IR 校正、而且 ${[s.main, s.sub].filter(k => k !== 'IR_NONE').map(k => IR_NAMES[k]).join('＋')} IR 都看到${s.main === 'IR_NONE' ? '前方的盒子／牆' : '牆'}才校正；沒看到就照座標（BNO＋編碼器）走`,
             ...stepLines,
             '}']}];
         }
@@ -2802,6 +2864,13 @@ function ruleChecks(S, sim){
     else push('ok', `PS3 手把 MAC：${mac}`);
   }
   if (on.arm || on.gun) push('warn', `硬體：使用${on.arm ? '手臂' : '發射器'}時，控制板「SERVO POWER SELECT」伺服電源跳帽要往上移，插在 1、2`);
+  if (S.game === 'energy' && S.rtype === 'energyA'){
+    if (!on.ps3 || !K.mode.on) push('bad', '沒有勾選「PS3」或「一鍵自動／手動模式」：程式不會連 PS3 手把（只能按控制板 A 跑自動），自動完成後無法切回手動遙控；請到「套件與感測器」勾選 PS3 並開啟一鍵自動模式');
+    const a0 = S.robot.start, blue = num(a0.y) < S.field.H / 2, std = startPos(blue ? 'blue' : 'red', 'A', S.field.W, S.field.H, S);
+    const off = Math.hypot(num(a0.x) - std.x, num(a0.y) - std.y);
+    if (off > 2) push('warn', `A 出發點 (${fmt(a0.x)}, ${fmt(a0.y)}) 不是標準位置 (${fmt(std.x)}, ${fmt(std.y)})，差 ${fmt(off)} cm：實際擺車一定要和規劃器的出發點一樣，差幾公分整條路線就會一起偏、撞到隔板`);
+    else if (!blue) push('ok', '紅方擺車：車子右側對齊「出發區下方」直隔板（X 35～40）朝車子那一面的延長線，車尾離場地邊 10 cm，車頭朝下');
+  }
   if (on.bno) push('warn', 'BNO055：啟動前先歸零方向——車子擺在出發點、車頭朝向出發方向再按 START（程式以啟動當下的方向當 0°）');
   if (S.rtype === 'energyA' && on.gun) push('bad', '機器人 A（物資能源）要夾取物資，請在「套件與感測器」勾「手臂 ATARM」，不要勾「乒乓球發射器」（兩個函式庫不能同時使用）；或直接按「自動規劃最佳路徑」會自動換成手臂');
   if (on.bno && !usesBno) push('warn', '有勾選 BNO055，但路徑沒有用到轉正：建議取消勾選。BNO055 沒接好時開機會略過它，但少一個元件就少一個出錯點');
@@ -3912,6 +3981,7 @@ window.addEventListener('resize', resize);
 new ResizeObserver(resize).observe($('#wrap'));
 refreshAll();
 requestAnimationFrame(() => { resize(); fit(); });
+if (S.game === 'energy' && S.rtype === 'energyA' && !S.steps.length) setTimeout(() => runAutoPlan('已套用比賽設定（PS3、一鍵自動＋出發前選邊、標準出發點），並重新規劃路線'), 300);   // 舊方案升級後沒有路線：自動重新規劃
 })();
 </script>
 </body>
