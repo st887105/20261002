@@ -26,6 +26,7 @@
     <button type="button" data-level="basic">基礎篇</button>
     <button type="button" data-level="adv">進階篇：套件、遙控與感測器</button>
     <button type="button" data-level="race">競賽自動化</button>
+    <button type="button" data-level="cal">校正測試</button>
   </div>
   <p class="muted" id="levelDesc" style="margin-top:-4px"></p>
 
@@ -123,6 +124,7 @@
   const LEVELS = {
     basic: { label: '基礎篇', desc: '只用控制板本身：按鈕、四顆馬達、MTC 精準移動、伺服馬達、OLED、等待。' },
     adv: { label: '進階篇', desc: '加上套件與感測器：水平雲台、手臂 ATARM、發射器 PPGUN、超音波、BNO055、PS3 手把、V7RC 手機遙控、MTC Robot 移動、IR 靠牆校正。先在「套件與感測器設定」勾選要用的項目。' },
+    cal: { label: '校正測試', desc: '比賽前逐項校正：馬達方向、移動距離（A 前進／B 平移／A＋B 旋轉）、BNO 角度與轉正、IR 目標值與對比、手臂高度與夾爪、PS3 連線。每支都是獨立程式，從上面選一支，調整參數後複製或下載燒錄。' },
     race: { label: '競賽自動化', desc: '比賽常用的自動化組合：設定原點、前往定點（座標）＋到點升降／開爪／合爪、前進或後退指定距離、感測距離移動、撞牆校正、BNO 轉正、超音波接近、夾取／放置組合、連續發射。' }
   };
   const TRIGGERS = [
@@ -425,7 +427,7 @@
   // 舊版 PS3 預設配置（12 鍵官方版、△／○ 組合鍵版）自動換成目前的預設配置；自己改過的配置不動
   (function () { const P = state.kits.ps3; const m = P && P.map; if (Array.isArray(m) && ((m.length === 12 && m.some(r => r.btn === 'l2' && r.act === 'angle')) || (m.length <= 6 && m.some(r => r.mod === 'triangle' && r.btn === 'left')))) P.map = m.some(r => r.act === 'fire') ? OFFICIAL_MAP.ps3gun() : OFFICIAL_MAP.ps3arm(); })();
   const hash = (location.hash || '').slice(1);
-  if (hash === 'race' || hash === 'adv' || hash === 'basic') state.level = hash;
+  if (hash === 'race' || hash === 'adv' || hash === 'basic' || hash === 'cal') state.level = hash;
 
   const esc = v => String(v === undefined || v === null ? '' : v)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -724,6 +726,7 @@
   }
 
   function generate() {
+    if (state.level === 'cal') return { code: calCode(), need: {} };
     normalizeMode();
     speedHit = false;
     const need = {};
@@ -990,17 +993,22 @@
         'void setPos(double x, double y, double h) {   // 校正後重設目前位置與車頭角度',
         '  posX = x; posY = y; goHeadDeg = h;',
         '}',
-        'void goTo(double x, double y, double rot, double vm, double a, double d) {   // 前往定點 (x, y)，途中車頭轉 rot 度（右轉＋）；a 加速度、d 減速度（減速慢一點，停得比較準、比較順）',
+        'TuMtcInterruptCallback moveGuard = nullptr;   // 移動中斷檢查：自動流程的長距離移動設成 irGuard（前方 IR 防撞），其他時候不中斷',
+        'void goToV(double x, double y, double rot, double vm, double a, double d, double vs, double ve) {   // 同 goTo，vs／ve＝起點／終點速度（ve > 0：不停車直接接下一段）',
+        '  // 途中車頭轉 rot 度（右轉＋）；a 加速度、d 減速度（減速慢一點，停得比較準、比較順）',
         '  if (!originSet) setOrigin();',
         '  double dx = x - posX, dy = y - posY;');
       if (useBno) helpers.push('  if (bnoOK) {',
-        '    mtc.moveSCurveBno(dx, dy, rot, vm, a, -d, 0, 0);   // BNO 精準移動：X／Y 依原點方向固定，陀螺儀邊走邊修正航向',
+        '    mtc.moveSCurveBno(dx, dy, rot, vm, a, -d, vs, ve, moveGuard);   // BNO 精準移動：X／Y 依原點方向固定，陀螺儀邊走邊修正航向',
         '  } else {');
       const ind2 = useBno ? '    ' : '  ';
       helpers.push(ind2 + 'double h = goHeadDeg * PI / 180.0;   // 換算成目前車身方向',
-        ind2 + 'mtc.moveSCurve(dx * cos(h) - dy * sin(h), dx * sin(h) + dy * cos(h), -rot, vm, a, -d, 0, 0);');
+        ind2 + 'mtc.moveSCurve(dx * cos(h) - dy * sin(h), dx * sin(h) + dy * cos(h), rot, vm, a, -d, vs, ve, moveGuard);   // MTC V3：旋轉＋＝右轉');
       if (useBno) helpers.push('  }');
       helpers.push('  posX = x; posY = y; goHeadDeg += rot;', '}',
+        'void goTo(double x, double y, double rot, double vm, double a, double d) {   // 前往定點 (x, y)，途中車頭轉 rot 度（右轉＋）；a 加速度、d 減速度；到點停車',
+        '  goToV(x, y, rot, vm, a, d, 0, 0);',
+        '}',
         'void goTo(double x, double y, double rot, double vm, double a) {   // 減速度和加速度相同',
         '  goTo(x, y, rot, vm, a, a);',
         '}',
@@ -1012,6 +1020,13 @@
         '}');
       if (need.ir && need.tune) helpers.push('',
         '// ===== IR 限距靠牆：每次只走 0.5 cm、最多走 maxCm，讀數跨過「離牆目標值」就停；走到上限還沒跨過就不相信 IR（黑色隔板反光弱，不會一直推牆） =====',
+        'bool irGuard() {   // IR 防撞：前方 IR 連續 2 次比「離牆 10 cm」目標值更靠近就中斷移動（沒做 IR 校正或黑色隔板對比不足就不中斷）',
+        '  static int hit = 0;',
+        '  if (!irSaved || irO[0] < 0 || !irContrastOk(0)) return false;',
+        '  int sgn = irT[0] > irO[0] ? 1 : -1;   // 靠近牆讀數變大（1）或變小（-1）',
+        '  hit = (irRead(0) - irT[0]) * sgn > 0 ? hit + 1 : 0;',
+        '  return hit >= 2;',
+        '}',
         'int irAvg(int a, int b) {   // 一顆或兩顆 IR 的平均讀數（b < 0 只用一顆）',
         '  long v = 0;',
         '  for (int n = 0; n < 4; n++) { v += irRead(a) + (b >= 0 ? irRead(b) : 0); delay(3); }',
@@ -1267,7 +1282,7 @@
         return h + '<label class="chk"><input type="checkbox" data-k="stop" data-id="' + id + '"' + (a.stop ? ' checked' : '') + '>結束後停止</label>';
       }
       case 'single': return sel('motor', '馬達', [['M1', 'M1 左前'], ['M2', 'M2 左後'], ['M3', 'M3 右後'], ['M4', 'M4 右前']], a.motor) + inp('speed', '速度 −255–255', a.speed, ' min="-255" max="255"');
-      case 'mtc': return inp('x', 'X 右移 cm', a.x) + inp('y', 'Y 前進 cm', a.y) + inp('r', '旋轉 °（逆時針＋）', a.r) + inp('vm', '最高速 deg/s', a.vm, ' min="0"') + inp('a', '加速度', a.a, ' min="0"');
+      case 'mtc': return inp('x', 'X 右移 cm', a.x) + inp('y', 'Y 前進 cm', a.y) + inp('r', '旋轉 °（右轉＋，MTC V3）', a.r) + inp('vm', '最高速 deg/s', a.vm, ' min="0"') + inp('a', '加速度', a.a, ' min="0"');
       case 'servo': return sel('pin', '腳位', ['S0', 'S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7'].map(p => [p, p]), a.pin) + inp('deg', '角度 0–180', a.deg, ' min="0" max="180"');
       case 'oled': return '<label>文字<input class="w-text" type="text" data-k="text" data-id="' + id + '" value="' + esc(a.text) + '"></label>' + inp('x', 'X 0–127', a.x, ' min="0" max="127"') + inp('y', 'Y 0–63', a.y, ' min="0" max="63"') + sel('font', '字型', [['en', '英數字'], ['zh', '中文（只打包用到的字）']], a.font);
       case 'wait': return inp('sec', '秒數', a.sec, ' min="0" step="0.1"');
@@ -1309,11 +1324,532 @@
     return '';
   }
 
+  /* ================= 校正測試（v1.9.26）：每支都是獨立程式，IR／BNO 校正值存在與比賽程式相同的快閃記憶體位置 ================= */
+  const CAL_HEAD = (title, lines) => ['// generated by OpenBlock', '// =====================================================================', '// TU:bit V2 校正測試：' + title].concat(lines.map(l => '// ' + l), ['// 車城國小資訊老師徐吉德整理製作@2026', '// =====================================================================']).join('\n') + '\n';
+  const CAL_OLED = `Adafruit_SH1106G display(128, 64, &Wire);
+
+void show(const String& l1, const String& l2, const String& l3, const String& l4) {   // OLED 顯示四行
+  display.clearDisplay();
+  display.setFont();
+  display.setTextSize(1);
+  display.setTextColor(SH110X_WHITE);
+  display.setCursor(0, 0);
+  display.println(l1);
+  display.println(l2);
+  display.println(l3);
+  display.println(l4);
+  display.display();
+}
+`;
+  const CAL_BTN = `int readKeys() {   // 0＝沒按、1＝A、2＝B、3＝A＋B（0.3 秒內兩顆都按到）；放開才回傳
+  bool a = tubit.readButton(Button_A), b = tubit.readButton(Button_B);
+  if (!a && !b) return 0;
+  unsigned long t0 = millis();
+  while (millis() - t0 < 300) {
+    a = a || tubit.readButton(Button_A);
+    b = b || tubit.readButton(Button_B);
+    delay(5);
+  }
+  while (tubit.readButton(Button_A) || tubit.readButton(Button_B)) delay(10);
+  return (a ? 1 : 0) + (b ? 2 : 0);
+}
+`;
+  const CAL_BNOFOUND = `bool bnoFound() {   // 先確認 I2C 位址 0x28 有 BNO055；找不到就不要呼叫 bno.start()（會卡住）
+  Wire.begin();
+  for (int i = 0; i < 30; i++) {
+    Wire.beginTransmission(0x28);
+    if (Wire.endTransmission() == 0) return true;
+    delay(100);
+  }
+  return false;
+}
+
+String i2cList() {   // 列出 I2C 上有回應的位址：0x3C＝OLED、0x28＝BNO055、只有 0x29＝BNO 的 ADR 腳要接 GND
+  String s = "";
+  for (uint8_t a = 1; a < 127; a++) {
+    Wire.beginTransmission(a);
+    if (Wire.endTransmission() == 0) { char b[6]; sprintf(b, "0x%02X ", a); s += b; }
+  }
+  return s.length() ? s : String("none");
+}
+`;
+  const CAL_INC = (...x) => ['#include <Arduino.h>', '#include <TuBitCore.h>', '#include <Wire.h>'].concat(x).join('\n') + '\n';
+  const cn = (v, d) => { const n = Number(v); return Number.isFinite(n) ? String(n) : String(d); };
+
+  const CAL = {
+    motor: {
+      label: '① 馬達方向（架空）',
+      desc: '第一次組裝、換線或換馬達後先做。車子架高讓輪子懸空，確認四顆馬達接線與 MTC 移動方向都正確。',
+      steps: ['車子架高、輪子懸空，開電源。', '按 A：M1→M2→M3→M4 依序單獨轉 1.5 秒，每顆都要往「車子前進」的方向轉；轉反就把那顆馬達線反插或換孔位。', '放回地面按 B：前進 10 cm → 右移 10 cm → 右轉 90° → 依序退回原位。方向不對先回頭檢查接線。'],
+      fields: [['pwm', '單顆測試 PWM（0–255）', 120, 10]],
+      code: p => CAL_HEAD('馬達方向（架空測試）', ['A：M1 左前 → M2 左後 → M3 右後 → M4 右前，依序單獨往「前進方向」轉 1.5 秒', 'B：放在地上，MTC 前進 10 → 右移 10 → 右轉 90°，再依序退回', '左右兩側馬達鏡像安裝：前進時 M1、M2 為負，M3、M4 為正']) +
+        CAL_INC('#include <TuMTC.h>', '#include <Adafruit_GFX.h>', '#include <Adafruit_SH110X.h>') + `
+TuBitCore tubit;
+TuMTC mtc(tubit);
+${CAL_OLED}
+${CAL_BTN}
+const int PWM = ${cn(p.pwm, 120)};   // 單顆測試速度
+
+void spinOne(int i) {   // 單獨轉第 i 顆（0～3）往前進方向
+  const char *name[4] = {"M1 front-left", "M2 rear-left", "M3 rear-right", "M4 front-right"};
+  int v[4] = {0, 0, 0, 0};
+  v[i] = (i < 2) ? -PWM : PWM;
+  show("MOTOR TEST", name[i], "should turn FORWARD", "");
+  tubit.setMotorsPwm(v[0], v[1], v[2], v[3]);
+  delay(1500);
+  tubit.stopAllMotors();
+  delay(600);
+}
+
+void step(const char *msg, double x, double y, double z) {
+  show("MTC DIRECTION", msg, "", "");
+  mtc.moveSCurve(x, y, z, 400, 800, -800, 0, 0);
+  delay(700);
+}
+
+void setup() {
+  tubit.init();
+  display.begin(0x3C, true);
+  show("MOTOR / DIRECTION", "A: M1-M4 one by one", "   (wheels in air)", "B: fwd/right/turn");
+}
+
+void loop() {
+  int k = readKeys();
+  if (k == 1) {
+    for (int i = 0; i < 4; i++) spinOne(i);
+    show("MOTOR TEST done", "A: again", "B: MTC direction", "");
+  } else if (k == 2) {
+    delay(1500);
+    step("forward 10 cm", 0, 10, 0);
+    step("right 10 cm", 10, 0, 0);
+    step("turn RIGHT 90", 0, 0, 90);   // MTC V3：旋轉＋＝右轉
+    step("turn back", 0, 0, -90);
+    step("back to start", -10, -10, 0);
+    show("MTC DIRECTION done", "A: motors", "B: again", "");
+  }
+  delay(10);
+}
+`
+    },
+    move: {
+      label: '② 移動距離（A/B/A+B）',
+      desc: '量「程式要走多遠」和「實際走多遠」是否相同。2026-10-17 實車：前進 100 cm 偏左 0.5 cm、右平移 50 cm 準確、轉 360° 實轉 359.8°，預設值不用改。',
+      steps: ['地上貼中線與起點線（車尾對齊起點線）；旋轉測試前，車子左側貼齊一條直線膠帶。', '按 A 前進、按 B 右平移、A＋B 同時按原地右轉；放開後 2 秒出發，每項跑 3 次。', '量實際距離；OLED 顯示 BNO 量到的偏角（drift）與實際轉角（turned）。', '新換算值＝目前值 × 指令 ÷ 實際平均；誤差小於 1% 不用改。'],
+      fields: [['dFwd', '前進 cm', 100, 10], ['dSide', '右平移 cm', 50, 10], ['dTurn', '原地右轉 °', 360, 90], ['vm', '最高速', 1500, 100], ['a', '加速度', 2500, 100], ['ad', '減速度', 1800, 100], ['kx', '平移換算 K_X', 20.16, 0.01], ['ky', '前進換算 K_Y', 19.2, 0.01], ['kt', '旋轉換算 K_TURN', 5.1408, 0.0001], ['o1', 'M1 補償 %', 0, 1], ['o2', 'M2 補償 %', 0, 1], ['o3', 'M3 補償 %', 0, 1], ['o4', 'M4 補償 %', 0, 1]],
+      code: p => CAL_HEAD('移動距離（TuMTC V3.0.4）', ['A：前進 ' + cn(p.dFwd, 100) + ' cm　B：右平移 ' + cn(p.dSide, 50) + ' cm　A＋B：原地右轉 ' + cn(p.dTurn, 360) + '°', '放開按鍵後等 2 秒才出發；OLED 顯示 BNO 量到的偏角（前進、平移）或實際轉角（旋轉）', '新換算值 ＝ 目前值 × 指令 ÷ 實際；例：前進 100 實走 98 → K_Y × 100 ÷ 98', '前進會歪：用 M1～M4 補償 %（一次只調一顆、不超過 ±25）']) +
+        CAL_INC('#include <TuMTC.h>', '#include <EasyBNO055_ESP.h>', '#include <Adafruit_GFX.h>', '#include <Adafruit_SH110X.h>') + `
+TuBitCore tubit;
+TuMTC mtc(tubit);
+EasyBNO055_ESP bno;
+${CAL_OLED}
+${CAL_BTN}
+${CAL_BNOFOUND}
+const double D_FWD = ${cn(p.dFwd, 100)}, D_SIDE = ${cn(p.dSide, 50)}, D_TURN = ${cn(p.dTurn, 360)};
+const double K_X = ${cn(p.kx, 20.16)};     // 平移：每 1 cm 輪子轉幾度（函式庫預設 20.16）
+const double K_Y = ${cn(p.ky, 19.2)};      // 前進：每 1 cm 輪子轉幾度（預設 19.2）
+const double K_TURN = ${cn(p.kt, 5.1408)}; // 旋轉：車身每 1° 輪子轉幾度（預設 5.1408）
+const double OFF_M1 = ${cn(p.o1, 0)}, OFF_M2 = ${cn(p.o2, 0)}, OFF_M3 = ${cn(p.o3, 0)}, OFF_M4 = ${cn(p.o4, 0)};   // 四輪補償 %
+const double T_VM = ${cn(p.vm, 1500)}, T_ACC = ${cn(p.a, 2500)}, T_DEC = ${cn(p.ad, 1800)};   // 比賽長距離：1500／2500／1800；到點慢速：800／1500／900
+
+bool bnoOK = false;
+int runCount[3] = {0, 0, 0};
+double yawLast = 0, yawAcc = 0;
+
+double wrap180(double d) {
+  while (d > 180) d -= 360;
+  while (d < -180) d += 360;
+  return d;
+}
+void yawTrack() {   // 累加角度變化，跨過 0／360 也不會算錯
+  double z = bno.orientationZ;
+  yawAcc += wrap180(z - yawLast);
+  yawLast = z;
+}
+bool trackDuringMove() {   // moveSCurve 每個控制週期呼叫：只記錄角度，不中斷
+  if (bnoOK) yawTrack();
+  return false;
+}
+
+void setup() {
+  tubit.init();
+  Serial.begin(115200);
+  display.begin(0x3C, true);
+  bnoOK = bnoFound();
+  if (bnoOK) { bno.start(); delay(1000); }
+  mtc.setMtcXytConstants(K_X, K_Y, K_TURN);
+  mtc.SetMotorOffset(OFF_M1, OFF_M2, OFF_M3, OFF_M4);
+  Serial.println("test,no,bno_deg");
+  show("A:FWD  B:RIGHT", "A+B: TURN RIGHT", bnoOK ? "BNO OK" : "NO BNO (use tape)", "");
+}
+
+void loop() {
+  int k = readKeys();
+  if (k == 0) { delay(10); return; }
+  int t = (k == 3) ? 2 : (k == 1 ? 0 : 1);
+  const char *name[3] = {"FWD", "RIGHT", "TURN"};
+  runCount[t]++;
+  show(String(name[t]) + " #" + String(runCount[t]), "hands off...", "start in 2 s", "");
+  delay(2000);
+  if (bnoOK) { yawLast = bno.orientationZ; yawAcc = 0; }
+  if (t == 0) mtc.moveSCurve(0, D_FWD, 0, T_VM, T_ACC, -T_DEC, 0, 0, trackDuringMove);
+  else if (t == 1) mtc.moveSCurve(D_SIDE, 0, 0, T_VM, T_ACC, -T_DEC, 0, 0, trackDuringMove);
+  else mtc.moveSCurve(0, 0, D_TURN, T_VM, T_ACC, -T_DEC, 0, 0, trackDuringMove);   // MTC V3：旋轉＋＝右轉
+  tubit.stopAllMotors();
+  delay(600);   // 停穩再讀角度
+  if (bnoOK) yawTrack();
+  String r;
+  if (!bnoOK) r = "measure with tape";
+  else if (t == 2) r = "turned " + String(fabs(yawAcc), 1) + (yawAcc >= 0 ? " R" : " L");
+  else r = "drift " + String(yawAcc, 1) + (yawAcc >= 0 ? " R" : " L");
+  show("A:FWD  B:RIGHT", "A+B: TURN RIGHT", String(name[t]) + " #" + String(runCount[t]), r);
+  Serial.printf("%s,%d,%.1f\\n", name[t], runCount[t], bnoOK ? yawAcc : 0.0);
+}
+`
+    },
+    bno: {
+      label: '③ BNO 角度與轉正',
+      desc: '檢查 BNO055 有沒有接好、靜置漂移多少、轉正係數是否合適。A 設的 0° 存在快閃記憶體（和比賽程式的 BNO 校正模式同一個位置）。',
+      steps: ['開機找不到 BNO 會列出 I2C 位址：0x29 代表 ADR 腳要接 GND。', '靜置 10 秒以上看 DRIFT：小於 0.5°/分鐘才穩定；按 A 把目前方向設為 0°。', '按 B：用 BNO 轉正連轉 4 次 90°，顯示每次的誤差和時間；常轉過頭（誤差變號）就把轉正係數調小，轉太慢就調大。', '轉正係數、允許誤差、逾時填到規劃器「BNO 轉正」設定。'],
+      fields: [['k', '轉正係數', 1.25, 0.05], ['tol', '允許誤差 °', 1.5, 0.5], ['to', '逾時秒', 1.5, 0.5]],
+      code: p => CAL_HEAD('BNO055 角度與轉正', ['開機自動檢查 I2C：找不到 BNO055 會在 OLED 列出找到的位址', '靜置看 DRIFT（每分鐘漂移幾度）；A：把目前方向設為 0°（存在快閃記憶體，比賽程式同一個位置）', 'B：BNO 轉正連轉 4 次 90°（右轉），顯示每次停下來的誤差與時間，用來調轉正係數']) +
+        CAL_INC('#include <TuMTC.h>', '#include <Preferences.h>', '#include <EasyBNO055_ESP.h>', '#include <Adafruit_GFX.h>', '#include <Adafruit_SH110X.h>') + `
+TuBitCore tubit;
+TuMTC mtc(tubit);
+EasyBNO055_ESP bno;
+Preferences tunePrefs;
+${CAL_OLED}
+${CAL_BTN}
+${CAL_BNOFOUND}
+double BNO_TURN_K = ${cn(p.k, 1.25)};   // 轉正係數（轉過頭調小、轉太慢調大）
+const double TURN_TOL = ${cn(p.tol, 1.5)};   // 允許誤差 °
+const unsigned long TURN_TIMEOUT = ${Math.round(num(p.to, 1.5) * 1000)};   // 逾時毫秒
+bool bnoOK = false;
+double bnoZero = 0, z0 = 0;
+unsigned long t0 = 0;
+
+double wrap180(double d) {
+  while (d > 180) d -= 360;
+  while (d < -180) d += 360;
+  return d;
+}
+
+unsigned long turnTo(double target) {   // 與比賽程式相同的 BNO 轉正：誤差 × 係數，回傳花了幾毫秒
+  tubit.resetEnc();
+  tubit.stopAllMotors();
+  unsigned long s = millis();
+  while (fabs(wrap180(target - bno.orientationZ)) > TURN_TOL && millis() - s < TURN_TIMEOUT) {
+    mtc.bnoMoveClosed(0, 0, wrap180(target - bno.orientationZ) * BNO_TURN_K, bno.orientationZ);
+    delay(5);
+  }
+  tubit.resetEnc();
+  tubit.stopAllMotors();
+  return millis() - s;
+}
+
+void setup() {
+  tubit.init();
+  Serial.begin(115200);
+  display.begin(0x3C, true);
+  tunePrefs.begin("tubit", true);
+  bnoZero = tunePrefs.getDouble("bz", 0);
+  tunePrefs.end();
+  bnoOK = bnoFound();
+  if (!bnoOK) {
+    String found = i2cList();
+    show("NO BNO055 at 0x28", "I2C found:", found, found.indexOf("0x29") >= 0 ? "ADR pin -> GND" : "check VIN GND SDA SCL");
+    Serial.println("I2C devices: " + found);
+    return;
+  }
+  bno.start();
+  delay(1000);
+  z0 = bno.orientationZ;
+  t0 = millis();
+}
+
+void loop() {
+  if (!bnoOK) { delay(200); return; }
+  double sec = (millis() - t0) / 1000.0;
+  double drift = sec > 1 ? wrap180(bno.orientationZ - z0) / sec * 60.0 : 0;   // 每分鐘漂移幾度
+  show("HEAD " + String(wrap180(bno.orientationZ - bnoZero), 1),
+       "DRIFT " + String(drift, 2) + " d/min",
+       sec < 10 ? "keep still..." : (fabs(drift) < 0.5 ? "STABLE OK" : "MOVING? wait"),
+       "A=ZERO  B=TURN TEST");
+  int k = readKeys();
+  if (k == 1) {   // 目前方向設為 0°
+    bnoZero = bno.orientationZ;
+    tunePrefs.begin("tubit", false);
+    tunePrefs.putDouble("bz", bnoZero);
+    tunePrefs.end();
+    z0 = bno.orientationZ;
+    t0 = millis();
+  } else if (k == 2) {   // 轉正測試：右轉 4 次 90°
+    show("TURN TEST", "hands off...", "", "");
+    delay(1500);
+    double base = bno.orientationZ;
+    String res[4];
+    for (int n = 1; n <= 4; n++) {
+      unsigned long ms = turnTo(base + 90.0 * n);
+      delay(400);   // 停穩看有沒有轉過頭
+      double err = wrap180(bno.orientationZ - (base + 90.0 * n));   // ＋＝轉過頭（多轉）
+      res[n - 1] = String(n * 90) + ": " + String(err, 1) + " " + String(ms / 1000.0, 1) + "s";
+      Serial.printf("turn %d: err %.1f deg, %lu ms\\n", n * 90, err, ms);
+    }
+    show(res[0], res[1], res[2], res[3]);
+    delay(6000);
+    z0 = bno.orientationZ;
+    t0 = millis();
+  }
+  delay(100);
+}
+`
+    },
+    ir: {
+      label: '④ IR 目標值與對比',
+      desc: '量 6 顆 IR 在「離牆 10 cm」和「沒有牆」的讀數。存進快閃記憶體後，燒比賽程式不用再量（同一個儲存位置）。黑色隔板反光弱，OPEN 這步一定要做。',
+      steps: ['平常畫面即時顯示 6 顆 IR：讀數／目標值／OK 或 LOW。', '按 A 進入校正：前、後、左、右依序把那一面放在離隔板 10 cm（用 10 cm 木塊量），按 A 記錄、按 B 跳過。', '最後一步 OPEN：把車放在四周 40 cm 內沒有牆的地方按 A。', '完成後顯示對比：LOW 的那顆 IR 比賽時會自動不用；出發校正用右側，右側一定要 OK。'],
+      fields: [['see', '看到牆的範圍 %', 35, 5]],
+      code: p => CAL_HEAD('IR 目標值與對比', ['平常：即時顯示 6 顆 IR 讀數／目標值與對比（OK／LOW）', 'A：校正精靈 前→後→左→右（離牆 10 cm 按 A，B 跳過）→ OPEN（四周 40 cm 沒有牆按 A）', '量到的值存在快閃記憶體（命名空間 tubit，和比賽程式同一個位置），燒錄比賽程式後直接沿用']) +
+        CAL_INC('#include <TuMTC.h>', '#include <Preferences.h>', '#include <TuIRAlign.h>', '#include <Adafruit_GFX.h>', '#include <Adafruit_SH110X.h>') + `
+TuBitCore tubit;
+TuMTC mtc(tubit);
+extern TuBitCore tubit;
+TuMTC& tuirRobot() {
+  return mtc;
+}
+TuIRAlign<TuMTC>& tuirAlign() {
+  static TuIRAlign<TuMTC> align(tubit, tuirRobot());
+  return align;
+}
+Preferences tunePrefs;
+${CAL_OLED}
+int irT[6] = {25, 25, 25, 25, 25, 25};   // 目標值（前 後 左前 左後 右前 右後）
+int irO[6] = {-1, -1, -1, -1, -1, -1};   // 沒有牆的讀數
+bool irSaved = false;
+const int IR_SEE_PCT = ${cn(p.see, 35)};
+const char *NM[6] = {"F33 ", "B32 ", "LF35", "LB34", "RF39", "RB36"};
+
+int irRead(int i) {   // 第 i 顆 IR 濾波值（0 前 1 後 2 左前 3 左後 4 右前 5 右後）
+  tuirAlign().readAllIR_();
+  switch (i) {
+    case 0: return tuirAlign().getFilteredUP();
+    case 1: return tuirAlign().getFilteredBK();
+    case 2: return tuirAlign().getFilteredLU();
+    case 3: return tuirAlign().getFilteredLB();
+    case 4: return tuirAlign().getFilteredRU();
+  }
+  return tuirAlign().getFilteredRB();
+}
+
+bool irContrastOk(int i) {   // 有牆、沒牆的讀數差夠大，這顆 IR 才可靠
+  if (irO[i] < 0) return true;
+  return abs(irT[i] - irO[i]) >= max(5, abs(irT[i]) * IR_SEE_PCT / 100);
+}
+
+void irLoad() {
+  tunePrefs.begin("tubit", true);
+  for (int i = 0; i < 6; i++) irT[i] = tunePrefs.getInt((String("ir") + i).c_str(), irT[i]);
+  for (int i = 0; i < 6; i++) irO[i] = tunePrefs.getInt((String("io") + i).c_str(), -1);
+  irSaved = tunePrefs.getBool("irok", false);
+  tunePrefs.end();
+}
+
+void irSave() {   // 只寫 IR 的值，不動比賽程式的其他微調（前後微調、雲台、BNO 0°）
+  tunePrefs.begin("tubit", false);
+  for (int i = 0; i < 6; i++) tunePrefs.putInt((String("ir") + i).c_str(), irT[i]);
+  for (int i = 0; i < 6; i++) tunePrefs.putInt((String("io") + i).c_str(), irO[i]);
+  tunePrefs.putBool("irok", irSaved);
+  tunePrefs.end();
+}
+
+void showLive(const char *title) {
+  display.clearDisplay();
+  display.setFont();
+  display.setTextSize(1);
+  display.setTextColor(SH110X_WHITE);
+  display.setCursor(0, 0);
+  display.println(title);
+  for (int i = 0; i < 6; i++) {
+    display.print(NM[i]);
+    display.print(" ");
+    display.print(irRead(i));
+    display.print(" T");
+    display.print(irT[i]);
+    display.println(irO[i] < 0 ? " ?" : (irContrastOk(i) ? " OK" : " LOW"));
+  }
+  display.display();
+}
+
+void irWizard() {   // 前→後→左→右→沒有牆
+  const char *side[5] = {"FRONT 10cm", "BACK 10cm", "LEFT 10cm", "RIGHT 10cm", "OPEN no wall 40cm"};
+  const int first[5] = {0, 1, 2, 4, 0}, cnt[5] = {1, 1, 2, 2, 6};
+  int s = 0;
+  while (s < 5) {
+    showLive(side[s]);
+    if (tubit.readButton(Button_A)) {   // 記錄：取 20 次平均
+      for (int k = 0; k < cnt[s]; k++) {
+        long sum = 0;
+        for (int n = 0; n < 20; n++) { sum += irRead(first[s] + k); delay(10); }
+        if (s < 4) irT[first[s] + k] = sum / 20;
+        else irO[first[s] + k] = sum / 20;
+      }
+      Serial.printf("IR %s saved\\n", side[s]);
+      s++;
+      while (tubit.readButton(Button_A)) delay(10);
+    }
+    if (tubit.readButton(Button_B)) {   // 跳過這一面
+      s++;
+      while (tubit.readButton(Button_B)) delay(10);
+    }
+    delay(80);
+  }
+  irSaved = true;
+  irSave();
+  tuirAlign().setTargets(irT[0], irT[1], irT[2], irT[3], irT[4], irT[5]);
+  Serial.printf("setTargets(%d,%d,%d,%d,%d,%d)\\n", irT[0], irT[1], irT[2], irT[3], irT[4], irT[5]);
+  for (int i = 0; i < 6; i++) Serial.printf("%s target %d open %d %s\\n", NM[i], irT[i], irO[i], irContrastOk(i) ? "OK" : "LOW");
+}
+
+void setup() {
+  tubit.init();
+  Serial.begin(115200);
+  display.begin(0x3C, true);
+  tuirAlign();
+  tuirAlign().setPins(33, 32, 35, 34, 39, 36);   // 前 後 左前 左後 右前 右後
+  irLoad();
+  tuirAlign().setTargets(irT[0], irT[1], irT[2], irT[3], irT[4], irT[5]);
+}
+
+void loop() {
+  showLive(irSaved ? "IR LIVE  A=calibrate" : "IR (not saved) A=cal");
+  if (tubit.readButton(Button_A)) {
+    while (tubit.readButton(Button_A)) delay(10);
+    irWizard();
+  }
+  delay(120);
+}
+`
+    },
+    arm: {
+      label: '⑤ 手臂高度與夾爪',
+      desc: '確認手臂升降高度與夾爪開合角度，找出「夾取、搬運、放置」最合適的角度，再填回規劃器的手臂設定。',
+      steps: ['按 A：手臂依序 最高 → 放置高度 → 最低，OLED 顯示目前角度。', '按 B：夾爪張開／夾緊切換。', 'A＋B：手臂旋轉回正中 90°。', '盒子高 8 cm：放置高度要讓齒輪底部略高於盒頂；不夠就改「放置高度」重新產生。'],
+      fields: [['up', '最高 °', 55, 5], ['place', '放置高度 °', 20, 5], ['down', '最低（夾取）°', 2, 1], ['co', '夾爪張開', 80, 5], ['cc', '夾爪夾緊', 150, 5]],
+      code: p => CAL_HEAD('手臂 ATARM 高度與夾爪', ['A：手臂 最高 → 放置高度 → 最低 依序切換', 'B：夾爪 張開／夾緊　A＋B：手臂旋轉回正中 90°', '接線：旋轉 S0、升降 S7、夾爪 S6；伺服電源跳帽要選對（SERVO POWER SELECT）']) +
+        CAL_INC('#include <Adafruit_GFX.h>', '#include <Adafruit_SH110X.h>', '#include <ATARM.h>') + `
+TuBitCore tubit;
+${CAL_OLED}
+${CAL_BTN}
+const int LIFT[3] = {${cn(p.up, 65)}, ${cn(p.place, 20)}, ${cn(p.down, 0)}};   // 最高、放置、最低
+const char *LIFT_NAME[3] = {"UP", "PLACE", "DOWN"};
+int liftIdx = 0;
+bool clawClosed = false;
+
+void showArm(const String& msg) {
+  show("A:LIFT  B:CLAW", "A+B: PAN 90", "LIFT " + String(LIFT[liftIdx]) + " " + LIFT_NAME[liftIdx], String(clawClosed ? "CLAW CLOSED" : "CLAW OPEN") + " " + msg);
+}
+
+void setup() {
+  tubit.init();
+  display.begin(0x3C, true);
+  ATARM_INIT(S0, S7, S6);   // 旋轉, 升降, 夾爪
+  ATARM_SetClawRange(${cn(p.co, 80)}, ${cn(p.cc, 150)});   // 張開, 夾緊
+  ATARM_SetLiftRange(${Math.min(num(p.down, 0), num(p.up, 65))}, ${Math.max(num(p.down, 0), num(p.up, 65))});   // 最低, 最高
+  ATARM_SetPanRange(55, 125);
+  ATARM_LiftSet(LIFT[0], 1);
+  ATARM_ClawCtrl(false, 1);
+  showArm("");
+}
+
+void loop() {
+  int k = readKeys();
+  if (k == 1) { liftIdx = (liftIdx + 1) % 3; ATARM_LiftSet(LIFT[liftIdx], 1); showArm(""); }
+  else if (k == 2) { clawClosed = !clawClosed; ATARM_ClawCtrl(clawClosed, 1); showArm(""); }
+  else if (k == 3) { ATARM_PanSet(90, 1); showArm("PAN90"); }
+  delay(10);
+}
+`
+    },
+    ps3: {
+      label: '⑥ PS3 手把連線',
+      desc: '手把連不上時先跑這支：OLED 顯示控制板自己的藍牙 MAC、是否連線、搖桿與按鍵。手把要先用 SixaxisPairTool 寫入與程式相同的 MAC。',
+      steps: ['把 MAC 改成手把記住的位址（隊伍手把：10:00:00:02:22:35），產生後燒錄。', '長按手把中間 PS 鈕，OLED 出現 CONNECTED 就成功；按 ✕ 手把會震動。', '連不上：確認 SixaxisPairTool 寫入的 MAC 和這裡一樣、手把有電、附近沒有別台車用同一個 MAC。'],
+      fields: [['mac', '手把 MAC', '10:00:00:02:22:35', 'text']],
+      code: p => { const mac = /^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$/.test(String(p.mac || '').trim()) ? String(p.mac).trim() : '10:00:00:02:22:35';
+        return CAL_HEAD('PS3 手把連線', ['MAC：' + mac + '（要和 SixaxisPairTool 寫進手把的位址相同）', 'OLED：連線狀態、搖桿數值、按到的鍵；按 ✕ 手把震動']) +
+        CAL_INC('#include <Ps3Controller.h>', '#include <Adafruit_GFX.h>', '#include <Adafruit_SH110X.h>') + `
+TuBitCore tubit;
+${CAL_OLED}
+String pressed() {
+  if (Ps3.data.button.cross) return "CROSS";
+  if (Ps3.data.button.circle) return "CIRCLE";
+  if (Ps3.data.button.square) return "SQUARE";
+  if (Ps3.data.button.triangle) return "TRIANGLE";
+  if (Ps3.data.button.l1) return "L1";
+  if (Ps3.data.button.l2) return "L2";
+  if (Ps3.data.button.r1) return "R1";
+  if (Ps3.data.button.r2) return "R2";
+  if (Ps3.data.button.start) return "START";
+  if (Ps3.data.button.select) return "SELECT";
+  if (Ps3.data.button.up) return "UP";
+  if (Ps3.data.button.down) return "DOWN";
+  if (Ps3.data.button.left) return "LEFT";
+  if (Ps3.data.button.right) return "RIGHT";
+  return "-";
+}
+
+void setup() {
+  tubit.init();
+  Serial.begin(115200);
+  display.begin(0x3C, true);
+  Ps3.begin("${mac}");
+  Serial.println("PS3 MAC: ${mac}");
+}
+
+void loop() {
+  if (Ps3.isConnected()) {
+    show("PS3 CONNECTED",
+         "LX " + String(Ps3.data.analog.stick.lx) + " LY " + String(Ps3.data.analog.stick.ly),
+         "RX " + String(Ps3.data.analog.stick.rx) + " RY " + String(Ps3.data.analog.stick.ry),
+         "KEY " + pressed());
+    if (Ps3.data.button.cross) Ps3.setRumble(100, 200);
+  } else {
+    show("PS3 waiting...", "MAC ${mac}", "press PS button", "");
+  }
+  delay(100);
+}
+`; }
+    }
+  };
+  const CAL_KEYS = Object.keys(CAL);
+  function calState() {
+    if (!state.cal || !CAL[state.cal.prog]) state.cal = { prog: 'move', p: {} };
+    const P = state.cal.p = state.cal.p || {};
+    CAL_KEYS.forEach(k => { P[k] = Object.assign(Object.fromEntries(CAL[k].fields.map(f => [f[0], f[2]])), P[k] || {}); });
+    return state.cal;
+  }
+  function calCode() { const c = calState(); return CAL[c.prog].code(c.p[c.prog]); }
+  function calPanel() {
+    const c = calState(), C = CAL[c.prog], P = c.p[c.prog];
+    const flds = C.fields.map(f => '<label>' + esc(f[1]) + '<input ' + (f[3] === 'text' ? 'type="text" style="width:150px"' : 'type="number" step="' + f[3] + '"') + ' data-calf="' + f[0] + '" value="' + esc(P[f[0]]) + '"></label>').join('');
+    return '<div class="trig"><div class="trig-head">' + esc(C.label) + '</div><div class="trig-body">' +
+      '<p style="margin:0 0 8px">' + esc(C.desc) + '</p>' +
+      '<ol style="margin:0 0 10px;padding-left:1.3em">' + C.steps.map(s => '<li>' + esc(s) + '</li>').join('') + '</ol>' +
+      '<div class="act-fields">' + flds + '<button class="btn small" type="button" data-calreset="1">恢復預設值</button></div></div></div>' +
+      '<div class="note"><b>建議順序</b>① 馬達方向 → ② 移動距離 → ③ BNO → ④ IR → ⑤ 手臂 → ⑥ PS3。IR 與 BNO 0° 存在 ESP32 快閃記憶體（命名空間 tubit），之後燒錄比賽程式會直接沿用，不用重量。</div>';
+  }
+
   function renderLevel() {
     document.querySelectorAll('#levelTabs button').forEach(b => b.setAttribute('aria-selected', b.dataset.level === state.level ? 'true' : 'false'));
     document.getElementById('levelDesc').textContent = LEVELS[state.level].desc;
-    document.getElementById('kitBox').classList.toggle('hidden', state.level === 'basic');
+    document.getElementById('kitBox').classList.toggle('hidden', state.level === 'basic' || state.level === 'cal');
     const bar = document.getElementById('presetBar');
+    if (state.level === 'cal') {
+      const c = calState();
+      bar.innerHTML = CAL_KEYS.map(k => '<button class="btn small' + (k === c.prog ? ' primary' : '') + '" type="button" data-cal="' + k + '">' + esc(CAL[k].label) + '</button>').join('');
+      bar.previousElementSibling.textContent = '校正程式：';
+      return;
+    }
+    bar.previousElementSibling.textContent = '快速範本：';
     bar.innerHTML = PRESETS[state.level].map((p, i) => '<button class="btn small" type="button" data-preset="' + i + '">' + esc(p[0]) + '</button>').join('') +
       '<button class="btn small" type="button" data-preset="clear">全部清空</button>';
   }
@@ -1495,6 +2031,7 @@
 
   function render() {
     renderLevel();
+    if (state.level === 'cal') { document.getElementById('trigs').innerHTML = calPanel(); update(); return; }
     renderKits();
     const lv = ORDER.indexOf(state.level);
     document.getElementById('trigs').innerHTML = TRIGGERS.filter(t => (t.mode ? state.level !== 'basic' && state.kits.mode.on : (!t.kit || (state.level !== 'basic' && state.kits.on[t.kit])))).map(t => {
@@ -1523,6 +2060,11 @@
   }
 
   function update() {
+    if (state.level === 'cal') {
+      document.getElementById('code').textContent = calCode();
+      document.getElementById('summary').textContent = '校正程式：' + CAL[state.cal.prog].label.replace(/^\S+ /, '') + '。調整左邊參數，程式碼會即時更新；複製後貼到兔比積木 Arduino IDE 編譯燒錄。';
+      save(); return;
+    }
     const g = generate();
     document.getElementById('code').textContent = g.code;
     const on = TRIGGERS.filter(t => state.trig[t.key].on);
@@ -1541,6 +2083,8 @@
     render();
   });
   document.getElementById('presetBar').addEventListener('click', e => {
+    const cb = e.target.closest('button[data-cal]');
+    if (cb) { calState().prog = cb.dataset.cal; render(); return; }
     const b = e.target.closest('button[data-preset]'); if (!b) return;
     if (b.dataset.preset === 'clear') { state.trig = emptyTrig(); state.kits = defaultKits(); render(); return; }
     const p = PRESETS[state.level][+b.dataset.preset][1]();
@@ -1607,11 +2151,13 @@
   });
   box.addEventListener('input', e => {
     const el = e.target;
+    if (el.dataset.calf) { const c = calState(); c.p[c.prog][el.dataset.calf] = el.value; update(); return; }
     if (!el.dataset.id || el.tagName === 'SELECT' || el.type === 'checkbox') return;
     setField(el); update();
   });
   box.addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.calreset) { const c = calState(); delete c.p[c.prog]; render(); return; }
     if (b.dataset.add) {
       const st = state.trig[b.dataset.trigkey];
       st.acts.push(mk(b.dataset.add));
@@ -1633,6 +2179,9 @@
   const flash = msg => { const s = document.getElementById('copied'); s.textContent = msg; setTimeout(() => { s.textContent = ''; }, 2000); };
   document.getElementById('copyBtn').addEventListener('click', async () => {
     const text = generate().code;
+    const ta0 = document.createElement('textarea'); ta0.value = text; ta0.setAttribute('readonly', ''); ta0.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:1px;opacity:0';
+    document.body.appendChild(ta0); ta0.focus(); ta0.select(); let ok0 = false; try { ok0 = document.execCommand('copy'); } catch (e) {} ta0.remove();
+    if (ok0) { flash('已複製'); return; }   // 先在點擊當下同步複製（嵌在 iframe 時剪貼簿 API 常被擋）
     try { await navigator.clipboard.writeText(text); flash('已複製'); }
     catch (e) {
       const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select();
@@ -1644,7 +2193,7 @@
     const blob = new Blob([generate().code], { type: 'text/plain' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = 'tubit_program.ino';
+    a.download = state.level === 'cal' ? 'tubit_cal_' + calState().prog + '.ino' : 'tubit_program.ino';
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   });
