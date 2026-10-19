@@ -177,7 +177,7 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
 <body>
 <div class="app">
 <header>
-  <div class="brand"><h1>TU:bit V2 2026全國競賽路徑規劃器</h1><span class="ver" id="ver" title="更新紀錄">v1.9.34</span><a class="ver" href="../competition.html" title="回競賽專區">← 競賽專區</a><a class="ver" href="../generator.html#race" title="程式產生器：競賽自動化">程式產生器</a></div>
+  <div class="brand"><h1>TU:bit V2 2026全國競賽路徑規劃器</h1><span class="ver" id="ver" title="更新紀錄">v1.9.42</span><a class="ver" href="../competition.html" title="回競賽專區">← 競賽專區</a><a class="ver" href="../generator.html#race" title="程式產生器：競賽自動化">程式產生器</a></div>
   <div class="hgroup">
     <select id="gameSel" aria-label="競賽項目">
       <option value="energy">物資能源爭霸戰 300×300</option>
@@ -479,6 +479,14 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
 </dialog>
 <dialog id="logDlg">
   <h3 style="margin-top:0">更新紀錄</h3>
+  <p><b>v1.9.42</b>（2026-10-19）穩定中求快：只加快 P3→P4（夾取轉向後到對齊點的長距離斜線，前方 IR 防撞仍開著），速度 1500／3500／2200 → 2000／4500／3000，和出發 P1 相同（已實測穩定）。要停準的地方都不動：夾取點、P5 橫移到放置台、P6 放置、轉向、手臂等待、車頭轉正 1° 都維持原設定。</p>
+  <p><b>v1.9.41</b>（2026-10-19）只改放置距離：P5 離放置台 1.5 → 2.0 cm，P6 一樣慢速往前 0.5 cm，最後停在離放置台 1.5 cm 張爪（與成功版 v1.9.36 相同）；P4 跟著對齊 P5（再往外多留 0.9 cm）。其他不動。</p>
+  <p><b>v1.9.40</b>（2026-10-19）依實測（兩台車到 P5 都會碰到放置台）放置改回成功版的兩段式：P4 對齊 P5（離盒再多留 0.9 cm）→ 直線橫移到 P5（車頭離放置台 1.5 cm）→ 慢速往前 0.5 cm 到 P6 張爪。P5、P6 都跟著放置微調（□○ 左右、△✕ 前後）。出發、夾取、轉向、手臂（含 v1.9.39 手臂角度微調）、速度與其他微調不動。</p>
+  <p><b>v1.9.39</b>（2026-10-19）現場微調新增「手臂角度」：兩台車同一支程式，伺服馬達裝的角度不同、手臂抬起高度不一樣時，手動模式按住 START＋按下右搖桿（R3）+1°、左搖桿（L3）−1°（最多 ±20°），夾取、搬運角度與手動升降範圍一起平移；按下時手臂馬上移到新的搬運高度，可直接量高度。數值和其他微調一樣存在快閃記憶體，重開機、重新燒錄都還在；START＋SELECT 一起歸零。OLED 多一行 ARM 顯示目前搬運角度。路線、速度與其他微調不動，FT_ARM 預設 0 時動作與 v1.9.38 相同。</p>
+  <p><b>v1.9.38</b>（2026-10-19）依實測（兩台車 P4→P5 橫移時都會碰到放置台）只改 P4：對齊點離盒子再遠 0.9 cm（紅方 x 27 → 27.9），P4→P5 橫移時車頭離放置台多留 0.9 cm、到放置點才靠近到 1.5 cm。放置點 P5、出發、夾取、轉向、手臂、速度、按鍵與微調值都不動。</p>
+  <p><b>v1.9.37</b>（2026-10-19）依第二台車實測只改放置路線：P4→P5 斜著橫移時車頭會擦到放置盒的角（原車偶爾也會碰到）。改為 P5＝P6（盒前點就是放置點，不再先停盒前 4 cm 再前進），P4 對齊放置點（車頭離盒距離和放置時相同），P4→P5 只直線橫移，不會斜切到盒角；P4 跟著「放置前後」微調（START＋△✕）一起移動，左右微調只影響放置點。P3→P4 路線離 T 形隔板仍保持 2.5 cm 以上、離左牆隔板 20 cm。出發、夾取、轉向、手臂、按鍵、速度與其他微調值不動。</p>
+  <p><b>v1.9.36</b>（2026-10-19）實測成功版（v1.9.35 路線，連續 3 次完成、約 17 秒）加入「現場簡易微調」：手動模式按住 START＋←→（夾取左右）、↑↓（夾取前後）、□○（放置左右）、△✕（放置前後），每按一下 0.5 cm，數值存在快閃記憶體、斷電不消失，OLED 顯示 GRAB／PLACE 目前值；START＋SELECT 全部歸零。微調預設 0，不調整時動作與 v1.9.35 完全相同。按住 START 時手臂按鍵不動作、放開 START 不會誤啟動自動。課程網站競賽專區新增「實測成功版」程式下載與學生現場 SOP。</p>
+  <p><b>v1.9.35</b>（2026-10-19）依實測（v1.9.34）只改兩處：① 前半段（出發 → 夾取點）加快：P1 長距離 2000／4500／3000、不停車接續速度 800、到夾取點 1000／2000／1200；② 放置不再用前方 IR 反覆偵測（偵測時會後退、再前進撞到盒子）：直接走到盒前 4 cm（不開 IR 防撞），再慢速前進到盒前 1.5 cm 張爪；放置微調 X −8 → −10（再往左 2 cm）。夾取、轉向、手臂、按鍵與其他設定不動。紅藍模擬約 9.6 秒。規劃器新增設定 placeIR（放置時前方 IR 偵測，預設關）、placePre（盒前停車距離，預設 4 cm）、fastStart（前半段加速，預設開）。</p>
   <p><b>v1.9.34</b>（2026-10-17）只改兩個微調值（其他程式與路線不動）：① 夾取：從 P1 直接一次走到修正後的夾取點（不再到點後另外平移），夾取微調 X −2 → −3 cm（再往左 1 cm）；② 放置：盒前 10 cm 那一點與最後靠近的放置微調 X −5 → −8 cm（再往左 3 cm）。打開 v1.9.33 的專案只會改這四個數值（紅／藍方各兩個），自己改過的數值不會被蓋掉。</p>
   <p><b>v1.9.33</b>（2026-10-17）依實測回報全面檢查修正：① 手動模式不能控制手臂／夾爪／雲台：原因是 v1.9.23 強制開啟 PS3 時沒有補上 PS3 手臂按鍵（按鍵表是空的，程式只產生搖桿移動），現在自動補上官方手臂車配置（↑↓ 升降、←→ 雲台、△ 開爪、○ 合爪），賽規檢查也會在缺少手臂按鍵時顯示紅色錯誤；② 手臂角度依實測固定為 夾取 2°、搬運 55°（舊專案若是其他數值也會改成實測值）；③ 夾取微調改成「到夾取點停好後再平移」（goDist，看得到、不受不停車接續影響），紅藍方相同時不再產生 (sideBlue ? -2 : -2) 這種寫法；④ 複製程式碼改為點擊當下同步複製（網頁嵌在 iframe 時剪貼簿 API 會被擋），失敗才選取，並新增「下載 .ino」按鈕；⑤ 修正誤導提醒：BNO 定點移動全程用 BNO 鎖車頭，不再提示「BNO 沒用到、建議取消勾選」；⑥ goToV 註解重複修正。</p>
   <p><b>v1.9.32</b>（2026-10-17）依實測修正手臂與夾取點：手臂「夾取（下降）」2°、「搬運（抬升）」55°（實測超過約 55° 手臂會轉過頂端反而變低，v1.9.31 的 120° 會頂到車身、讓伺服馬達卡住），手臂範圍改為 2～55°，手動遙控也不會超出；紅方與藍方夾取微調 X 都改為 −2 cm（往車子左邊）。校正測試⑤手臂預設同步為 夾取 2°、最高 55°。舊專案自動改一次。</p>
@@ -540,7 +548,7 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
 <script>
 'use strict';
 /* ================= 基本工具 ================= */
-const VERSION = 'v1.9.34';
+const VERSION = 'v1.9.42';
 const STORE_KEY = 'tubit-planner-v1';
 const uid = () => Math.random().toString(36).slice(2, 9);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -1593,13 +1601,19 @@ const GEN = (function () {
         'float TRIM_PAN = 0;   // 雲台微調 °：手動模式按住 START＋R1（左）／R2（右）',
         'const float TRIM_FWD_STEP = ' + plain(fs) + ';   // 每按一下前後幾公分',
         'const float TRIM_PAN_STEP = ' + plain(ps) + ';   // 每按一下雲台幾度'];
+      const FT = !!(TU.field && need.goto && need.ps3);   // 現場簡易微調：夾取點、放置點各自左右／前後（學生在比賽現場用手把調，不用重新燒錄）
+      if (FT) T.push('float FT_GX = 0, FT_GY = 0;   // 現場微調・夾取點：X 往車子右邊＋、Y 往前＋（cm）；手動模式按住 START＋←→／↑↓',
+        'float FT_PX = 0, FT_PY = 0;   // 現場微調・放置點：X 往車子右邊＋、Y 往前＋（cm）；手動模式按住 START＋□○／△✕',
+        'const float FT_STEP = 0.5;   // 每按一下移動幾公分');
       if (need.ir) T.push('int irT[6] = {' + irDef + '};   // IR 目標值（前 後 左前 左後 右前 右後），IR 校正模式量測後更新', 'int irO[6] = {-1, -1, -1, -1, -1, -1};   // 沒有牆（開放空間）時的 IR 讀數；用來判斷「有牆／沒牆」差得夠不夠（黑色隔板反光弱）', 'bool irSaved = false;   // 是否做過 IR 校正模式（沒做過就略過自動流程的 IR 靠牆校正，避免用錯的目標值把車子轉歪）');
       if (need.bno) T.push('double bnoZero = 0;   // BNO 0° 的位置（BNO 校正模式按 A 設定）');
       T.splice(0, T.length).forEach(l => def.push(l));   // 全域變數放在宣告區（headingErr 等函式會用到）
       T.push('', 'void tuneLoad() {   // 開機讀取微調值', '  tunePrefs.begin("tubit", true);', '  TRIM_FWD = tunePrefs.getFloat("fwd", 0);', '  TRIM_PAN = tunePrefs.getFloat("pan", 0);');
+      if (FT) T.push('  FT_GX = tunePrefs.getFloat("gx", 0);', '  FT_GY = tunePrefs.getFloat("gy", 0);', '  FT_PX = tunePrefs.getFloat("px", 0);', '  FT_PY = tunePrefs.getFloat("py", 0);');
       if (need.ir) T.push('  for (int i = 0; i < 6; i++) irT[i] = tunePrefs.getInt((String("ir") + i).c_str(), irT[i]);', '  for (int i = 0; i < 6; i++) irO[i] = tunePrefs.getInt((String("io") + i).c_str(), -1);', '  irSaved = tunePrefs.getBool("irok", false);');
       if (need.bno) T.push('  bnoZero = tunePrefs.getDouble("bz", 0);');
       T.push('  tunePrefs.end();', '}', '', 'void tuneSave() {   // 儲存微調值', '  tunePrefs.begin("tubit", false);', '  tunePrefs.putFloat("fwd", TRIM_FWD);', '  tunePrefs.putFloat("pan", TRIM_PAN);');
+      if (FT) T.push('  tunePrefs.putFloat("gx", FT_GX);', '  tunePrefs.putFloat("gy", FT_GY);', '  tunePrefs.putFloat("px", FT_PX);', '  tunePrefs.putFloat("py", FT_PY);');
       if (need.ir) T.push('  for (int i = 0; i < 6; i++) tunePrefs.putInt((String("ir") + i).c_str(), irT[i]);', '  for (int i = 0; i < 6; i++) tunePrefs.putInt((String("io") + i).c_str(), irO[i]);', '  tunePrefs.putBool("irok", irSaved);');
       if (need.bno) T.push('  tunePrefs.putDouble("bz", bnoZero);');
       T.push('  tunePrefs.end();', '}', '',
@@ -1607,7 +1621,9 @@ const GEN = (function () {
         '  Serial.printf("TRIM FWD %.1f cm  PAN %.1f deg  %s\\n", TRIM_FWD, TRIM_PAN, msg);',
         '  display.clearDisplay();', '  display.setFont();', '  display.setTextSize(1);', '  display.setTextColor(SH110X_WHITE);', '  display.setCursor(0, 0);',
         '  display.println("TRIM  START+L/R");', '  display.print("FWD ");', '  display.print(TRIM_FWD, 1);', '  display.println(" cm");',
-        '  display.print("PAN ");', '  display.print(TRIM_PAN, 1);', '  display.println(" deg");', '  display.println(msg);', '  display.display();', '}', '',
+        '  display.print("PAN ");', '  display.print(TRIM_PAN, 1);', '  display.println(" deg");',
+        ...(FT ? ['  display.println("GRAB  X" + String(FT_GX, 1) + " Y" + String(FT_GY, 1));', '  display.println("PLACE X" + String(FT_PX, 1) + " Y" + String(FT_PY, 1));', '  Serial.printf("GRAB X %.1f Y %.1f  PLACE X %.1f Y %.1f\\n", FT_GX, FT_GY, FT_PX, FT_PY);'] : []),
+        '  display.println(msg);', '  display.display();', '}', '',
         'void trimBefore() {   // 到夾取／放置點：先套用微調');
       T.push('  if (TRIM_FWD != 0) ' + (need.goto ? 'goDist(0, TRIM_FWD, 300, 400);' : 'mtc.moveSCurve(0, TRIM_FWD, 0, 300, 400, -400, 0, 0);') + '   // 前後微調');
       if (panAdd) T.push('  if (TRIM_PAN != 0) ' + panAdd + '(TRIM_PAN);   // 雲台微調');
@@ -1619,7 +1635,7 @@ const GEN = (function () {
           'bool startClick() {   // START 放開才算「按一下」；按住 START 時按過 L1／L2／R1／R2／SELECT 是微調，不會啟動自動',
           '  bool s = Ps3.isConnected() && Ps3.data.button.start;',
           '  if (s) {', '    startHeld = true;',
-          '    if (Ps3.data.button.l1 || Ps3.data.button.l2 || Ps3.data.button.r1 || Ps3.data.button.r2 || Ps3.data.button.select) startCombo = true;',
+          '    if (Ps3.data.button.l1 || Ps3.data.button.l2 || Ps3.data.button.r1 || Ps3.data.button.r2 || Ps3.data.button.select' + (FT ? ' || Ps3.data.button.up || Ps3.data.button.down || Ps3.data.button.left || Ps3.data.button.right || Ps3.data.button.square || Ps3.data.button.circle || Ps3.data.button.triangle || Ps3.data.button.cross' : '') + ') startCombo = true;',
           '    return false;', '  }',
           '  if (startHeld) {', '    startHeld = false;', '    bool go = !startCombo;', '    startCombo = false;', '    return go;', '  }',
           '  return false;', '}', '',
@@ -1633,8 +1649,14 @@ const GEN = (function () {
           '  if (l2 && !pL2) { TRIM_FWD -= TRIM_FWD_STEP; changed = true; }',
           '  if (r1 && !pR1) { TRIM_PAN += TRIM_PAN_STEP; changed = true; }',
           '  if (r2 && !pR2) { TRIM_PAN -= TRIM_PAN_STEP; changed = true; }',
-          '  if (sl && !pSel) { TRIM_FWD = 0; TRIM_PAN = 0; changed = true; }',
+          '  if (sl && !pSel) { TRIM_FWD = 0; TRIM_PAN = 0;' + (FT ? ' FT_GX = 0; FT_GY = 0; FT_PX = 0; FT_PY = 0;' : '') + ' changed = true; }',
           '  pL1 = l1; pL2 = l2; pR1 = r1; pR2 = r2; pSel = sl;',
+          ...(FT ? ['  static bool pK[8] = {false, false, false, false, false, false, false, false};   // ← → ↑ ↓ □ ○ △ ✕ 上一次是否按著',
+            '  bool k[8] = {st && Ps3.data.button.left, st && Ps3.data.button.right, st && Ps3.data.button.up, st && Ps3.data.button.down,',
+            '               st && Ps3.data.button.square, st && Ps3.data.button.circle, st && Ps3.data.button.triangle, st && Ps3.data.button.cross};',
+            '  float *v[8] = {&FT_GX, &FT_GX, &FT_GY, &FT_GY, &FT_PX, &FT_PX, &FT_PY, &FT_PY};',
+            '  const float d[8] = {-FT_STEP, FT_STEP, FT_STEP, -FT_STEP, -FT_STEP, FT_STEP, FT_STEP, -FT_STEP};   // 夾取：← 左 → 右 ↑ 前 ↓ 後；放置：□ 左 ○ 右 △ 前 ✕ 後',
+            '  for (int i = 0; i < 8; i++) { if (k[i] && !pK[i]) { *v[i] += d[i]; changed = true; } pK[i] = k[i]; }'] : []),
           '  if (changed) {', '    tuneSave();', '    tuneShow("SAVED");', '    Ps3.setRumble(60, 120);', '  }', '}');
       }
       if (need.ir) {
@@ -1736,6 +1758,7 @@ function defaultKitsFor(robot){
   if (robot === 'energyA'){   // 比賽用預設（與目前燒錄的程式相同）：IR、現場微調、PS3（本隊手把）、一鍵自動＋出發前選邊
     K.on.ir = true;
     K.tune.on = true;
+    K.tune.field = true;   // 現場簡易微調（夾取／放置左右前後）
     K.ps3.mac = TEAM_PS3_MAC;
   }
   if (robot !== 'customArm' && robot !== 'customShooter'){
@@ -1785,7 +1808,7 @@ function newState(game, robot, W, H){
   const f = game === 'energy' ? presetEnergy() : game === 'target' ? presetTarget() : presetCustom(W || 200, H || 200);
   const st = {
     v:1, kv:2, game, rtype:robot, field:{W:f.W, H:f.H}, objects:f.objects,
-    robot: {w:20, l:20, clawOff:15, placeTol:2, irGap:10, irCheck:true, irRoute:'guard', fastPlan:true, arcPlan:false, panLock:true, boxGap:1.5, boxMargin:2, grabDxRed:-3, grabDyRed:0, grabDxBlue:-3, grabDyBlue:0, placeDxRed:-8, placeDyRed:0, placeDxBlue:-8, placeDyBlue:0, irMaxCm:4, barrierGap:4, start: game === 'energy' ? Object.assign({}, START_POS.A) : {x:Math.round(f.W / 2), y:30, h:0}},
+    robot: {w:20, l:20, clawOff:15, placeTol:2, irGap:10, irCheck:true, irRoute:'guard', fastPlan:true, arcPlan:false, panLock:true, boxGap:1.5, boxMargin:2, grabDxRed:-3, grabDyRed:0, grabDxBlue:-3, grabDyBlue:0, placeDxRed:-10, placeDyRed:0, placeDxBlue:-10, placeDyBlue:0, placeIR:false, placePre:4, placeLine:true, placeLineBack:0.9, placeLineGap:2, placeFwd:0.5, fastLine:true, fastStart:true, irMaxCm:4, barrierGap:4, start: game === 'energy' ? Object.assign({}, START_POS.A) : {x:Math.round(f.W / 2), y:30, h:0}},
     task: {grab:{x:78, y:172}, place:{x:6, y:103}},   // 自動任務的絕對位置（紅方場地座標）：夾取點、放置點（觸發閘門裝置上）；藍方自動換算 180° 對稱
     robotB: game === 'energy' ? {on:true, x:17, y:280, h:180, w:20, l:20} : {on:false, x:Math.round(f.W / 2) + 16, y:30, h:0, w:24, l:24},   // 同時出發的另一台（手動）
     motion:{vm:600, a:800, ad:800, wheelD:6, bnoGoto:true},
@@ -1877,12 +1900,45 @@ function upgradeState(o){
     if (o.robot){ if (num(o.robot.boxGap, 1) === 1) o.robot.boxGap = 1.5; if (o.robot.grabDxBlue === undefined) Object.assign(o.robot, {grabDxRed:0, grabDyRed:0, grabDxBlue:1, grabDyBlue:0}); }
     o.steps = []; o.boxFix1928 = true; o.boxFix1929 = true;
   }
+  if (o.rtype === 'energyA' && !o.fix1942){   // v1.9.42：只加快 P4（長距離），其他不動
+    if (o.robot) o.robot.fastLine = true;
+    o.steps = []; o.fix1942 = true;
+  }
+  if (o.rtype === 'energyA' && !o.fix1941){   // v1.9.41：P5 離盒 1.5 → 2.0 cm（P6 往前 0.5 cm 後離盒 1.5 cm，同成功版）；其他不動
+    if (o.robot){ o.robot.placeLineGap = 2; o.robot.placeFwd = 0.5; o.robot.placeLine = true; if (o.robot.placeLineBack === undefined) o.robot.placeLineBack = 0.9; }
+    o.steps = []; o.fix1941 = true; o.fix1940 = true; o.fix1938 = true; o.fix1937 = true;
+  }
+  if (o.rtype === 'energyA' && !o.fix1940){   // v1.9.40：P5 離盒 1.5 cm、再往前 0.5 cm 到 P6 放置（兩段式，同成功版）；P4 對齊 P5
+    if (o.robot){ o.robot.placeLineGap = 1.5; o.robot.placeFwd = 0.5; o.robot.placeLine = true; if (o.robot.placeLineBack === undefined) o.robot.placeLineBack = 0.9; }
+    o.steps = []; o.fix1940 = true; o.fix1938 = true; o.fix1937 = true;
+  }
+  if (o.rtype === 'energyA' && !o.fix1938){   // v1.9.38：只改 P4（對齊點）離盒子再遠 0.9 cm；其他不動
+    if (o.robot) o.robot.placeLineBack = 0.9;
+    o.steps = []; o.fix1938 = true; o.fix1937 = true; if (o.robot) o.robot.placeLine = true;
+  }
+  if (o.rtype === 'energyA' && !o.fix1937){   // v1.9.37：放置改為 P4 對齊放置點、直線橫移直接到放置點（P5＝P6），避免斜切擦到盒角；其他不動
+    if (o.robot) o.robot.placeLine = true;
+    o.steps = []; o.fix1937 = true;
+  }
+  if (o.rtype === 'energyA' && !o.fix1936){   // v1.9.36：開啟現場簡易微調（夾取／放置左右前後，手把調整、存快閃記憶體）；路線不變
+    if (o.kits && o.kits.tune) o.kits.tune.field = true;
+    o.fix1936 = true;
+  }
+  if (o.rtype === 'energyA' && !o.fix1935){   // v1.9.35：前半段加速；放置不再用前方 IR 反覆偵測（會後退、撞盒子），直接到盒前再往左 2 cm（−8 → −10）
+    const r = o.robot || {};
+    if (r.placeIR === undefined) r.placeIR = false;
+    if (r.placePre === undefined) r.placePre = 4;
+    if (r.fastStart === undefined) r.fastStart = true;
+    if (num(r.placeDxRed, -8) === -8) r.placeDxRed = -10;
+    if (num(r.placeDxBlue, -8) === -8) r.placeDxBlue = -10;
+    o.steps = []; o.fix1935 = true;
+  }
   if (o.rtype === 'energyA' && !o.fix1934){   // v1.9.34：只改微調值（夾取再往左 1 cm → −3，放置再往左 3 cm → −8），路線與其他設定不動
     const r = o.robot || {};
     if (num(r.grabDxRed, -2) === -2) r.grabDxRed = -3;
     if (num(r.grabDxBlue, -2) === -2) r.grabDxBlue = -3;
-    if (num(r.placeDxRed, -5) === -5) r.placeDxRed = -8;
-    if (num(r.placeDxBlue, -5) === -5) r.placeDxBlue = -8;
+    if (num(r.placeDxRed, -5) === -5) r.placeDxRed = -10;
+    if (num(r.placeDxBlue, -5) === -5) r.placeDxBlue = -10;
     o.fix1934 = true;
   }
   if (o.rtype === 'energyA' && !o.fix1933){   // v1.9.33：手臂依實測 夾取 2°／搬運 55°；PS3 手把補上手臂按鍵（v1.9.23 開啟 PS3 時漏補，手動模式只能移動）
@@ -1897,12 +1953,12 @@ function upgradeState(o){
     if (o.kits && o.kits.arm){ if (num(o.kits.arm.down, 0) === 0) o.kits.arm.down = 2; if ([65, 80, 120].includes(num(o.kits.arm.up, 65))) o.kits.arm.up = 55; }
     if (o.robot){ o.robot.grabDxRed = -3; o.robot.grabDxBlue = -3; }
     o.steps = []; o.fix1932 = true; o.fix1931 = true; o.liftFix1930 = true;
-    if (o.robot && o.robot.placeDxRed === undefined) Object.assign(o.robot, {placeDxRed:-8, placeDyRed:0, placeDxBlue:-8, placeDyBlue:0});
+    if (o.robot && o.robot.placeDxRed === undefined) Object.assign(o.robot, {placeDxRed:-10, placeDyRed:0, placeDxBlue:-10, placeDyBlue:0});
   }
   if (o.game === 'energy' && !o.fix1931){   // v1.9.31：手臂抬到 120°（80° 夾爪離地只有 7.5 cm）、藍方夾取改左 1 cm、盒前左移 5 cm、P1→P2 不停車
     if (o.arm && [65, 80].includes(num(o.arm.liftUp, 65))) o.arm.liftUp = 120;
     if (o.kits && o.kits.arm && [65, 80].includes(num(o.kits.arm.up, 65))) o.kits.arm.up = 120;
-    if (o.robot){ if (num(o.robot.grabDxBlue, 1) === 1) o.robot.grabDxBlue = -1; if (o.robot.placeDxRed === undefined) Object.assign(o.robot, {placeDxRed:-8, placeDyRed:0, placeDxBlue:-8, placeDyBlue:0}); }
+    if (o.robot){ if (num(o.robot.grabDxBlue, 1) === 1) o.robot.grabDxBlue = -1; if (o.robot.placeDxRed === undefined) Object.assign(o.robot, {placeDxRed:-10, placeDyRed:0, placeDxBlue:-10, placeDyBlue:0}); }
     o.steps = []; o.fix1931 = true; o.liftFix1930 = true;
   }
   if (o.game === 'energy' && !o.liftFix1930){   // v1.9.30：夾到後手臂抬高到 80°（65° 放到 8 cm 高的盒子時高度不夠）
@@ -2409,7 +2465,7 @@ function autoPlanCore(S){
   }
   // 盒子在牆角、車子離牆只有 1～2 cm：先到側邊 IR 校正點把左右位置校正準，再短距離到盒子前，避免累積誤差撞牆或放偏
   const pb = pa.cpb || null;
-  let viaCp = '';
+  let viaCp = '', lined = false;
   if (pb){
     const l1 = fold(from, pb.l1); l1.forEach(q => steps.push(mv(q, false)));   // 側邊 IR 靠牆會校正車頭，到點不用先 BNO 轉正
     steps.push(alignAt(pb.cp)); usedKits.ir = true;
@@ -2417,13 +2473,40 @@ function autoPlanCore(S){
     viaCp = `先到 (${fmt(pb.cp.x)}, ${fmt(pb.cp.y)}) 做 IR ${IR_SIDE_NAME[pb.cp.main]}${IR_SUB_NAME[pb.cp.sub]}靠牆校正左右位置，再走 ${fmt(legLen(pb.cp, pb.l2))} cm 到盒子前；`;
   } else {
     if (cpIR) viaCp = '附近沒有能校正左右位置的牆（場地外框是鋁擠條不算），左右位置靠 BNO＋編碼器；';
-    const lg = fold(from, pa.leg); lg.forEach((q, i) => steps.push(mv(q, i === lg.length - 1)));
+    const lg = fold(from, pa.leg);
+    if (guard && S.robot.placeIR === false && S.robot.placeLine !== false){   // v1.9.37：盒前點＝放置點（P5＝P6），前一點先對齊放置點再直線橫移過去，車頭離盒距離全程和放置時一樣，不會斜切擦到盒角
+      const Fq = fwdVec(pa.fin.h), lineGap = Math.max(0.5, num(S.robot.placeLineGap, pa.gap)), fwd = Math.max(0, num(S.robot.placeFwd, 0));   // v1.9.40：P5 停在離盒 lineGap cm，再往前 fwd cm 到 P6 放置（同成功版的兩段式）
+      const p5 = {x:Math.round((pa.fin.x + Fq.x * (pa.gap - lineGap)) * 10) / 10, y:Math.round((pa.fin.y + Fq.y * (pa.gap - lineGap)) * 10) / 10, h:pa.fin.h};
+      const p6 = fwd > 0.05 ? {x:Math.round((p5.x + Fq.x * fwd) * 10) / 10, y:Math.round((p5.y + Fq.y * fwd) * 10) / 10, h:p5.h} : null;
+      const fin = p5, R = rightVec(fin.h), k = lg.length - 2, base = k >= 0 ? lg[k] : from, before = k >= 1 ? lg[k - 1] : from;
+      const Fb = fwdVec(fin.h), back = Math.max(0, num(S.robot.placeLineBack, 0.9));   // v1.9.38：對齊點離盒子再遠 back cm（實測兩台車橫移都會碰到放置台）
+      const t = (base.x - fin.x) * R.x + (base.y - fin.y) * R.y, A = {x:Math.round((fin.x + R.x * t - Fb.x * back) * 10) / 10, y:Math.round((fin.y + R.y * t - Fb.y * back) * 10) / 10, h:fin.h};
+      const pad0 = S._pad;
+      if (pad0 !== undefined && back) S._pad = Math.min(pad0, Math.max(3, pad0 - back));   // 對齊點往外移 back cm，P3→P4 離隔板可少 back cm（至少 3 cm）
+      const okA = Math.abs(t) > 5 && segClear(S, before, mv(A, false));
+      if (pad0 !== undefined) S._pad = Math.min(pad0, 1);
+      const okF = okA && segClear(S, A, mv(fin, false)) && (!p6 || segClear(S, fin, mv(p6, false)));
+      if (pad0 !== undefined) S._pad = pad0;
+      if (okF){
+        for (let i = 0; i < k; i++) steps.push(mv(lg[i], false));
+        steps.push(Object.assign(mv(A, false), {placeLine:true}));
+        steps.push(Object.assign(mv(fin, false), {placeFin:true, guard:false, fix:false}));
+        if (p6) steps.push(Object.assign(mv(p6, false, 'fin'), {placeFin:true, guard:false, fix:false}));   // 慢速往前 fwd cm 再放置
+        lined = true;
+        viaCp += `先到 (${fmt(A.x)}, ${fmt(A.y)}) 和放置點對齊${back ? `（離盒子多留 ${fmt(back)} cm）` : ''}，再直線橫移 ${fmt(Math.abs(t))} cm 到盒前 ${fmt(lineGap)} cm${p6 ? `，再慢速往前 ${fmt(fwd)} cm（離盒 ${fmt(Math.max(0, lineGap - fwd))} cm）放置` : ''}；`;
+      }
+    }
+    if (!lined){
+      lg.forEach((q, i) => steps.push(mv(q, i === lg.length - 1)));
+      { const t = steps[steps.length - 1]; t.placeFin = true; if (S.robot.placeIR === false){ t.guard = false; t.fix = false; } }   // 盒前那一點：可左右微調；不偵測時也不開 IR 防撞
+    }
   }   // 到盒子前 10 cm（車頭正對盒子），到點 BNO 轉正
-  if (useIR){ steps.push({id:uid(), type:'align', main:'IR_NONE', sub:'IR_UP', timeout:3, confirm:fast ? 0.3 : 0.5, reset:true, rx:pa.pre.x, ry:pa.pre.y, rh:pa.pre.h}); usedKits.ir = true; }
-  steps.push(mv(pa.fin, false, 'fin'));   // 直直往前靠近盒子
+  if (useIR && S.robot.placeIR !== false){ steps.push({id:uid(), type:'align', main:'IR_NONE', sub:'IR_UP', timeout:3, confirm:fast ? 0.3 : 0.5, reset:true, rx:pa.pre.x, ry:pa.pre.y, rh:pa.pre.h}); usedKits.ir = true; }
+  if (!lined) steps.push(Object.assign(mv(pa.fin, false, 'fin'), {placeFin:true}));   // 直直往前靠近盒子
   push(fast ? quick(newStep('clawOpen'), 300) : newStep('clawOpen'));   // 盒子高 8 cm：手臂抬著直接張爪，齒輪落在盒子上
   const fName = {90:'右側', '-90':'左側', 180:'上方', 0:'下方'}[pa.h] || '';
-  msgs.push(`放置：${viaCp}從盒子${fName}正面靠近，先停在盒子前 ${fmt(num(S.robot.irGap, 10))} cm${useIR ? '，前方 IR 確認看到盒子並校正距離' : ''}，再直直前進 ${fmt(pa.d)} cm 到盒子前 ${fmt(pa.gap)} cm；手臂不降、不旋轉，直接張爪，夾爪中心在盒子上 (${fmt(pa.claw.x)}, ${fmt(pa.claw.y)})`);
+  if (lined) msgs.push(`放置：${viaCp}手臂不降、不旋轉，直接張爪，夾爪中心在盒子上 (${fmt(pa.claw.x)}, ${fmt(pa.claw.y)})`);
+  else msgs.push(`放置：${viaCp}從盒子${fName}正面靠近，先停在盒子前 ${fmt(pa.gap + pa.d)} cm${useIR && S.robot.placeIR !== false ? '，前方 IR 確認看到盒子並校正距離' : ''}，再直直前進 ${fmt(pa.d)} cm 到盒子前 ${fmt(pa.gap)} cm；手臂不降、不旋轉，直接張爪，夾爪中心在盒子上 (${fmt(pa.claw.x)}, ${fmt(pa.claw.y)})`);
   if (guard) msgs.push('快速直達：出發不做 IR 校正、不繞去靠牆，直接到夾取點、再直接到放置盒前；長距離移動時前方 IR 防撞（比離牆 10 cm 更近就停車），到盒子前用前方 IR 確認距離再張爪');
   if (fast) msgs.push('省時規劃：長距離加速、到點減速放慢；手臂全程不旋轉（夾取、放置都車頭正對目標）');
   msgs.push('手臂順序：出發先抬起＋張開 → 夾取點 車頭正對齒輪 下降、合爪、抬起 → 放置點 車頭正對盒子 直接張爪');
@@ -2438,7 +2521,7 @@ function autoPlanCore(S){
       const b = steps[i + 1];
       const toPre = steps[i + 2] && steps[i + 2].type === 'align';   // 下一點就是放置盒前 10 cm：放置姿態本來就只離牆 2 cm，直線檢查用 2 cm
       const pad0 = S._pad; if (toPre && pad0 !== undefined) S._pad = Math.min(pad0, 2);
-      const ok = b && b.type === 'move' && a.guard && !a.grabFin && Math.abs(normDeg(a.h - b.h)) < 0.5 && Math.hypot(a.x - p.x, a.y - p.y) > 1 && segClear(S, p, b);
+      const ok = b && b.type === 'move' && a.guard && !a.grabFin && !a.placeLine && Math.abs(normDeg(a.h - b.h)) < 0.5 && Math.hypot(a.x - p.x, a.y - p.y) > 1 && segClear(S, p, b);
       if (pad0 !== undefined) S._pad = pad0;
       if (ok){ steps.splice(i, 1); i--; cut++; continue; }
       p = {x:a.x, y:a.y, h:a.h};
@@ -2451,10 +2534,14 @@ function autoPlanCore(S){
       const b = steps[i + 1];
       if (b && b.type === 'move' && a.guard && Math.abs(normDeg(a.h - q0.h)) < 0.5 && Math.abs(normDeg(b.h - a.h)) < 0.5){
         const d1 = Math.atan2(a.y - q0.y, a.x - q0.x), d2 = Math.atan2(b.y - a.y, b.x - a.x), turn = Math.abs(normDeg((d2 - d1) * 180 / Math.PI));
-        if (Math.hypot(a.x - q0.x, a.y - q0.y) > 10 && Math.hypot(b.x - a.x, b.y - a.y) > 5 && turn < 45){ a.flowOut = 600; b.flowIn = 600; nf++; }
+        if (Math.hypot(a.x - q0.x, a.y - q0.y) > 10 && Math.hypot(b.x - a.x, b.y - a.y) > 5 && turn < 45){ a.flowOut = 800; b.flowIn = 800; nf++; }
       }
       q0 = {x:a.x, y:a.y, h:a.h};
     }
+    if (S.robot.fastStart !== false){   // 前半段（出發 → 夾取點）加快：長距離 2000／4500／3000，到夾取點 1000／2000／1200
+      for (const st0 of steps){ if (st0.type !== 'move') continue; if (st0.grabFin){ Object.assign(st0, {vm:1000, a:2000, ad:1200}); break; } Object.assign(st0, {vm:2000, a:4500, ad:3000}); }
+    }
+    if (S.robot.fastLine !== false){ const pl = steps.find(x => x.type === 'move' && x.placeLine); if (pl){ Object.assign(pl, {vm:2000, a:4500, ad:3000}); msgs.push('省時：P3→P4（轉向後到對齊點的長距離）加快到 2000／4500／3000（和出發 P1 相同、已實測穩定）；橫移到放置台、放置、夾取維持原速，確保準確'); } }   // v1.9.42
     if (nf) msgs.push(`不停車：${nf} 處轉角不停下來，直接接下一段（夾取前那段）`);
   }
   return {steps, msgs, usedKits, ok:true};
@@ -2471,7 +2558,7 @@ function faceApproach(S, cp, target, off){   // IR 校正點 cp：原地轉成�
   return {pose, d:Math.round((D - off) * 10) / 10};
 }
 function boxApproach(S, from, box, pt, off, useIR){   // 放置盒：車頭正對盒子某一面，前方 IR 停在 irGap，再直走到離盒子 gap cm，夾爪中心在盒子上
-  const L = num(S.robot.l, 20), gap = Math.max(0.5, num(S.robot.boxGap, 1)), ir = num(S.robot.irGap, 10), m = Math.max(1, num(S.robot.boxMargin, 2));   // m：夾爪（齒輪）中心離盒邊至少 m cm，齒輪重心在盒子上才放得穩
+  const L = num(S.robot.l, 20), gap = Math.max(0.5, num(S.robot.boxGap, 1)), ir = S.robot.placeIR === false ? Math.max(gap + 2, num(S.robot.placePre, 4)) : num(S.robot.irGap, 10), m = Math.max(1, num(S.robot.boxMargin, 2));   // placeIR 關閉：不偵測，盒前只停 placePre cm 再慢速靠近   // m：夾爪（齒輪）中心離盒邊至少 m cm，齒輪重心在盒子上才放得穩
   const faces = [{h:90, n:{x:1, y:0}, p:{x:box.x + box.w}}, {h:-90, n:{x:-1, y:0}, p:{x:box.x}}, {h:180, n:{x:0, y:1}, p:{y:box.y + box.h}}, {h:0, n:{x:0, y:-1}, p:{y:box.y}}];
   const inBox = c => c.x >= box.x + m - 1e-9 && c.x <= box.x + box.w - m + 1e-9 && c.y >= box.y + m - 1e-9 && c.y <= box.y + box.h - m + 1e-9;
   let best = null;
@@ -2759,17 +2846,21 @@ function planActs(S){
       const vm = Math.abs(num(s.vm, S.motion.vm) || S.motion.vm), a = Math.abs(num(s.a, S.motion.a) || S.motion.a), ad = Math.abs(num(s.ad, a) || a);
       const gd = s.guard && S.kits.on.ir && S.kits.tune && S.kits.tune.on && Math.hypot(to.x - p.x, to.y - p.y) > 1;   // 原地轉向不用防撞
       const sideOn = S.kits.mode && S.kits.mode.on && S.kits.mode.side, R0 = S.robot;
-      const tr = k => num(R0[k], 0), kind = s.grabFin ? 'grab' : s.placeFin ? 'place' : '';   // 夾取／放置微調：直接算進目標座標，一次走到修正後的點
+      const tr = k => num(R0[k], 0), kind = s.grabFin ? 'grab' : s.placeFin ? 'place' : s.placeLine ? 'pline' : '';   // pline：放置前的對齊點，只跟放置點的「前後」微調（左右不跟）   // 夾取／放置微調：直接算進目標座標，一次走到修正後的點
       const gdx = s.grabFin ? [tr('grabDxRed'), tr('grabDxBlue')] : [0, 0], gdy = s.grabFin ? [tr('grabDyRed'), tr('grabDyBlue')] : [0, 0];
       const sv = pair => pair[0] === pair[1] || !sideOn ? g1(pair[0]) : `(sideBlue ? ${g1(pair[1])} : ${g1(pair[0])})`;
       const shift = [];
       const dq = (dx, dy) => { const Rv = rightVec(to.h), Fv = fwdVec(to.h), q2 = startFrame(S, {x:to.x + Rv.x * dx + Fv.x * dy, y:to.y + Rv.y * dx + Fv.y * dy, h:to.h}); return {x:q2.x - q.x, y:q2.y - q.y}; };   // 車頭方向的微調（右＋、前＋）換成定點座標
-      const tRed = kind ? dq(tr(kind + 'DxRed'), tr(kind + 'DyRed')) : {x:0, y:0}, tBlue = kind ? dq(tr(kind + 'DxBlue'), tr(kind + 'DyBlue')) : {x:0, y:0};
+      const tRed = kind === 'pline' ? dq(0, tr('placeDyRed')) : kind ? dq(tr(kind + 'DxRed'), tr(kind + 'DyRed')) : {x:0, y:0}, tBlue = kind === 'pline' ? dq(0, tr('placeDyBlue')) : kind ? dq(tr(kind + 'DxBlue'), tr(kind + 'DyBlue')) : {x:0, y:0};
       const gx = [tRed.x, tBlue.x].map(v => Math.round(v * 10) / 10), gy = [tRed.y, tBlue.y].map(v => Math.round(v * 10) / 10);
-      const adj = (v, pair) => !kind || (!pair[0] && !pair[1]) ? g1(v) : `${g1(v)} + ${sv(pair)}`;
+      const adj0 = (v, pair) => !kind || (!pair[0] && !pair[1]) ? g1(v) : `${g1(v)} + ${sv(pair)}`;
+      const ftOn = kind && S.kits.tune && S.kits.tune.on && S.kits.tune.field && S.kits.on.ps3;   // 現場微調（手把 START＋方向鍵／□○△✕），燒錄後不用改程式
+      const uA = ftOn ? dq(1, 0) : null, uB = ftOn ? dq(0, 1) : null, fx = kind === 'grab' ? ['FT_GX', 'FT_GY'] : ['FT_PX', 'FT_PY'];
+      const term = (c, n) => Math.abs(c) < 0.01 ? '' : (c > 0 ? ' + ' : ' - ') + (Math.abs(Math.abs(c) - 1) < 0.01 ? n : `${g1(Math.abs(c))} * ${n}`);
+      const adj = (v, pair, ax) => adj0(v, pair) + (ftOn ? (kind === 'pline' ? '' : term(uA[ax], fx[0])) + term(uB[ax], fx[1]) : '');
       const vs = num(s.flowIn, 0), ve = num(s.flowOut, 0);
       const settle = S.kits.on.bno ? [ve ? 'mtc.setHeadingSettle(8.0, 0, 30);   // 不停車：到點不等車頭轉正，直接接下一段' : s.guard ? 'mtc.setHeadingSettle(3.0, 30, 300);   // 長距離：車頭差 3° 內就走下一段（省時）' : 'mtc.setHeadingSettle(1.0, 80, 1000);   // 到點：車頭轉正到 1° 內'] : [];
-      const acts = [{type:'raw', need:{goto:true, mtc:true, speed:true}, lines:[...settle, ...(gd ? ['moveGuard = irGuard;   // 長距離快速移動：前方 IR 看到牆太近就停，避免撞牆'] : []), (vs || ve ? `goToV(${adj(q.x, gx)}, ${adj(q.y, gy)}, ${g1(rot)}, autoV(${vm}), autoV(${a}), autoV(${ad}), autoV(${vs}), autoV(${ve}));   // ${ve ? '不停車接下一段' : '接續上一段'}，` : `goTo(${adj(q.x, gx)}, ${adj(q.y, gy)}, ${g1(rot)}, autoV(${vm}), autoV(${a})${ad !== a ? `, autoV(${ad})` : ''});   // `) + `定點座標 (${fmt(q.x)}, ${fmt(q.y)})${rot ? '，車頭' + (rot > 0 ? '右' : '左') + '轉 ' + fmt(Math.abs(rot)) + '°' : ''}`, ...(gd ? ['moveGuard = nullptr;'] : []), ...shift]}];
+      const acts = [{type:'raw', need:{goto:true, mtc:true, speed:true}, lines:[...settle, ...(gd ? ['moveGuard = irGuard;   // 長距離快速移動：前方 IR 看到牆太近就停，避免撞牆'] : []), (vs || ve ? `goToV(${adj(q.x, gx, 'x')}, ${adj(q.y, gy, 'y')}, ${g1(rot)}, autoV(${vm}), autoV(${a}), autoV(${ad}), autoV(${vs}), autoV(${ve}));   // ${ve ? '不停車接下一段' : '接續上一段'}，` : `goTo(${adj(q.x, gx, 'x')}, ${adj(q.y, gy, 'y')}, ${g1(rot)}, autoV(${vm}), autoV(${a})${ad !== a ? `, autoV(${ad})` : ''});   // `) + `定點座標 (${fmt(q.x)}, ${fmt(q.y)})${rot ? '，車頭' + (rot > 0 ? '右' : '左') + '轉 ' + fmt(Math.abs(rot)) + '°' : ''}`, ...(gd ? ['moveGuard = nullptr;'] : []), ...shift]}];
       if (s.fix) acts.push(...(S.kits.on.bno ? [{type:'bnoTurn', deg:bnoTarget(S, to.h), tol:num(S.turn.tol, 1), timeout:num(S.turn.timeout, 3)}] : []));
       out.push({type:'group', label:`===== ${LB[i]} 前往 (${fmt(to.x)}, ${fmt(to.y)}) 車頭 ${fmt(to.h)}° =====`, acts});
       p = to; return;
@@ -2897,6 +2988,40 @@ function genCode(S, sim){
     S.kits.mode.on && S.kits.mode.side && S.kits.on.ps3 ? '// 出發前選邊：手動模式按 SELECT 選邊（第 1 下紅方、再按換藍方，OLED 顯示）→ 按 START 執行自動 → 做完自動回手動；下次自動要再按 SELECT 選邊，只按 SELECT 不會啟動' :
     S.kits.mode.on ? '// 一鍵自動流程在 runAuto()；按自動鍵執行，' + ({stay:'做完停在 AUTO OK，經裁判確認後按手動鍵切回遙控', repeat:'會重複執行直到按手動鍵', back:'做完立刻回手動遙控（比賽建議改成「停在自動」）'}[S.kits.mode.after] || '做完停在 AUTO OK') : '// 按控制板 A 鍵執行路徑'];
   const lines = r.code.split('\n');
+  if (S.kits.tune && S.kits.tune.on && S.kits.tune.field && S.kits.on.ps3){   // 按住 START 是現場微調：手動遙控的按鍵動作先不做
+    const a = lines.findIndex(l => l.startsWith('void remoteControl()'));
+    for (let i = a + 1; a >= 0 && i < lines.length && lines[i] !== '}'; i++) lines[i] = lines[i].replace(/^(\s*)if \(Ps3\.data\.button\./, '$1if (!Ps3.data.button.start && Ps3.data.button.');
+  }
+  if (S.kits.tune && S.kits.tune.on && S.kits.tune.field && S.kits.on.ps3 && S.kits.on.arm && lines.some(l => l.startsWith('void tuneKeys()'))){   // v1.9.39：現場微調・手臂角度（每台車伺服馬達角度不同）：START＋按下右搖桿 +1°、左搖桿 −1°，所有手臂角度一起平移
+    const A0 = S.kits.arm || {}, UP = Math.round(num(A0.up, 65)), DN = Math.round(num(A0.down, 0));
+    const at = (pre, add) => { const i = lines.findIndex(l => l.startsWith(pre)); if (i >= 0) lines.splice(i + 1, 0, ...add); return i >= 0; };
+    for (let i = 0; i < lines.length; i++) lines[i] = lines[i].replace(/ATARM_LiftSet\((\d+(?:\.\d+)?),/g, 'ATARM_LiftSet($1 + FT_ARM,');   // 自動流程的手臂角度都加上微調
+    { const i = lines.findIndex(l => /^\s*ATARM_SetLiftRange\(/.test(l)); if (i >= 0) lines[i] = lines[i].replace(/ATARM_SetLiftRange\([^)]*\);.*$/, 'armApply(false);   // 手臂升降範圍 ' + DN + '～' + UP + '°（含現場手臂角度微調）'); }
+    at('float FT_PX = 0, FT_PY = 0;', ['int FT_ARM = 0;   // 現場微調・手臂角度（°）：夾取、搬運角度一起加減；手動模式按住 START＋按下右搖桿（+1°）／左搖桿（−1°）']);
+    at('  FT_PY = tunePrefs.getFloat("py", 0);', ['  FT_ARM = tunePrefs.getInt("arm", 0);']);
+    at('  tunePrefs.putFloat("py", FT_PY);', ['  tunePrefs.putInt("arm", FT_ARM);']);
+    at('  display.println("PLACE X" + String(FT_PX, 1) + " Y" + String(FT_PY, 1));', ['  display.println("ARM   " + String(' + UP + ' + FT_ARM) + " (" + String(FT_ARM >= 0 ? "+" : "") + String(FT_ARM) + ") deg");', '  Serial.printf("ARM UP %d deg (%+d)\\n", ' + UP + ' + FT_ARM, FT_ARM);']);
+    { const i = lines.findIndex(l => l.startsWith('void trimBefore()')); if (i >= 0) lines.splice(i, 0,
+      'void armApply(bool show) {   // 套用手臂角度微調：升降範圍跟著平移（手動模式也不會超過）；show＝手臂移到搬運高度給你看',
+      '  ATARM_SetLiftRange(max(0, ' + DN + ' + FT_ARM), ' + UP + ' + FT_ARM);',
+      '  if (show) ATARM_LiftSet(' + UP + ' + FT_ARM, 0);',
+      '}', ''); }
+    for (let i = 0; i < lines.length; i++){
+      if (lines[i].includes('|| Ps3.data.button.cross) startCombo = true;')) lines[i] = lines[i].replace('|| Ps3.data.button.cross) startCombo = true;', '|| Ps3.data.button.cross || Ps3.data.button.l3 || Ps3.data.button.r3) startCombo = true;');
+      if (lines[i].includes(' FT_PX = 0; FT_PY = 0; changed = true; }')) lines[i] = lines[i].replace(' FT_PX = 0; FT_PY = 0; changed = true; }', ' FT_PX = 0; FT_PY = 0; FT_ARM = 0; changed = true; }');
+    }
+    { const k = lines.findIndex(l => l.startsWith('void tuneKeys()'));
+      const c = lines.findIndex((l, j) => j > k && l === '  bool changed = false;'); if (c > 0) lines.splice(c + 1, 0, '  int armWas = FT_ARM;');
+      const e = lines.findIndex((l, j) => j > k && l === '  if (changed) {');
+      if (e > 0) lines.splice(e, 0,
+        '  static bool pL3 = false, pR3 = false;   // 手臂角度：按住 START＋按下右搖桿 +1°、左搖桿 −1°（最多 ±20°）',
+        '  bool l3 = st && Ps3.data.button.l3, r3 = st && Ps3.data.button.r3;',
+        '  if (r3 && !pR3 && FT_ARM < 20) FT_ARM++;',
+        '  if (l3 && !pL3 && FT_ARM > -20) FT_ARM--;',
+        '  pL3 = l3; pR3 = r3;',
+        '  if (FT_ARM != armWas) { armApply(true); changed = true; }   // 手臂馬上移到新的搬運高度，量量看夠不夠高');
+    }
+  }
   lines.splice(1, 0, ...info);
   return lines.join('\n');
 }

@@ -32,6 +32,8 @@
       <a href="#target">標靶爭奪賽</a>
       <a href="#calc">計分試算</a>
       <a href="#planner">全國賽路徑規劃器</a>
+      <a href="#success">機器人 A 實測成功版</a>
+      <a href="#fieldtune">現場微調 SOP</a>
       <a href="#open">開源場地資料</a>
       <a href="#pingtung">屏東區賽（6/6）</a>
     </aside>
@@ -238,12 +240,50 @@
         <p>物資能源爭霸戰的<b>機器人 A 必須全自動</b>。路徑規劃器用 1 cm 座標畫出路徑與到點動作（夾取、放置、抬升、轉正…），自動產生可貼到兔比積木 Arduino IDE 燒錄的程式碼，並檢查車體尺寸與碰撞。</p>
         <ul>
           <li>內建 <b>物資能源爭霸戰 300×300</b> 與 <b>標靶爭奪賽 360×360</b> 場地，也可自訂空白場地。</li>
-          <li>第一次使用先燒錄「軸向測試程式」：車子應依序前進 20 cm、右移 20 cm、逆時針轉 90°。</li>
-          <li>比賽時按 A 執行自動路線，完成後舉手報告，裁判確認後按 B 切換遙控。</li>
+          <li>第一次使用先到<a href="generator.html#cal">程式產生器「校正測試」</a>做馬達方向、移動距離、BNO、IR、手臂、PS3 校正。</li>
+          <li>比賽時用 PS3 手把：SELECT 選紅／藍方 → START 執行自動 → 做完自動回手動遙控。</li>
         </ul>
         <div class="btns"><a class="btn gear" href="race-planner/">開啟 2026全國競賽路徑規劃器</a><a class="btn" href="race-planner/README.md">使用說明</a><a class="btn" href="generator.html#race">程式產生器：競賽自動化</a></div>
       </div>
       <div class="note warn"><b>場地物件位置</b>規劃器的場地座標由實施計畫圖面換算，實際以大會公告圖面與現場為準。</div>
+
+      <h2 id="success">機器人 A 實測成功版（物資能源爭霸戰）</h2>
+      <div class="card">
+        <p>2026/10/19 實測：<b>連續 3 次完成</b>夾取齒輪 → 放上觸發閘門裝置，<b>約 17 秒</b>。路線：出發（車身對齊邊線）→ 快速直下 → 不停車接到夾取點 → 夾取 → 原地右轉 → 快速到放置盒前 4 cm → 慢速靠近張爪。</p>
+        <dl class="kv">
+          <dt>出發擺車</dt><dd>紅方 (65, 288.5) 車頭朝下：車子靠場地中間那一側貼齊出發區膠帶線、車尾貼齊場地邊；藍方 180° 對稱</dd>
+          <dt>手臂</dt><dd>夾取 2°、搬運 55°（範圍 2～55°；超過 55° 手臂會轉過頂）</dd>
+          <dt>微調預設</dt><dd>夾取 X −3 cm、放置 X −10 cm（往車子左邊），紅藍相同</dd>
+          <dt>手動按鍵</dt><dd>左搖桿 移動／平移、右搖桿 旋轉；↑↓ 手臂升降、←→ 雲台、△ 開爪、○ 合爪</dd>
+        </dl>
+        <div class="btns"><a class="btn primary" href="examples/race_A_success_v1.9.36.ino" download>下載成功版程式 .ino（v1.9.36）</a><a class="btn gear" href="race-planner/">用路徑規劃器開啟／調整</a><a class="btn" href="https://tubitblock.trgreat.com/arduino-ide.html" target="_blank" rel="noopener">兔比 Arduino IDE 燒錄</a></div>
+      </div>
+      <div class="note"><b>第二台車</b>燒錄同一支程式前，先用<a href="generator.html#cal">校正測試</a>確認：① 馬達方向 ② 移動距離（A 前進 100、B 平移 50、A＋B 轉 360°，誤差 1% 內）③ 手臂 2°／55° 高度 ④ IR 校正（開機按住 A）。車子不同，夾取／放置位置可能差 1～3 cm，用下面的「現場微調」修正，不用改程式。</div>
+      <div class="note"><b>v1.9.42 放置防擦盒版＋手臂角度微調（換車測試中）</b>第二台車從 P4 往 P5 橫移時會擦到放置盒的角。新版改成 P4 先對齊放置點（車頭離盒距離和放置時一樣），再直線橫移直接到放置點（P5＝P6，不再停盒前 4 cm）；實測兩台車仍會碰到放置台，v1.9.38 再把 P4 往外移 0.9 cm；v1.9.41 改回成功版的兩段式：橫移到盒前 2.0 cm 的 P5，再慢速往前 0.5 cm 到 P6（離盒 1.5 cm，和成功版相同）張爪；v1.9.42 只把夾取後到對齊點的長距離加快到和出發相同的速度，夾取、放置維持原速。<a href="examples/race_A_v1.9.42.ino" download>下載 v1.9.42 .ino</a>。橫移時如果還會擦到盒子，按住 START＋✕ 往後 0.5 cm（對齊點和放置點一起後退）。</div>
+
+      <h2 id="fieldtune">現場微調 SOP（學生版）</h2>
+      <div class="card">
+        <p>在<b>手動模式</b>（OLED 顯示 MANUAL）<b>按住 START</b>，再按下面的鍵；每按一下移動 <b>0.5 cm</b>，手把會震一下，OLED 顯示目前數值。數值存在控制板，<b>關機、重開機都不會消失</b>，重新燒錄同一支程式也還在，不用重新燒錄。</p>
+        <div class="table-wrap"><table>
+          <thead><tr><th>要調整</th><th>按住 START ＋</th><th>效果</th></tr></thead>
+          <tbody>
+            <tr><td>夾取點 左右</td><td>← ／ →</td><td>夾的時候車子再往左／往右 0.5 cm</td></tr>
+            <tr><td>夾取點 前後</td><td>↑ ／ ↓</td><td>夾的時候車子再往前／往後 0.5 cm</td></tr>
+            <tr><td>放置點 左右</td><td>□ ／ ○</td><td>放的時候車子再往左／往右 0.5 cm</td></tr>
+            <tr><td>放置點 前後</td><td>△ ／ ✕</td><td>放的時候車子再往前（靠近盒子）／往後 0.5 cm</td></tr>
+            <tr><td>手臂角度（v1.9.39 起）</td><td>按下右搖桿 ／ 左搖桿</td><td>夾取、搬運角度一起 +1° ／ −1°，手臂馬上移到新的搬運高度（兩台車手臂高度不同時用）</td></tr>
+            <tr><td>全部歸零</td><td>SELECT</td><td>現場微調全部回到 0</td></tr>
+          </tbody>
+        </table></div>
+        <ol>
+          <li><b>看 OLED：</b>開機會顯示 <code>GRAB X… Y…</code>、<code>PLACE X… Y…</code>，確認是上一次調好的數值。</li>
+          <li><b>試跑一次：</b>SELECT 選邊 → START 自動。觀察夾爪是不是正對齒輪、齒輪是不是落在盒子中間。</li>
+          <li><b>只調偏掉的那一項：</b>例如夾的時候齒輪在夾爪右邊 1 cm → 按住 START 按 → 兩下（＋1.0）。一次只調一項。</li>
+          <li><b>再跑一次確認</b>，連續 2 次成功就不要再動。</li>
+          <li><b>其他校正：</b>開機時按住控制板 A＝IR 校正；按住 B＝BNO 校正（靜置看漂移，A 設 0°）。</li>
+        </ol>
+      </div>
+      <div class="note warn"><b>注意</b>微調是「車子的左右／前後」（以車頭方向為準），紅方、藍方共用同一組數值。按住 START 時手臂按鍵不會動作；放開 START 不會啟動自動，要單獨按一下 START 才會開始。</div>
 
       <h2 id="open">開源場地資料</h2>
       <div class="table-wrap">
