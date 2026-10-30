@@ -1113,7 +1113,8 @@
       '    mtc.setHeadingPid(3.0, 0.0, 0.03, 120.0, 60.0);', '    mtc.setHeadingSettle(1.0, 100, 1500);', '  }');
     if (need.ps3) {
       const mac = String(K.ps3.mac || '').trim();
-      setups.push(/^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$/.test(mac) && mac !== '00:00:00:00:00:00' ? '  Ps3.begin(' + cStr(mac) + ');   // 改成自己手把記住的 MAC' : '  Ps3.begin();');
+      if (/^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$/.test(mac) && mac !== '00:00:00:00:00:00'){ need.ps3Mac = mac; setups.push('  Ps3.begin(PS3_MAC);   // 手把 MAC：在程式最上方的 PS3_MAC 修改'); }   // v1.9.44：MAC 放在程式最上方，換手把只改一行
+      else setups.push('  Ps3.begin();');
     }
     if (need.v7rc) setups.push(v7mode === 'WIFI' ? '  v7rc.setupWIFI(ssid, password, channel);' : '  v7rc.setupBLE(' + cStr(K.v7rc.name) + ');   // 每台車的藍牙名稱要不同');
     if (need.ir) {
@@ -1263,6 +1264,7 @@
     if (need.arm || need.gun) head.push('// ⚠ 使用' + (need.arm ? '手臂 ATARM' : '發射器 PPGUN') + '：控制板「SERVO POWER SELECT」伺服電源跳帽要往上移，插在 1、2，伺服馬達才有足夠電力');
     if (conflict) head.push('// ⚠ 同時用了手臂與發射器動作：ATARM.h 與 PPGUN.h 不能放在同一支程式，請刪除其中一種動作');
     if (rcConflict) head.push('// ⚠ 同時用了 PS3 與 V7RC：一支程式只用一種遙控方式，請刪除其中一種');
+    if (need.ps3Mac) head.push('', '// ===== PS3 手把 MAC：換手把（或換車）時只要改這一行 =====', 'char PS3_MAC[] = ' + cStr(need.ps3Mac) + ';   // 用 SixaxisPairTool 寫進手把的 MAC（格式 xx:xx:xx:xx:xx:xx）', '');
     const out = head.concat(inc, [''], def, rcDefs, helpers, rcFns, ['', 'void setup() {'], setups, [''], setupBody, ['}', '', 'void loop() {'], loopBody, ['}', '']);
     return { code: out.join('\n'), need };
   }

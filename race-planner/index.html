@@ -177,7 +177,7 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
 <body>
 <div class="app">
 <header>
-  <div class="brand"><h1>TU:bit V2 2026全國競賽路徑規劃器</h1><span class="ver" id="ver" title="更新紀錄">v1.9.42</span><a class="ver" href="../competition.html" title="回競賽專區">← 競賽專區</a><a class="ver" href="../generator.html#race" title="程式產生器：競賽自動化">程式產生器</a></div>
+  <div class="brand"><h1>TU:bit V2 2026全國競賽路徑規劃器</h1><span class="ver" id="ver" title="更新紀錄">v1.9.46</span><a class="ver" href="../competition.html" title="回競賽專區">← 競賽專區</a><a class="ver" href="../generator.html#race" title="程式產生器：競賽自動化">程式產生器</a></div>
   <div class="hgroup">
     <select id="gameSel" aria-label="競賽項目">
       <option value="energy">物資能源爭霸戰 300×300</option>
@@ -479,6 +479,10 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
 </dialog>
 <dialog id="logDlg">
   <h3 style="margin-top:0">更新紀錄</h3>
+  <p><b>v1.9.46</b>（2026-10-30）修正隨機「迷航」（出發後往側邊亂跑、原地打轉）：BNO055 原本用 NDOF 模式（含地磁），室內的馬達、鐵件、手機會讓地磁讀數突然跳動，車頭角度一錯，定點移動就往錯的方向走。開機後改成 IMU 模式（只用陀螺儀＋加速度計，不用地磁）。另外按 START 時先確認 BNO 角度穩定（最多等 2 秒），不穩定就不出發，OLED 顯示 BNO NOT STEADY、手把震動，車子放好不要動再按一次 START。路線與其他設定不動。</p>
+  <p><b>v1.9.45</b>（2026-10-30）依實測影片：放置往左 10 cm 改為 5 cm（原本的 10 cm 是在有倉儲牆的場地調出來的，可能是牆把車子擋在正確位置；沒裝牆時車子走完 10 cm、偏出盒子左側）。改小讓車子停在牆前、不靠牆擋。其他不動。</p>
+  <p><b>v1.9.44</b>（2026-10-30）PS3 手把 MAC 移到程式最上方（char PS3_MAC[] = "…";），換手把或換車時只要改這一行；setup() 改為 Ps3.begin(PS3_MAC)。路線與其他設定不動。課程網站程式產生器同步。</p>
+  <p><b>v1.9.43</b>（2026-10-30）依實測修正三項：① 現場手臂微調（START＋按下右／左搖桿）改為只調「搬運（抬升）角度」，夾取（下降）角度維持不變——不同車手臂抬不夠高時調高搬運角度，不會連夾取高度一起變高而夾不到；② 夾到齒輪之後的移動不開前方 IR 防撞（齒輪／夾爪可能擋到 IR 誤停，誤停後程式以為已到點，後面座標全錯而亂跑）；出發段仍有 IR 防撞，若防撞停車則立即停止自動回手動，不再照錯的座標繼續跑；③ OLED 顯示的紅／藍出發點改為規劃器實際出發點（使用自製出發固定架改過出發點時不再顯示標準位置）。另新增檢查：自動速度超過 130% 時提醒（容易打滑、夾取偏移）。</p>
   <p><b>v1.9.42</b>（2026-10-19）穩定中求快：只加快 P3→P4（夾取轉向後到對齊點的長距離斜線，前方 IR 防撞仍開著），速度 1500／3500／2200 → 2000／4500／3000，和出發 P1 相同（已實測穩定）。要停準的地方都不動：夾取點、P5 橫移到放置台、P6 放置、轉向、手臂等待、車頭轉正 1° 都維持原設定。</p>
   <p><b>v1.9.41</b>（2026-10-19）只改放置距離：P5 離放置台 1.5 → 2.0 cm，P6 一樣慢速往前 0.5 cm，最後停在離放置台 1.5 cm 張爪（與成功版 v1.9.36 相同）；P4 跟著對齊 P5（再往外多留 0.9 cm）。其他不動。</p>
   <p><b>v1.9.40</b>（2026-10-19）依實測（兩台車到 P5 都會碰到放置台）放置改回成功版的兩段式：P4 對齊 P5（離盒再多留 0.9 cm）→ 直線橫移到 P5（車頭離放置台 1.5 cm）→ 慢速往前 0.5 cm 到 P6 張爪。P5、P6 都跟著放置微調（□○ 左右、△✕ 前後）。出發、夾取、轉向、手臂（含 v1.9.39 手臂角度微調）、速度與其他微調不動。</p>
@@ -548,7 +552,7 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
 <script>
 'use strict';
 /* ================= 基本工具 ================= */
-const VERSION = 'v1.9.42';
+const VERSION = 'v1.9.46';
 const STORE_KEY = 'tubit-planner-v1';
 const uid = () => Math.random().toString(36).slice(2, 9);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -1571,7 +1575,8 @@ const GEN = (function () {
       '    mtc.setHeadingPid(3.0, 0.0, 0.03, 120.0, 60.0);', '    mtc.setHeadingSettle(1.0, 100, 1500);', '  }');
     if (need.ps3) {
       const mac = String(K.ps3.mac || '').trim();
-      setups.push(/^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$/.test(mac) && mac !== '00:00:00:00:00:00' ? '  Ps3.begin(' + cStr(mac) + ');   // 改成自己手把記住的 MAC' : '  Ps3.begin();');
+      if (/^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$/.test(mac) && mac !== '00:00:00:00:00:00'){ need.ps3Mac = mac; setups.push('  Ps3.begin(PS3_MAC);   // 手把 MAC：在程式最上方的 PS3_MAC 修改'); }   // v1.9.44：MAC 放在程式最上方，換手把只改一行
+      else setups.push('  Ps3.begin();');
     }
     if (need.v7rc) setups.push(v7mode === 'WIFI' ? '  v7rc.setupWIFI(ssid, password, channel);' : '  v7rc.setupBLE(' + cStr(K.v7rc.name) + ');   // 每台車的藍牙名稱要不同');
     if (need.ir) {
@@ -1735,6 +1740,7 @@ const GEN = (function () {
     if (need.arm || need.gun) head.push('// ⚠ 使用' + (need.arm ? '手臂 ATARM' : '發射器 PPGUN') + '：控制板「SERVO POWER SELECT」伺服電源跳帽要往上移，插在 1、2，伺服馬達才有足夠電力');
     if (conflict) head.push('// ⚠ 同時用了手臂與發射器動作：ATARM.h 與 PPGUN.h 不能放在同一支程式，請刪除其中一種動作');
     if (rcConflict) head.push('// ⚠ 同時用了 PS3 與 V7RC：一支程式只用一種遙控方式，請刪除其中一種');
+    if (need.ps3Mac) head.push('', '// ===== PS3 手把 MAC：換手把（或換車）時只要改這一行 =====', 'char PS3_MAC[] = ' + cStr(need.ps3Mac) + ';   // 用 SixaxisPairTool 寫進手把的 MAC（格式 xx:xx:xx:xx:xx:xx）', '');
     const out = head.concat(inc, [''], def, rcDefs, helpers, rcFns, ['', 'void setup() {'], setups, [''], setupBody, ['}', '', 'void loop() {'], loopBody, ['}', '']);
     return { code: out.join('\n'), need };
   }
@@ -1797,6 +1803,12 @@ function taskPt(S, k, blue){   // 自動任務位置：紅方直接用，藍方�
   if (q && isFinite(num(q.x, NaN)) && isFinite(num(q.y, NaN))) return {x:num(q.x), y:num(q.y)};
   return T[k] ? (blue ? {x:S.field.W - num(T[k].x), y:S.field.H - num(T[k].y)} : {x:num(T[k].x), y:num(T[k].y)}) : null;
 }
+function sideStarts(S){   // v1.9.43：OLED 顯示的紅／藍出發點＝規劃器實際出發點（自製出發固定架移動過出發點時，畫面不再顯示標準位置）
+  const W = S.field.W, H = S.field.H, a = S.robot.start, top = a.y > H / 2;
+  const red = top ? {x:num(a.x), y:num(a.y)} : {x:W - num(a.x), y:H - num(a.y)};
+  const blue = S.task && S.task.blueSym === false && S.task.blue && S.task.blue.start ? {x:num(S.task.blue.start.x), y:num(S.task.blue.start.y)} : {x:W - red.x, y:H - red.y};
+  return {red, blue};
+}
 function startPos(side, who, W = 300, H = 300, S0){
   const p = START_POS[who];
   if (side === 'blue' && who === 'A' && S0 && S0.task && S0.task.blue && S0.task.blue.start) return {x:num(S0.task.blue.start.x), y:num(S0.task.blue.start.y), h:0};
@@ -1808,7 +1820,7 @@ function newState(game, robot, W, H){
   const f = game === 'energy' ? presetEnergy() : game === 'target' ? presetTarget() : presetCustom(W || 200, H || 200);
   const st = {
     v:1, kv:2, game, rtype:robot, field:{W:f.W, H:f.H}, objects:f.objects,
-    robot: {w:20, l:20, clawOff:15, placeTol:2, irGap:10, irCheck:true, irRoute:'guard', fastPlan:true, arcPlan:false, panLock:true, boxGap:1.5, boxMargin:2, grabDxRed:-3, grabDyRed:0, grabDxBlue:-3, grabDyBlue:0, placeDxRed:-10, placeDyRed:0, placeDxBlue:-10, placeDyBlue:0, placeIR:false, placePre:4, placeLine:true, placeLineBack:0.9, placeLineGap:2, placeFwd:0.5, fastLine:true, fastStart:true, irMaxCm:4, barrierGap:4, start: game === 'energy' ? Object.assign({}, START_POS.A) : {x:Math.round(f.W / 2), y:30, h:0}},
+    robot: {w:20, l:20, clawOff:15, placeTol:2, irGap:10, irCheck:true, irRoute:'guard', fastPlan:true, arcPlan:false, panLock:true, boxGap:1.5, boxMargin:2, grabDxRed:-3, grabDyRed:0, grabDxBlue:-3, grabDyBlue:0, placeDxRed:-5, placeDyRed:0, placeDxBlue:-5, placeDyBlue:0, placeIR:false, placePre:4, placeLine:true, placeLineBack:0.9, placeLineGap:2, placeFwd:0.5, fastLine:true, fastStart:true, irMaxCm:4, barrierGap:4, start: game === 'energy' ? Object.assign({}, START_POS.A) : {x:Math.round(f.W / 2), y:30, h:0}},
     task: {grab:{x:78, y:172}, place:{x:6, y:103}},   // 自動任務的絕對位置（紅方場地座標）：夾取點、放置點（觸發閘門裝置上）；藍方自動換算 180° 對稱
     robotB: game === 'energy' ? {on:true, x:17, y:280, h:180, w:20, l:20} : {on:false, x:Math.round(f.W / 2) + 16, y:30, h:0, w:24, l:24},   // 同時出發的另一台（手動）
     motion:{vm:600, a:800, ad:800, wheelD:6, bnoGoto:true},
@@ -1900,6 +1912,12 @@ function upgradeState(o){
     if (o.robot){ if (num(o.robot.boxGap, 1) === 1) o.robot.boxGap = 1.5; if (o.robot.grabDxBlue === undefined) Object.assign(o.robot, {grabDxRed:0, grabDyRed:0, grabDxBlue:1, grabDyBlue:0}); }
     o.steps = []; o.boxFix1928 = true; o.boxFix1929 = true;
   }
+  if (o.rtype === 'energyA' && !o.fix1945){   // v1.9.45：放置往左 10 → 5 cm（實測沒有倉儲牆擋時會往左偏出盒子；改小讓車子停在牆前，不靠牆擋）
+    const r = o.robot || {};
+    if (num(r.placeDxRed, -10) === -10) r.placeDxRed = -5;
+    if (num(r.placeDxBlue, -10) === -10) r.placeDxBlue = -5;
+    o.fix1945 = true;
+  }
   if (o.rtype === 'energyA' && !o.fix1942){   // v1.9.42：只加快 P4（長距離），其他不動
     if (o.robot) o.robot.fastLine = true;
     o.steps = []; o.fix1942 = true;
@@ -1929,8 +1947,8 @@ function upgradeState(o){
     if (r.placeIR === undefined) r.placeIR = false;
     if (r.placePre === undefined) r.placePre = 4;
     if (r.fastStart === undefined) r.fastStart = true;
-    if (num(r.placeDxRed, -8) === -8) r.placeDxRed = -10;
-    if (num(r.placeDxBlue, -8) === -8) r.placeDxBlue = -10;
+    if (num(r.placeDxRed, -8) === -8) r.placeDxRed = -5;
+    if (num(r.placeDxBlue, -8) === -8) r.placeDxBlue = -5;
     o.steps = []; o.fix1935 = true;
   }
   if (o.rtype === 'energyA' && !o.fix1934){   // v1.9.34：只改微調值（夾取再往左 1 cm → −3，放置再往左 3 cm → −8），路線與其他設定不動
@@ -2541,6 +2559,7 @@ function autoPlanCore(S){
     if (S.robot.fastStart !== false){   // 前半段（出發 → 夾取點）加快：長距離 2000／4500／3000，到夾取點 1000／2000／1200
       for (const st0 of steps){ if (st0.type !== 'move') continue; if (st0.grabFin){ Object.assign(st0, {vm:1000, a:2000, ad:1200}); break; } Object.assign(st0, {vm:2000, a:4500, ad:3000}); }
     }
+    { let got = false; for (const st0 of steps){ if (st0.type !== 'move') continue; if (got) st0.noGuard = true; if (st0.grabFin) got = true; } }   // v1.9.43：夾到齒輪後，齒輪／夾爪可能擋到前方 IR 而誤停（誤停後座標全錯 → 亂跑），夾取後的移動不開 IR 防撞
     if (S.robot.fastLine !== false){ const pl = steps.find(x => x.type === 'move' && x.placeLine); if (pl){ Object.assign(pl, {vm:2000, a:4500, ad:3000}); msgs.push('省時：P3→P4（轉向後到對齊點的長距離）加快到 2000／4500／3000（和出發 P1 相同、已實測穩定）；橫移到放置台、放置、夾取維持原速，確保準確'); } }   // v1.9.42
     if (nf) msgs.push(`不停車：${nf} 處轉角不停下來，直接接下一段（夾取前那段）`);
   }
@@ -2839,12 +2858,14 @@ function planActs(S){
   const sim0 = simulate(S);
   const G = useGoto(S);
   if (G && S.steps.some(s => s.type === 'move')) out.push({type:'group', label:'起點設為定點原點（BNO 精準定點：之後每個路徑點都用座標前往）', acts:[{type:'raw', need:{goto:true, mtc:true}, lines:['setOrigin();']}]});
+  let afterGrab = false;   // v1.9.43：夾到齒輪之後的移動不開前方 IR 防撞（舊方案不用重新規劃也適用）
   S.steps.forEach((s, i) => {
+    const ag = afterGrab; if (s.grabFin) afterGrab = true;
     if (s.type === 'move' && G && !(s.curve && Math.abs(num(s.bulge)) > 0.01) && !(num(s.stopCm) > 0 && S.kits.on.ultra)){
       const to = {x:num(s.x), y:num(s.y), h:num(s.h)};
       const q = startFrame(S, to), rot = normDeg(-(to.h - p.h));
       const vm = Math.abs(num(s.vm, S.motion.vm) || S.motion.vm), a = Math.abs(num(s.a, S.motion.a) || S.motion.a), ad = Math.abs(num(s.ad, a) || a);
-      const gd = s.guard && S.kits.on.ir && S.kits.tune && S.kits.tune.on && Math.hypot(to.x - p.x, to.y - p.y) > 1;   // 原地轉向不用防撞
+      const gd = s.guard && !s.noGuard && !ag && S.kits.on.ir && S.kits.tune && S.kits.tune.on && Math.hypot(to.x - p.x, to.y - p.y) > 1;   // 原地轉向不用防撞
       const sideOn = S.kits.mode && S.kits.mode.on && S.kits.mode.side, R0 = S.robot;
       const tr = k => num(R0[k], 0), kind = s.grabFin ? 'grab' : s.placeFin ? 'place' : s.placeLine ? 'pline' : '';   // pline：放置前的對齊點，只跟放置點的「前後」微調（左右不跟）   // 夾取／放置微調：直接算進目標座標，一次走到修正後的點
       const gdx = s.grabFin ? [tr('grabDxRed'), tr('grabDxBlue')] : [0, 0], gdy = s.grabFin ? [tr('grabDyRed'), tr('grabDyBlue')] : [0, 0];
@@ -2954,7 +2975,7 @@ function genCode(S, sim){
     if (oled){
       L.push('display.clearDisplay();', 'display.setFont();', 'display.setTextSize(1);', 'display.setTextColor(SH110X_WHITE);', 'display.setCursor(0, 0);',
         'display.println("PLACE CAR AT");', ...(K.mode.on && K.mode.side && K.on.ps3
-          ? [`display.println("RED  X${fmt(startPos('red', 'A').x)} Y${fmt(startPos('red', 'A').y)} DOWN");`, `display.println("BLUE X${fmt(startPos('blue', 'A', S.field.W, S.field.H, S).x)} Y${fmt(startPos('blue', 'A', S.field.W, S.field.H, S).y)} UP");`]
+          ? [`display.println("RED  X${fmt(sideStarts(S).red.x)} Y${fmt(sideStarts(S).red.y)} DOWN");`, `display.println("BLUE X${fmt(sideStarts(S).blue.x)} Y${fmt(sideStarts(S).blue.y)} UP");`]
           : (!S.task || S.task.blueSym !== false)
           ? [`display.println("RED  X${fmt(a.y > S.field.H / 2 ? a.x : S.field.W - a.x)} Y${fmt(a.y > S.field.H / 2 ? a.y : S.field.H - a.y)} DOWN");`, `display.println("BLUE X${fmt(a.y > S.field.H / 2 ? S.field.W - a.x : a.x)} Y${fmt(a.y > S.field.H / 2 ? S.field.H - a.y : a.y)} UP");`]
           : [`display.println("${a.y > S.field.H / 2 ? 'RED' : 'BLUE'} ONLY X${fmt(a.x)} Y${fmt(a.y)}");   // 藍方座標自訂：這支程式只給這一方用`]));
@@ -2968,7 +2989,7 @@ function genCode(S, sim){
   if (S.kits.mode.on){
     st.trig.AUTO = {on:true, acts};
     if (S.game === 'energy' && S.kits.mode.side){   // 選邊模式：OLED 顯示兩方出發點；藍方座標自訂時另外產生藍方流程
-      const W = S.field.W, H = S.field.H, red = startPos('red', 'A', W, H), blu = startPos('blue', 'A', W, H, S);
+      const W = S.field.W, H = S.field.H, red = sideStarts(S).red, blu = sideStarts(S).blue;
       st.kits = Object.assign({}, st.kits, {mode:Object.assign({}, S.kits.mode, {sideInfo:{red:`X${fmt(red.x)} Y${fmt(red.y)} DOWN`, blue:`X${fmt(blu.x)} Y${fmt(blu.y)} UP`}})});
       if (S.task && S.task.blueSym === false && S.steps.some(x => x.type === 'move')){
         const curBlue = num(S.robot.start.y) < H / 2, O = clone(S), side = curBlue ? 'red' : 'blue';
@@ -2992,18 +3013,61 @@ function genCode(S, sim){
     const a = lines.findIndex(l => l.startsWith('void remoteControl()'));
     for (let i = a + 1; a >= 0 && i < lines.length && lines[i] !== '}'; i++) lines[i] = lines[i].replace(/^(\s*)if \(Ps3\.data\.button\./, '$1if (!Ps3.data.button.start && Ps3.data.button.');
   }
+  if (lines.some(l => l.includes('if (bnoOK) bno.start();'))){   // v1.9.46：BNO 改 IMU 模式（不用地磁）＋出發前確認車頭角度穩定，避免隨機「迷航」
+    const st = lines.findIndex(l => l.startsWith('void setup() {'));
+    lines.splice(st, 0,
+      'void bnoImuMode() {   // BNO055 改成 IMU 模式（只用陀螺儀＋加速度計，不用地磁）：室內馬達、鐵件、手機會讓地磁亂跳，車頭角度突然差很多度就會「迷航」',
+      '  Wire.beginTransmission(0x28); Wire.write(0x3D); Wire.write(0x00); Wire.endTransmission();   // 先進設定模式',
+      '  delay(25);',
+      '  Wire.beginTransmission(0x28); Wire.write(0x3D); Wire.write(0x08); Wire.endTransmission();   // 0x08＝IMU（IMUPLUS）模式',
+      '  delay(30);',
+      '}',
+      '',
+      'bool bnoSteady() {   // 按 START 時確認 BNO 角度穩定（車子靜止、讀數不跳），最多等 2 秒',
+      '  if (!bnoOK) return true;',
+      '  unsigned long t0 = millis();',
+      '  while (millis() - t0 < 2000) {',
+      '    double a = bno.orientationZ;',
+      '    delay(150);',
+      '    double b = bno.orientationZ;',
+      '    double d = fabs(b - a);',
+      '    if (d > 180) d = 360 - d;',
+      '    if (!isnan(a) && !isnan(b) && d < 0.5) return true;',
+      '  }',
+      '  return false;',
+      '}',
+      '');
+    const bs = lines.findIndex(l => l.includes('if (bnoOK) bno.start();'));
+    lines.splice(bs + 1, 0, '  if (bnoOK) bnoImuMode();   // 不用地磁：避免車頭角度隨機亂跳（迷航）');
+    const ak = lines.findIndex(l => l.startsWith('  if (!autoMode && autoKey())'));
+    const el = lines.findIndex((l, j) => j > ak && l === '    } else {');
+    if (ak > 0 && el > 0 && lines[el + 1] === '      autoMode = true;') lines.splice(el, 1,
+      '    } else if (!bnoSteady()) {   // BNO 角度不穩定：先不出發（出發時角度錯，整條路線都會偏）',
+      '      Serial.println("BNO NOT STEADY: keep car still, press START again");',
+      ...(lines.some(l => l.includes('display.begin(')) ? ['      display.clearDisplay();', '      display.setFont();', '      display.setTextSize(1);', '      display.setTextColor(SH110X_WHITE);', '      display.setCursor(0, 0);', '      display.println("BNO NOT STEADY");', '      display.println("KEEP CAR STILL");', '      display.println("PRESS START AGAIN");', '      display.display();'] : []),
+      '      Ps3.setRumble(100, 150);',
+      '    } else {');
+  }
+  if (lines.some(l => l.startsWith('bool irGuard()')) && lines.some(l => l.startsWith('bool abortAuto()'))){   // v1.9.43：IR 防撞停車後位置已經不準，停止自動回手動（不再照錯的座標繼續跑）
+    const g = lines.findIndex(l => l.startsWith('bool irGuard()'));
+    lines.splice(g, 0, 'bool guardTrip = false;   // 前方 IR 防撞停過車：之後的座標都不準，自動流程要停止');
+    const r = lines.findIndex((l, j) => j > g && l === '  return hit >= 2;');
+    if (r > 0) lines.splice(r, 1, '  if (hit >= 2) { hit = 0; guardTrip = true; return true; }   // 停車並記下來', '  return false;');
+    const b = lines.findIndex(l => l.startsWith('bool abortAuto()'));
+    lines.splice(b + 1, 0, '  if (guardTrip) {   // IR 防撞停過車：停止自動、回手動，避免照錯的座標亂跑', '    guardTrip = false;', '    autoMode = false;', '    tubit.stopAllMotors();', '    Serial.println("IR GUARD STOP: auto aborted");', '    return true;', '  }');
+  }
   if (S.kits.tune && S.kits.tune.on && S.kits.tune.field && S.kits.on.ps3 && S.kits.on.arm && lines.some(l => l.startsWith('void tuneKeys()'))){   // v1.9.39：現場微調・手臂角度（每台車伺服馬達角度不同）：START＋按下右搖桿 +1°、左搖桿 −1°，所有手臂角度一起平移
     const A0 = S.kits.arm || {}, UP = Math.round(num(A0.up, 65)), DN = Math.round(num(A0.down, 0));
     const at = (pre, add) => { const i = lines.findIndex(l => l.startsWith(pre)); if (i >= 0) lines.splice(i + 1, 0, ...add); return i >= 0; };
-    for (let i = 0; i < lines.length; i++) lines[i] = lines[i].replace(/ATARM_LiftSet\((\d+(?:\.\d+)?),/g, 'ATARM_LiftSet($1 + FT_ARM,');   // 自動流程的手臂角度都加上微調
-    { const i = lines.findIndex(l => /^\s*ATARM_SetLiftRange\(/.test(l)); if (i >= 0) lines[i] = lines[i].replace(/ATARM_SetLiftRange\([^)]*\);.*$/, 'armApply(false);   // 手臂升降範圍 ' + DN + '～' + UP + '°（含現場手臂角度微調）'); }
-    at('float FT_PX = 0, FT_PY = 0;', ['int FT_ARM = 0;   // 現場微調・手臂角度（°）：夾取、搬運角度一起加減；手動模式按住 START＋按下右搖桿（+1°）／左搖桿（−1°）']);
+    for (let i = 0; i < lines.length; i++) lines[i] = lines[i].replace(/ATARM_LiftSet\((\d+(?:\.\d+)?),/g, (m0, v) => Math.round(+v) === UP ? 'ATARM_LiftSet(' + v + ' + FT_ARM,' : m0);   // v1.9.43：只有搬運（抬升）角度加上微調，夾取（下降）角度不變
+    { const i = lines.findIndex(l => /^\s*ATARM_SetLiftRange\(/.test(l)); if (i >= 0) lines[i] = lines[i].replace(/ATARM_SetLiftRange\([^)]*\);.*$/, 'armApply(false);   // 手臂升降範圍 ' + DN + '～' + UP + '°（搬運角度含現場微調）'); }
+    at('float FT_PX = 0, FT_PY = 0;', ['int FT_ARM = 0;   // 現場微調・搬運（抬升）角度（°）：夾到齒輪後手臂抬多高；夾取角度不變；手動模式按住 START＋按下右搖桿（+1°）／左搖桿（−1°）']);
     at('  FT_PY = tunePrefs.getFloat("py", 0);', ['  FT_ARM = tunePrefs.getInt("arm", 0);']);
     at('  tunePrefs.putFloat("py", FT_PY);', ['  tunePrefs.putInt("arm", FT_ARM);']);
     at('  display.println("PLACE X" + String(FT_PX, 1) + " Y" + String(FT_PY, 1));', ['  display.println("ARM   " + String(' + UP + ' + FT_ARM) + " (" + String(FT_ARM >= 0 ? "+" : "") + String(FT_ARM) + ") deg");', '  Serial.printf("ARM UP %d deg (%+d)\\n", ' + UP + ' + FT_ARM, FT_ARM);']);
     { const i = lines.findIndex(l => l.startsWith('void trimBefore()')); if (i >= 0) lines.splice(i, 0,
-      'void armApply(bool show) {   // 套用手臂角度微調：升降範圍跟著平移（手動模式也不會超過）；show＝手臂移到搬運高度給你看',
-      '  ATARM_SetLiftRange(max(0, ' + DN + ' + FT_ARM), ' + UP + ' + FT_ARM);',
+      'void armApply(bool show) {   // 套用搬運角度微調：升降上限跟著改（手動模式也不會超過）；show＝手臂移到搬運高度給你看',
+      '  ATARM_SetLiftRange(' + DN + ', ' + UP + ' + FT_ARM);',
       '  if (show) ATARM_LiftSet(' + UP + ' + FT_ARM, 0);',
       '}', ''); }
     for (let i = 0; i < lines.length; i++){
@@ -3014,7 +3078,7 @@ function genCode(S, sim){
       const c = lines.findIndex((l, j) => j > k && l === '  bool changed = false;'); if (c > 0) lines.splice(c + 1, 0, '  int armWas = FT_ARM;');
       const e = lines.findIndex((l, j) => j > k && l === '  if (changed) {');
       if (e > 0) lines.splice(e, 0,
-        '  static bool pL3 = false, pR3 = false;   // 手臂角度：按住 START＋按下右搖桿 +1°、左搖桿 −1°（最多 ±20°）',
+        '  static bool pL3 = false, pR3 = false;   // 搬運角度：按住 START＋按下右搖桿 +1°、左搖桿 −1°（最多 ±20°）；夾取角度不變',
         '  bool l3 = st && Ps3.data.button.l3, r3 = st && Ps3.data.button.r3;',
         '  if (r3 && !pR3 && FT_ARM < 20) FT_ARM++;',
         '  if (l3 && !pL3 && FT_ARM > -20) FT_ARM--;',
@@ -3065,6 +3129,7 @@ function ruleChecks(S, sim){
     else push(inZone(PA) && inZone(PB) ? 'ok' : 'warn', inZone(PA) && inZone(PB) ? `A（自動）與 B（手動）都在${zone.label || '出發區'}內、沒有重疊` : '機器人 A 或 B 有部分超出出發區，請調整位置');
   }
   const hitSegs = sim.segs.filter(s => s.hits.length);
+  { const sp = num((S.kits.auto || {}).speed, 100); if (S.kits.mode && S.kits.mode.on && sp > 130) push('warn', `自動速度 ${sp}%：麥克納姆輪加減速太大容易打滑，夾取點會偏、夾到後可能亂跑；建議 100～120%（已實測穩定的是 100%）`); }
   if (!sim.segs.length) push('warn', '尚未規劃任何移動');
   else if (hitSegs.length){
     const idx = hitSegs.map(sg => LB[S.steps.findIndex(s => s.id === sg.stepId)]);

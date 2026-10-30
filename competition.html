@@ -259,7 +259,7 @@
         <div class="btns"><a class="btn primary" href="examples/race_A_success_v1.9.36.ino" download>下載成功版程式 .ino（v1.9.36）</a><a class="btn gear" href="race-planner/">用路徑規劃器開啟／調整</a><a class="btn" href="https://tubitblock.trgreat.com/arduino-ide.html" target="_blank" rel="noopener">兔比 Arduino IDE 燒錄</a></div>
       </div>
       <div class="note"><b>第二台車</b>燒錄同一支程式前，先用<a href="generator.html#cal">校正測試</a>確認：① 馬達方向 ② 移動距離（A 前進 100、B 平移 50、A＋B 轉 360°，誤差 1% 內）③ 手臂 2°／55° 高度 ④ IR 校正（開機按住 A）。車子不同，夾取／放置位置可能差 1～3 cm，用下面的「現場微調」修正，不用改程式。</div>
-      <div class="note"><b>v1.9.42 放置防擦盒版＋手臂角度微調（換車測試中）</b>第二台車從 P4 往 P5 橫移時會擦到放置盒的角。新版改成 P4 先對齊放置點（車頭離盒距離和放置時一樣），再直線橫移直接到放置點（P5＝P6，不再停盒前 4 cm）；實測兩台車仍會碰到放置台，v1.9.38 再把 P4 往外移 0.9 cm；v1.9.41 改回成功版的兩段式：橫移到盒前 2.0 cm 的 P5，再慢速往前 0.5 cm 到 P6（離盒 1.5 cm，和成功版相同）張爪；v1.9.42 只把夾取後到對齊點的長距離加快到和出發相同的速度，夾取、放置維持原速。<a href="examples/race_A_v1.9.42.ino" download>下載 v1.9.42 .ino</a>。橫移時如果還會擦到盒子，按住 START＋✕ 往後 0.5 cm（對齊點和放置點一起後退）。</div>
+      <div class="note"><b>v1.9.43 放置防擦盒版＋搬運高度微調（換車測試中）</b>第二台車從 P4 往 P5 橫移時會擦到放置盒的角。新版改成 P4 先對齊放置點（車頭離盒距離和放置時一樣），再直線橫移直接到放置點（P5＝P6，不再停盒前 4 cm）；實測兩台車仍會碰到放置台，v1.9.38 再把 P4 往外移 0.9 cm；v1.9.41 改回成功版的兩段式：橫移到盒前 2.0 cm 的 P5，再慢速往前 0.5 cm 到 P6（離盒 1.5 cm，和成功版相同）張爪；v1.9.42 只把夾取後到對齊點的長距離加快到和出發相同的速度，夾取、放置維持原速。<a href="examples/race_A_v1.9.46.ino" download>下載 v1.9.46 .ino</a>。橫移時如果還會擦到盒子，按住 START＋✕ 往後 0.5 cm（對齊點和放置點一起後退）。</div>
 
       <h2 id="fieldtune">現場微調 SOP（學生版）</h2>
       <div class="card">
@@ -271,7 +271,7 @@
             <tr><td>夾取點 前後</td><td>↑ ／ ↓</td><td>夾的時候車子再往前／往後 0.5 cm</td></tr>
             <tr><td>放置點 左右</td><td>□ ／ ○</td><td>放的時候車子再往左／往右 0.5 cm</td></tr>
             <tr><td>放置點 前後</td><td>△ ／ ✕</td><td>放的時候車子再往前（靠近盒子）／往後 0.5 cm</td></tr>
-            <tr><td>手臂角度（v1.9.39 起）</td><td>按下右搖桿 ／ 左搖桿</td><td>夾取、搬運角度一起 +1° ／ −1°，手臂馬上移到新的搬運高度（兩台車手臂高度不同時用）</td></tr>
+            <tr><td>搬運高度（v1.9.43 起）</td><td>按下右搖桿 ／ 左搖桿</td><td>夾到齒輪後的抬升角度 +1° ／ −1°（夾取高度不變），手臂馬上移到新的搬運高度（不同車抬不夠高、放不上盒子時用）</td></tr>
             <tr><td>全部歸零</td><td>SELECT</td><td>現場微調全部回到 0</td></tr>
           </tbody>
         </table></div>
