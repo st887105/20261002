@@ -177,7 +177,7 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
 <body>
 <div class="app">
 <header>
-  <div class="brand"><h1>TU:bit V2 2026全國競賽路徑規劃器</h1><span class="ver" id="ver" title="更新紀錄">v1.9.46</span><a class="ver" href="../competition.html" title="回競賽專區">← 競賽專區</a><a class="ver" href="../generator.html#race" title="程式產生器：競賽自動化">程式產生器</a></div>
+  <div class="brand"><h1>TU:bit V2 2026全國競賽路徑規劃器</h1><span class="ver" id="ver" title="更新紀錄">v1.9.47</span><a class="ver" href="../competition.html" title="回競賽專區">← 競賽專區</a><a class="ver" href="../generator.html#race" title="程式產生器：競賽自動化">程式產生器</a></div>
   <div class="hgroup">
     <select id="gameSel" aria-label="競賽項目">
       <option value="energy">物資能源爭霸戰 300×300</option>
@@ -479,6 +479,7 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
 </dialog>
 <dialog id="logDlg">
   <h3 style="margin-top:0">更新紀錄</h3>
+  <p><b>v1.9.47</b>（2026-11-04）修正「到夾取點先後退、放下夾子，夾完又往前」：原因是舊的前後微調 TRIM_FWD（手動模式 START＋L1／L2，每按 1 cm）存在控制板，自動流程在夾取前會依它前後移動、夾完再移回來；這組微調不在學生說明裡，不小心按到 L2 就變成負值。已有「現場簡易微調」時停用 L1／L2 前後微調與 R1／R2 雲台微調，並忽略以前存下的值（夾取前後請用 START＋↑↓）。路線與其他設定不動。</p>
   <p><b>v1.9.46</b>（2026-10-30）修正隨機「迷航」（出發後往側邊亂跑、原地打轉）：BNO055 原本用 NDOF 模式（含地磁），室內的馬達、鐵件、手機會讓地磁讀數突然跳動，車頭角度一錯，定點移動就往錯的方向走。開機後改成 IMU 模式（只用陀螺儀＋加速度計，不用地磁）。另外按 START 時先確認 BNO 角度穩定（最多等 2 秒），不穩定就不出發，OLED 顯示 BNO NOT STEADY、手把震動，車子放好不要動再按一次 START。路線與其他設定不動。</p>
   <p><b>v1.9.45</b>（2026-10-30）依實測影片：放置往左 10 cm 改為 5 cm（原本的 10 cm 是在有倉儲牆的場地調出來的，可能是牆把車子擋在正確位置；沒裝牆時車子走完 10 cm、偏出盒子左側）。改小讓車子停在牆前、不靠牆擋。其他不動。</p>
   <p><b>v1.9.44</b>（2026-10-30）PS3 手把 MAC 移到程式最上方（char PS3_MAC[] = "…";），換手把或換車時只要改這一行；setup() 改為 Ps3.begin(PS3_MAC)。路線與其他設定不動。課程網站程式產生器同步。</p>
@@ -552,7 +553,7 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:11px;border:1px solid var(-
 <script>
 'use strict';
 /* ================= 基本工具 ================= */
-const VERSION = 'v1.9.46';
+const VERSION = 'v1.9.47';
 const STORE_KEY = 'tubit-planner-v1';
 const uid = () => Math.random().toString(36).slice(2, 9);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -3012,6 +3013,15 @@ function genCode(S, sim){
   if (S.kits.tune && S.kits.tune.on && S.kits.tune.field && S.kits.on.ps3){   // 按住 START 是現場微調：手動遙控的按鍵動作先不做
     const a = lines.findIndex(l => l.startsWith('void remoteControl()'));
     for (let i = a + 1; a >= 0 && i < lines.length && lines[i] !== '}'; i++) lines[i] = lines[i].replace(/^(\s*)if \(Ps3\.data\.button\./, '$1if (!Ps3.data.button.start && Ps3.data.button.');
+  }
+  if (lines.some(l => l.startsWith('float FT_GX = 0'))){   // v1.9.47：已有「現場簡易微調」（夾取／放置左右前後）時，停用舊的 L1／L2 前後微調與 R1／R2 雲台微調：舊值存在快閃記憶體，不小心按到就會「到夾取點先後退、夾完再往前」，學生又看不到
+    const a0 = lines.findIndex(l => l.startsWith('void runAuto'));
+    for (let i = lines.length - 1; i > a0 && a0 >= 0; i--) if (/^\s*trim(Before|After)\(\);/.test(lines[i])) lines.splice(i, 1);
+    for (let i = 0; i < lines.length; i++){
+      if (lines[i] === '  TRIM_FWD = tunePrefs.getFloat("fwd", 0);') lines[i] = '  TRIM_FWD = 0;   // 舊的 L1／L2 前後微調已停用（改用 START＋↑↓／△✕），忽略以前存的值';
+      if (lines[i] === '  TRIM_PAN = tunePrefs.getFloat("pan", 0);') lines[i] = '  TRIM_PAN = 0;   // 舊的 R1／R2 雲台微調已停用';
+    }
+    for (let i = lines.length - 1; i >= 0; i--) if (/^  if \((l1|l2|r1|r2) && !p(L1|L2|R1|R2)\) \{ TRIM_(FWD|PAN) [-+]= TRIM_(FWD|PAN)_STEP; changed = true; \}$/.test(lines[i])) lines.splice(i, 1);
   }
   if (lines.some(l => l.includes('if (bnoOK) bno.start();'))){   // v1.9.46：BNO 改 IMU 模式（不用地磁）＋出發前確認車頭角度穩定，避免隨機「迷航」
     const st = lines.findIndex(l => l.startsWith('void setup() {'));
