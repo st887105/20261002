@@ -37,6 +37,7 @@
 
   <div class="gen">
     <section>
+      <div id="bdBox"></div>
       <div class="trig hidden" id="kitBox">
         <div class="trig-head">套件與感測器設定（進階篇、競賽自動化）</div>
         <div class="trig-body">
@@ -363,6 +364,8 @@
         A: { on: true, acts: [mk('irAlign')] }, loop: { on: true, acts: [mk('irShow'), mk('wait', { sec: 0.1 })] } }) })]
     ],
     race: [
+      ['A：100×60 練習板繞一圈（出發朝右）', () => ({ kits: { bno: true }, board: { trig: 'A', sx: 15, sy: 14, h: 90 }, trig: Object.assign(emptyTrig(), {
+        A: { on: true, acts: [mk('origin'), mk('goXY', { x: 0, y: 60 }), mk('goXY', { x: -30, y: 60 }), mk('goXY', { x: -30, y: 0 }), mk('goXY', { x: 0, y: 0 })] } }) })],
       ['A：設定原點 → 前往定點夾取 → 回原點放置', () => ({ kits: { arm: true, bno: true }, trig: Object.assign(emptyTrig(), {
         A: { on: true, acts: [mk('origin'), mk('goXY', { x: 0, y: 50, then: 'grab' }), mk('goXY', { x: 40, y: 50, r: 90 }), mk('goDist', { dir: 'fwd', cm: 20 }), mk('goXY', { x: 0, y: 0, r: -90, then: 'place' })] } }) })],
       ['A：感測距離移動到 15 cm → 夾取', () => ({ kits: { arm: true, ultra: true }, trig: Object.assign(emptyTrig(), {
@@ -2031,8 +2034,147 @@ void loop() {
     document.getElementById('kitWarn').textContent = warn.join(' ');
   }
 
+  /* ---------- 練習板路徑圖（100×60 cm 白色瓦楞板）：在板子上點一下＝加一個「前往定點」，拖曳點可移動 ---------- */
+  const BD = { W: 100, H: 60, PX: 6, carW: 20, carL: 23 };   // 板子尺寸 cm、每 cm 幾像素、車身寬×長（約略）
+  function boardState() {
+    const b = state.board || (state.board = {});
+    if (!b.trig || !state.trig[b.trig]) b.trig = 'A';
+    b.sx = Math.min(BD.W, Math.max(0, num(b.sx, 15)));
+    b.sy = Math.min(BD.H, Math.max(0, num(b.sy, 14)));
+    b.h = [0, 90, 180, 270].includes(+b.h) ? +b.h : 90;
+    return b;
+  }
+  const rad = d => d * Math.PI / 180;
+  function bdFrame(o) { const h = rad(o.h); return { f: { x: Math.sin(h), y: Math.cos(h) }, r: { x: Math.cos(h), y: -Math.sin(h) } }; }   // 車頭 h（從板子上方 +y 順時針）
+  function bdToBoard(o, X, Y) { const F = bdFrame(o); return { x: o.x + X * F.r.x + Y * F.f.x, y: o.y + X * F.r.y + Y * F.f.y }; }
+  function bdToRel(o, x, y) { const F = bdFrame(o), dx = x - o.x, dy = y - o.y; return { X: dx * F.r.x + dy * F.r.y, Y: dx * F.f.x + dy * F.f.y }; }
+  function bdCorners(p) { const F = bdFrame(p), w = BD.carW / 2, l = BD.carL / 2; return [[-w, l], [w, l], [w, -l], [-w, -l]].map(([a, c]) => ({ x: p.x + a * F.r.x + c * F.f.x, y: p.y + a * F.r.y + c * F.f.y })); }
+  function bdOut(p) { return bdCorners(p).some(c => c.x < -0.01 || c.x > BD.W + 0.01 || c.y < -0.01 || c.y > BD.H + 0.01); }
+  function bdTrace() {   // 依目前流程算出每個移動點在板子上的位置
+    const b = boardState(), acts = state.trig[b.trig].acts;
+    let cur = { x: b.sx, y: b.sy, h: b.h }, org = Object.assign({}, cur);
+    const pts = [];
+    acts.forEach((a, i) => {
+      if (a.type === 'origin') org = Object.assign({}, cur);
+      else if (a.type === 'goXY') {
+        const q = bdToBoard(org, num(a.x, 0), num(a.y, 0));
+        cur = { x: q.x, y: q.y, h: ((cur.h + num(a.r, 0)) % 360 + 360) % 360 };
+        pts.push({ i, kind: 'xy', p: Object.assign({}, cur), then: a.then });
+      } else if (a.type === 'goDist') {
+        const cm = Math.abs(num(a.cm, 0)), v = { fwd: [0, cm], back: [0, -cm], left: [-cm, 0], right: [cm, 0] }[a.dir] || [0, cm];
+        const q = bdToBoard(cur, v[0], v[1]);
+        cur = { x: q.x, y: q.y, h: cur.h };
+        pts.push({ i, kind: 'dist', p: Object.assign({}, cur) });
+      }
+    });
+    return { start: { x: b.sx, y: b.sy, h: b.h }, pts, org, cur };
+  }
+  function boardSvg() {
+    const P = BD.PX, W = BD.W * P, H = BD.H * P, sx = x => x * P, sy = y => (BD.H - y) * P;
+    const T = bdTrace(), o = [];
+    o.push('<rect x="0" y="0" width="' + W + '" height="' + H + '" fill="#ffffff" stroke="#8a94a6" stroke-width="2"/>');
+    for (let x = 0; x <= BD.W; x += 5) o.push('<line x1="' + sx(x) + '" y1="0" x2="' + sx(x) + '" y2="' + H + '" stroke="' + (x % 10 ? '#eef1f5' : '#d5dbe4') + '" stroke-width="1"/>');
+    for (let y = 0; y <= BD.H; y += 5) o.push('<line x1="0" y1="' + sy(y) + '" x2="' + W + '" y2="' + sy(y) + '" stroke="' + (y % 10 ? '#eef1f5' : '#d5dbe4') + '" stroke-width="1"/>');
+    for (let x = 10; x < BD.W; x += 10) o.push('<text x="' + sx(x) + '" y="' + (H - 4) + '" font-size="10" fill="#8a94a6" text-anchor="middle">' + x + '</text>');
+    for (let y = 10; y < BD.H; y += 10) o.push('<text x="4" y="' + (sy(y) + 3) + '" font-size="10" fill="#8a94a6">' + y + '</text>');
+    const car = (p, fill, stroke, op) => { const c = bdCorners(p); const F = bdFrame(p);
+      const tip = { x: p.x + F.f.x * BD.carL / 2, y: p.y + F.f.y * BD.carL / 2 };
+      return '<polygon points="' + c.map(q => sx(q.x) + ',' + sy(q.y)).join(' ') + '" fill="' + fill + '" fill-opacity="' + op + '" stroke="' + stroke + '" stroke-width="1.5"/>' +
+        '<line x1="' + sx(p.x) + '" y1="' + sy(p.y) + '" x2="' + sx(tip.x) + '" y2="' + sy(tip.y) + '" stroke="' + stroke + '" stroke-width="2.5"/>'; };
+    o.push(car(T.start, '#2563eb', '#1d4ed8', 0.18));
+    let prev = T.start; const path = [[prev.x, prev.y]];
+    T.pts.forEach(q => path.push([q.p.x, q.p.y]));
+    o.push('<polyline points="' + path.map(([x, y]) => sx(x) + ',' + sy(y)).join(' ') + '" fill="none" stroke="#f59e0b" stroke-width="2.5" stroke-dasharray="6 4"/>');
+    T.pts.forEach((q, n) => { const bad = bdOut(q.p); o.push(car(q.p, bad ? '#dc2626' : '#16a34a', bad ? '#dc2626' : '#15803d', 0.08)); });
+    T.pts.forEach((q, n) => {
+      const bad = bdOut(q.p), lab = { grab: '夾', place: '放', open: '開', close: '合', lift: '升' }[q.then] || '';
+      o.push('<circle cx="' + sx(q.p.x) + '" cy="' + sy(q.p.y) + '" r="11" fill="' + (bad ? '#dc2626' : q.kind === 'dist' ? '#64748b' : '#16a34a') + '" stroke="#fff" stroke-width="2"' + (q.kind === 'xy' ? ' data-bdpt="' + q.i + '" style="cursor:grab"' : '') + '/>' +
+        '<text x="' + sx(q.p.x) + '" y="' + (sy(q.p.y) + 4) + '" font-size="11" font-weight="700" fill="#fff" text-anchor="middle" pointer-events="none">' + (n + 1) + '</text>' +
+        (lab ? '<text x="' + (sx(q.p.x) + 14) + '" y="' + (sy(q.p.y) - 8) + '" font-size="12" font-weight="700" fill="#b45309" pointer-events="none">' + lab + '</text>' : ''));
+    });
+    o.push('<circle cx="' + sx(T.start.x) + '" cy="' + sy(T.start.y) + '" r="7" fill="#2563eb" stroke="#fff" stroke-width="2"/><text x="' + (sx(T.start.x) + 10) + '" y="' + (sy(T.start.y) + 18) + '" font-size="11" font-weight="700" fill="#1d4ed8" pointer-events="none">出發</text>');
+    return '<svg id="bdSvg" viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;height:auto;display:block;border-radius:8px;touch-action:none;cursor:crosshair;background:#f8fafc">' + o.join('') + '</svg>';
+  }
+  function boardInfo() {
+    const T = bdTrace(), outs = T.pts.filter(q => bdOut(q.p)).length;
+    let len = 0, prev = T.start; T.pts.forEach(q => { len += Math.hypot(q.p.x - prev.x, q.p.y - prev.y); prev = q.p; });
+    return T.pts.length ? '共 ' + T.pts.length + ' 個移動點、約 ' + Math.round(len) + ' cm' + (outs ? '　<b style="color:#dc2626">⚠ ' + outs + ' 個點車身超出板子（紅色），請拖回板內</b>' : '　車身都在板內 ✓') : '在板子上點一下，就會加入第 1 個「前往定點」。';
+  }
+  function boardHtml() {
+    const b = boardState();
+    const opts = TRIGGERS.filter(t => (t.mode ? state.kits.mode.on : (!t.kit || state.kits.on[t.kit]))).map(t => '<option value="' + t.key + '"' + (t.key === b.trig ? ' selected' : '') + '>' + esc(t.label) + '</option>').join('');
+    const hs = [[0, '朝上（板子遠邊）'], [90, '朝右'], [180, '朝下（靠自己）'], [270, '朝左']].map(([v, l]) => '<option value="' + v + '"' + (v === b.h ? ' selected' : '') + '>' + l + '</option>').join('');
+    return '<div class="trig" id="bdCard"><div class="trig-head">練習板路徑圖（100 × 60 cm 白色瓦楞板）</div><div class="trig-body">' +
+      '<p class="muted" style="margin:0 0 8px;font-size:.86rem">在板子上<b>點一下</b>＝加入「前往定點」；<b>拖曳</b>綠點可移動位置；格線每 10 cm。車子擺在藍色出發位置、車頭照箭頭方向，按啟動鍵就會照路線走。綠框是到點時的車身（約 20 × 23 cm），紅色代表超出板子。</p>' +
+      '<div class="act-fields" style="margin-bottom:8px">' +
+      '<label>流程<select data-bd="trig">' + opts + '</select></label>' +
+      '<label>出發 X（cm）<input type="number" step="0.5" min="0" max="100" data-bd="sx" value="' + b.sx + '"></label>' +
+      '<label>出發 Y（cm）<input type="number" step="0.5" min="0" max="60" data-bd="sy" value="' + b.sy + '"></label>' +
+      '<label>出發車頭<select data-bd="h">' + hs + '</select></label>' +
+      '<button class="btn small" type="button" data-bdop="undo">刪除最後一點</button>' +
+      '<button class="btn small" type="button" data-bdop="clear">清除路徑點</button></div>' +
+      '<div id="bdWrap">' + boardSvg() + '</div>' +
+      '<p class="muted" id="bdInfo" style="margin:8px 0 0;font-size:.86rem">' + boardInfo() + '</p></div></div>';
+  }
+  function boardRefresh() { const w = document.getElementById('bdWrap'), i = document.getElementById('bdInfo'); if (w) w.innerHTML = boardSvg(); if (i) i.innerHTML = boardInfo(); }
+  function bdPoint(ev) {   // 滑鼠／手指位置 → 板子座標（cm）
+    const svg = document.getElementById('bdSvg'), r = svg.getBoundingClientRect();
+    const x = (ev.clientX - r.left) / r.width * BD.W, y = BD.H - (ev.clientY - r.top) / r.height * BD.H;
+    const q = v => Math.round(v * 2) / 2;
+    return { x: Math.min(BD.W, Math.max(0, q(x))), y: Math.min(BD.H, Math.max(0, q(y))) };
+  }
+  function bdOriginFor(idx) {   // 第 idx 個動作所用的原點（之前最後一個「設定原點」時的車子位置）
+    const b = boardState(), acts = state.trig[b.trig].acts;
+    let cur = { x: b.sx, y: b.sy, h: b.h }, org = Object.assign({}, cur);
+    for (let i = 0; i < Math.min(idx, acts.length); i++) {
+      const a = acts[i];
+      if (a.type === 'origin') org = Object.assign({}, cur);
+      else if (a.type === 'goXY') { const q = bdToBoard(org, num(a.x, 0), num(a.y, 0)); cur = { x: q.x, y: q.y, h: ((cur.h + num(a.r, 0)) % 360 + 360) % 360 }; }
+      else if (a.type === 'goDist') { const cm = Math.abs(num(a.cm, 0)), v = { fwd: [0, cm], back: [0, -cm], left: [-cm, 0], right: [cm, 0] }[a.dir] || [0, cm]; const q = bdToBoard(cur, v[0], v[1]); cur = { x: q.x, y: q.y, h: cur.h }; }
+    }
+    return org;
+  }
+  const r1 = v => Math.round(v * 10) / 10;
+  let bdDrag = null;
+  document.getElementById('bdBox').addEventListener('pointerdown', e => {
+    const svg = e.target.closest('#bdSvg'); if (!svg) return;
+    e.preventDefault();
+    const pt = e.target.closest('[data-bdpt]');
+    if (pt) { bdDrag = +pt.dataset.bdpt; svg.setPointerCapture && svg.setPointerCapture(e.pointerId); return; }
+    const b = boardState(), acts = state.trig[b.trig].acts;
+    state.trig[b.trig].on = true;
+    if (!acts.some(a => a.type === 'origin')) acts.unshift(mk('origin'));
+    const p = bdPoint(e), rel = bdToRel(bdOriginFor(acts.length), p.x, p.y);
+    acts.push(mk('goXY', { x: r1(rel.X), y: r1(rel.Y) }));
+    render();
+  });
+  document.getElementById('bdBox').addEventListener('pointermove', e => {
+    if (bdDrag === null || !document.getElementById('bdSvg')) return;
+    const b = boardState(), a = state.trig[b.trig].acts[bdDrag]; if (!a) return;
+    const p = bdPoint(e), rel = bdToRel(bdOriginFor(bdDrag), p.x, p.y);
+    a.x = r1(rel.X); a.y = r1(rel.Y);
+    boardRefresh();
+  });
+  const bdEnd = () => { if (bdDrag !== null) { bdDrag = null; render(); } };
+  document.getElementById('bdBox').addEventListener('pointerup', bdEnd);
+  document.getElementById('bdBox').addEventListener('pointercancel', bdEnd);
+  document.getElementById('bdBox').addEventListener('change', e => {
+    const k = e.target.dataset && e.target.dataset.bd; if (!k) return;
+    const b = boardState();
+    b[k] = k === 'trig' ? e.target.value : num(e.target.value, b[k]);
+    render();
+  });
+  document.getElementById('bdBox').addEventListener('click', e => {
+    const op = e.target.closest('[data-bdop]'); if (!op) return;
+    const b = boardState(), acts = state.trig[b.trig].acts;
+    if (op.dataset.bdop === 'undo') { for (let i = acts.length - 1; i >= 0; i--) if (acts[i].type === 'goXY') { acts.splice(i, 1); break; } }
+    if (op.dataset.bdop === 'clear') state.trig[b.trig].acts = acts.filter(a => a.type !== 'goXY');
+    render();
+  });
+
   function render() {
     renderLevel();
+    if (state.level !== 'race') document.getElementById('bdBox').innerHTML = '';
     if (state.level === 'cal') { document.getElementById('trigs').innerHTML = calPanel(); update(); return; }
     renderKits();
     const lv = ORDER.indexOf(state.level);
@@ -2058,6 +2200,7 @@ void loop() {
         (t.cond ? ' <code style="font-weight:400;font-size:.8rem">' + esc(t.cond) + '</code>' : '') + '</div>' +
         '<div class="trig-body">' + (acts || '<p class="muted" style="margin:0 0 6px">還沒有動作，從下面加入。</p>') + '<div class="add-row">' + adds + '</div></div></div>';
     }).join('');
+    document.getElementById('bdBox').innerHTML = state.level === 'race' ? boardHtml() : '';   // 競賽自動化：練習板路徑圖（放在最上面）
     update();
   }
 
@@ -2069,6 +2212,7 @@ void loop() {
     }
     const g = generate();
     document.getElementById('code').textContent = g.code;
+    if (state.level === 'race') boardRefresh();   // 動作欄位改了座標，路徑圖跟著更新
     const on = TRIGGERS.filter(t => state.trig[t.key].on);
     const n = on.reduce((s, t) => s + state.trig[t.key].acts.length, 0);
     const kits = Object.keys(KITS).filter(k => g.need[k]).map(k => KITS[k].label);
@@ -2091,6 +2235,7 @@ void loop() {
     if (b.dataset.preset === 'clear') { state.trig = emptyTrig(); state.kits = defaultKits(); render(); return; }
     const p = PRESETS[state.level][+b.dataset.preset][1]();
     state.trig = Object.assign(emptyTrig(), p.trig);
+    if (p.board) state.board = Object.assign({}, p.board);   // 練習板範本：一起設定出發位置
     state.kits.on = Object.assign(defaultKits().on, p.kits || {});
     const dk = defaultKits();   // 範本會重設遙控與模式設定（按鍵對應、速度、自動／手動鍵）
     ['ps3', 'v7rc', 'mode'].forEach(g => { state.kits[g] = Object.assign(dk[g], (p.cfg || {})[g] || {}); });
