@@ -304,7 +304,7 @@
     irSingle: { dir: 'IR_UP', timeout: 8, confirm: 1 },
     irShow: {},
     origin: {},
-    goXY: { x: 0, y: 0, r: 0, vm: 600, a: 800, then: 'none', deg: 0 },
+    goXY: { x: 0, y: 0, r: 0, vm: 600, a: 800, path: 'line', then: 'none', deg: 0, wait: 0 },
     goDist: { dir: 'fwd', cm: 0, vm: 600, a: 800 },
     distMove: { cm: 0, tol: 1, speed: 150, timeout: 5 },
     wall: { dir: 'fwd', speed: 120, sec: 1.5, backCm: 5 },
@@ -366,6 +366,8 @@
     race: [
       ['A：100×60 練習板繞一圈（出發朝右）', () => ({ kits: { bno: true }, board: { trig: 'A', sx: 15, sy: 14, h: 90 }, trig: Object.assign(emptyTrig(), {
         A: { on: true, acts: [mk('origin'), mk('goXY', { x: 0, y: 60 }), mk('goXY', { x: -30, y: 60 }), mk('goXY', { x: -30, y: 0 }), mk('goXY', { x: 0, y: 0 })] } }) })],
+      ['A：練習板 夾取 → 繞路 → 放置（出發朝右）', () => ({ kits: { arm: true, bno: true }, board: { trig: 'A', sx: 15, sy: 14, h: 90 }, trig: Object.assign(emptyTrig(), {
+        A: { on: true, acts: [mk('origin'), mk('goXY', { x: 0, y: 55, then: 'grab', vm: 400, a: 600 }), mk('goXY', { x: -30, y: 55, path: 'line' }), mk('goXY', { x: -30, y: 5, path: 'xy', then: 'place', deg: 20, wait: 0.5 }), mk('goXY', { x: 0, y: 0, path: 'yx' })] } }) })],
       ['A：設定原點 → 前往定點夾取 → 回原點放置', () => ({ kits: { arm: true, bno: true }, trig: Object.assign(emptyTrig(), {
         A: { on: true, acts: [mk('origin'), mk('goXY', { x: 0, y: 50, then: 'grab' }), mk('goXY', { x: 40, y: 50, r: 90 }), mk('goDist', { dir: 'fwd', cm: 20 }), mk('goXY', { x: 0, y: 0, r: -90, then: 'place' })] } }) })],
       ['A：感測距離移動到 15 cm → 夾取', () => ({ kits: { arm: true, ultra: true }, trig: Object.assign(emptyTrig(), {
@@ -576,6 +578,8 @@
       } else if (a.type === 'goXY') {
         need.goto = true; need.mtc = true; speedHit = true;
         const vm = Math.abs(num(a.vm, 600)), ac = Math.abs(num(a.a, 800));
+        if (a.path === 'yx') L.push(ind + 'goTo(posX, ' + fmtNum(a.y) + ', 0, autoV(' + plain(vm) + '), autoV(' + plain(ac) + '));   // 前進路徑：先前後移動到 Y=' + plain(a.y));
+        if (a.path === 'xy') L.push(ind + 'goTo(' + fmtNum(a.x) + ', posY, 0, autoV(' + plain(vm) + '), autoV(' + plain(ac) + '));   // 前進路徑：先左右平移到 X=' + plain(a.x));
         L.push(ind + 'goTo(' + fmtNum(a.x) + ', ' + fmtNum(a.y) + ', ' + fmtNum(a.r) + ', autoV(' + plain(vm) + '), autoV(' + plain(ac) + '));   // 前往定點 (' + plain(a.x) + ', ' + plain(a.y) + ')' + (num(a.r, 0) ? '，到點車頭' + (num(a.r) > 0 ? '右' : '左') + '轉 ' + plain(Math.abs(num(a.r))) + '°' : ''));
         const AK = state.kits.arm || {}, dn = clampInt(AK.down, 0, 180, 0), up = clampInt(AK.up, 0, 180, 65);
         const deg = clampInt(a.deg, 0, 180, 0);
@@ -587,6 +591,7 @@
           lift: ['ATARM_LiftSet(' + deg + ',1);   // 到點：手臂升降到 ' + deg + '°']
         }[a.then];
         if (T) { need.arm = true; T.forEach(l => L.push(ind + l)); }
+        if (num(a.wait, 0) > 0) L.push(ind + 'delay(' + Math.round(num(a.wait, 0) * 1000) + ');   // 到點後等待 ' + plain(num(a.wait, 0)) + ' 秒');
       } else if (a.type === 'goDist') {
         need.goto = true; need.mtc = true; speedHit = true;
         const cm = Math.abs(num(a.cm, 0)), vm = Math.abs(num(a.vm, 600)), ac = Math.abs(num(a.a, 800));
@@ -1303,7 +1308,8 @@
       case 'origin': return '<span class="muted">車子放在這裡時設為 (0, 0)：當下車頭方向＝Y＋、右邊＝X＋。之後的「前往定點」都以這裡為準；勾 BNO055 時會用新版 MTC V3 鎖定場地方向，到點更準。</span>';
       case 'goXY': return inp('x', 'X（右＋）cm', a.x) + inp('y', 'Y（前＋）cm', a.y) + inp('r', '途中車頭轉 °（右轉＋）', a.r) + inp('vm', '最高速 deg/s', a.vm, ' min="0"') + inp('a', '加速度', a.a, ' min="0"') +
         sel('then', '到點動作', [['none', '不動作'], ['grab', '夾取（張開→下降→合爪→抬升）'], ['place', '放置（下降→張開→抬升）'], ['open', '開爪'], ['close', '合爪'], ['lift', '手臂升降到角度']], a.then || 'none') +
-        inp('deg', '升降角度 °（到點動作選「升降」或「放置」時使用）', a.deg, ' min="0" max="180"');
+        inp('deg', '升降角度 °（到點動作選「升降」或「放置」時使用）', a.deg, ' min="0" max="180"') +
+        sel('path', '前進路徑', [['line', '直線斜走'], ['yx', '先前後、再左右（以出發車頭為準）'], ['xy', '先左右、再前後（以出發車頭為準）']], a.path || 'line') + inp('wait', '到點後等待 秒', a.wait || 0, ' min="0" step="0.1"');
       case 'goDist': return sel('dir', '方向', [['fwd', '前進'], ['back', '後退'], ['left', '左移'], ['right', '右移']], a.dir) + inp('cm', '距離 cm', a.cm, ' min="0"') + inp('vm', '最高速 deg/s', a.vm, ' min="0"') + inp('a', '加速度', a.a, ' min="0"');
       case 'distMove': return inp('cm', '目標距離 cm', a.cm, ' min="0"') + inp('tol', '容許誤差 cm', a.tol, ' min="0.5" step="0.5"') + inp('speed', '最高速度 0–255', a.speed, ' min="40" max="255"') + inp('timeout', '逾時秒數', a.timeout, ' min="0.5" step="0.5"');
       case 'wall': return sel('dir', '朝哪面牆推', WALL_DIRS.map(k => [k, MOVES[k].label]), a.dir) + inp('speed', '推牆速度 0–255', a.speed, ' min="0" max="255"') + inp('sec', '推牆秒數', a.sec, ' min="0" step="0.1"') + inp('backCm', '退開 cm（0＝不退）', a.backCm, ' min="0"');
@@ -2034,78 +2040,129 @@ void loop() {
     document.getElementById('kitWarn').textContent = warn.join(' ');
   }
 
-  /* ---------- 練習板路徑圖（100×60 cm 白色瓦楞板）：在板子上點一下＝加一個「前往定點」，拖曳點可移動 ---------- */
+  /* ---------- 練習板路徑圖（100×60 cm 白色瓦楞板）：點一下加點、點選路徑點設定前進路徑與到點動作、拖曳移動 ---------- */
   const BD = { W: 100, H: 60, PX: 6, carW: 20, carL: 23 };   // 板子尺寸 cm、每 cm 幾像素、車身寬×長（約略）
+  const BD_THEN = { grab: '夾', place: '放', open: '開', close: '合', lift: '升' };
+  const BD_SPD = { slow: [400, 600, '慢'], mid: [600, 800, '中'], fast: [1000, 1500, '快'] };
+  const BD_MOVE = ['goXY', 'goDist', 'origin'];   // 這些是移動；路徑點後面接著的其他動作＝這一點的「到點動作」
+  const BD_SUBS = [['grab', '夾取組合'], ['place', '放置組合'], ['armClaw', '夾爪開／合'], ['armLift', '手臂升降'], ['armPan', '手臂旋轉'],
+    ['gunFire', '發射 1 顆'], ['fireN', '連續發射'], ['gunPan', '砲台旋轉'], ['gunHead', '砲管仰角'], ['bnoTurn', 'BNO 轉正'], ['wait', '等待'], ['oled', 'OLED 文字']];
+  function bdShort(a) {   // 路徑圖上的動作簡稱
+    return ({ grab: '夾', place: '放', armLift: '升', armPan: '轉', gunFire: '射', fireN: '連射', gunPan: '砲轉', gunHead: '仰', bnoTurn: '正', wait: '等', oled: '字' })[a.type] ||
+      (a.type === 'armClaw' ? (String(a.close) === 'true' ? '合' : '開') : '');
+  }
+  function bdSubs(acts, i) { const out = []; for (let j = i + 1; j < acts.length && !BD_MOVE.includes(acts[j].type); j++) out.push(j); return out; }
   function boardState() {
     const b = state.board || (state.board = {});
     if (!b.trig || !state.trig[b.trig]) b.trig = 'A';
     b.sx = Math.min(BD.W, Math.max(0, num(b.sx, 15)));
     b.sy = Math.min(BD.H, Math.max(0, num(b.sy, 14)));
     b.h = [0, 90, 180, 270].includes(+b.h) ? +b.h : 90;
+    const acts = state.trig[b.trig].acts;
+    if (!(b.sel >= 0 && acts[b.sel] && acts[b.sel].type === 'goXY')) b.sel = -1;
     return b;
   }
   const rad = d => d * Math.PI / 180;
+  const normH = h => ((h % 360) + 360) % 360;
   function bdFrame(o) { const h = rad(o.h); return { f: { x: Math.sin(h), y: Math.cos(h) }, r: { x: Math.cos(h), y: -Math.sin(h) } }; }   // 車頭 h（從板子上方 +y 順時針）
   function bdToBoard(o, X, Y) { const F = bdFrame(o); return { x: o.x + X * F.r.x + Y * F.f.x, y: o.y + X * F.r.y + Y * F.f.y }; }
   function bdToRel(o, x, y) { const F = bdFrame(o), dx = x - o.x, dy = y - o.y; return { X: dx * F.r.x + dy * F.r.y, Y: dx * F.f.x + dy * F.f.y }; }
   function bdCorners(p) { const F = bdFrame(p), w = BD.carW / 2, l = BD.carL / 2; return [[-w, l], [w, l], [w, -l], [-w, -l]].map(([a, c]) => ({ x: p.x + a * F.r.x + c * F.f.x, y: p.y + a * F.r.y + c * F.f.y })); }
   function bdOut(p) { return bdCorners(p).some(c => c.x < -0.01 || c.x > BD.W + 0.01 || c.y < -0.01 || c.y > BD.H + 0.01); }
-  function bdTrace() {   // 依目前流程算出每個移動點在板子上的位置
+  function bdWalk(upto) {   // 依流程算出每個移動點在板子上的位置；upto：只算到第幾個動作之前（求那時的原點）
     const b = boardState(), acts = state.trig[b.trig].acts;
     let cur = { x: b.sx, y: b.sy, h: b.h }, org = Object.assign({}, cur);
     const pts = [];
-    acts.forEach((a, i) => {
+    const n = upto === undefined ? acts.length : Math.min(upto, acts.length);
+    for (let i = 0; i < n; i++) {
+      const a = acts[i];
       if (a.type === 'origin') org = Object.assign({}, cur);
       else if (a.type === 'goXY') {
-        const q = bdToBoard(org, num(a.x, 0), num(a.y, 0));
-        cur = { x: q.x, y: q.y, h: ((cur.h + num(a.r, 0)) % 360 + 360) % 360 };
-        pts.push({ i, kind: 'xy', p: Object.assign({}, cur), then: a.then });
+        const now = bdToRel(org, cur.x, cur.y), X = num(a.x, 0), Y = num(a.y, 0);
+        const corner = a.path === 'yx' ? bdToBoard(org, now.X, Y) : a.path === 'xy' ? bdToBoard(org, X, now.Y) : null;
+        const q = bdToBoard(org, X, Y);
+        if (corner) pts.push({ i, kind: 'corner', p: { x: corner.x, y: corner.y, h: cur.h } });
+        cur = { x: q.x, y: q.y, h: normH(cur.h + num(a.r, 0)) };
+        pts.push({ i, kind: 'xy', p: Object.assign({}, cur), a });
       } else if (a.type === 'goDist') {
         const cm = Math.abs(num(a.cm, 0)), v = { fwd: [0, cm], back: [0, -cm], left: [-cm, 0], right: [cm, 0] }[a.dir] || [0, cm];
         const q = bdToBoard(cur, v[0], v[1]);
         cur = { x: q.x, y: q.y, h: cur.h };
-        pts.push({ i, kind: 'dist', p: Object.assign({}, cur) });
+        pts.push({ i, kind: 'dist', p: Object.assign({}, cur), a });
       }
-    });
+    }
     return { start: { x: b.sx, y: b.sy, h: b.h }, pts, org, cur };
   }
+  const bdTrace = () => bdWalk();
+  const bdOriginFor = idx => bdWalk(idx).org;
   function boardSvg() {
     const P = BD.PX, W = BD.W * P, H = BD.H * P, sx = x => x * P, sy = y => (BD.H - y) * P;
-    const T = bdTrace(), o = [];
+    const b = boardState(), T = bdTrace(), o = [];
     o.push('<rect x="0" y="0" width="' + W + '" height="' + H + '" fill="#ffffff" stroke="#8a94a6" stroke-width="2"/>');
     for (let x = 0; x <= BD.W; x += 5) o.push('<line x1="' + sx(x) + '" y1="0" x2="' + sx(x) + '" y2="' + H + '" stroke="' + (x % 10 ? '#eef1f5' : '#d5dbe4') + '" stroke-width="1"/>');
     for (let y = 0; y <= BD.H; y += 5) o.push('<line x1="0" y1="' + sy(y) + '" x2="' + W + '" y2="' + sy(y) + '" stroke="' + (y % 10 ? '#eef1f5' : '#d5dbe4') + '" stroke-width="1"/>');
     for (let x = 10; x < BD.W; x += 10) o.push('<text x="' + sx(x) + '" y="' + (H - 4) + '" font-size="10" fill="#8a94a6" text-anchor="middle">' + x + '</text>');
     for (let y = 10; y < BD.H; y += 10) o.push('<text x="4" y="' + (sy(y) + 3) + '" font-size="10" fill="#8a94a6">' + y + '</text>');
-    const car = (p, fill, stroke, op) => { const c = bdCorners(p); const F = bdFrame(p);
+    const car = (p, fill, stroke, op, wd) => { const c = bdCorners(p); const F = bdFrame(p);
       const tip = { x: p.x + F.f.x * BD.carL / 2, y: p.y + F.f.y * BD.carL / 2 };
-      return '<polygon points="' + c.map(q => sx(q.x) + ',' + sy(q.y)).join(' ') + '" fill="' + fill + '" fill-opacity="' + op + '" stroke="' + stroke + '" stroke-width="1.5"/>' +
-        '<line x1="' + sx(p.x) + '" y1="' + sy(p.y) + '" x2="' + sx(tip.x) + '" y2="' + sy(tip.y) + '" stroke="' + stroke + '" stroke-width="2.5"/>'; };
+      return '<polygon points="' + c.map(q => sx(q.x) + ',' + sy(q.y)).join(' ') + '" fill="' + fill + '" fill-opacity="' + op + '" stroke="' + stroke + '" stroke-width="' + (wd || 1.5) + '" pointer-events="none"/>' +
+        '<line x1="' + sx(p.x) + '" y1="' + sy(p.y) + '" x2="' + sx(tip.x) + '" y2="' + sy(tip.y) + '" stroke="' + stroke + '" stroke-width="2.5" pointer-events="none"/>'; };
     o.push(car(T.start, '#2563eb', '#1d4ed8', 0.18));
-    let prev = T.start; const path = [[prev.x, prev.y]];
-    T.pts.forEach(q => path.push([q.p.x, q.p.y]));
-    o.push('<polyline points="' + path.map(([x, y]) => sx(x) + ',' + sy(y)).join(' ') + '" fill="none" stroke="#f59e0b" stroke-width="2.5" stroke-dasharray="6 4"/>');
-    T.pts.forEach((q, n) => { const bad = bdOut(q.p); o.push(car(q.p, bad ? '#dc2626' : '#16a34a', bad ? '#dc2626' : '#15803d', 0.08)); });
-    T.pts.forEach((q, n) => {
-      const bad = bdOut(q.p), lab = { grab: '夾', place: '放', open: '開', close: '合', lift: '升' }[q.then] || '';
-      o.push('<circle cx="' + sx(q.p.x) + '" cy="' + sy(q.p.y) + '" r="11" fill="' + (bad ? '#dc2626' : q.kind === 'dist' ? '#64748b' : '#16a34a') + '" stroke="#fff" stroke-width="2"' + (q.kind === 'xy' ? ' data-bdpt="' + q.i + '" style="cursor:grab"' : '') + '/>' +
-        '<text x="' + sx(q.p.x) + '" y="' + (sy(q.p.y) + 4) + '" font-size="11" font-weight="700" fill="#fff" text-anchor="middle" pointer-events="none">' + (n + 1) + '</text>' +
-        (lab ? '<text x="' + (sx(q.p.x) + 14) + '" y="' + (sy(q.p.y) - 8) + '" font-size="12" font-weight="700" fill="#b45309" pointer-events="none">' + lab + '</text>' : ''));
+    const path = [[T.start.x, T.start.y]].concat(T.pts.map(q => [q.p.x, q.p.y]));
+    o.push('<polyline points="' + path.map(([x, y]) => sx(x) + ',' + sy(y)).join(' ') + '" fill="none" stroke="#f59e0b" stroke-width="2.5" stroke-dasharray="6 4" pointer-events="none"/>');
+    const marks = T.pts.filter(q => q.kind !== 'corner');
+    marks.forEach(q => { const bad = bdOut(q.p), on = q.i === b.sel; o.push(car(q.p, bad ? '#dc2626' : on ? '#f59e0b' : '#16a34a', bad ? '#dc2626' : on ? '#d97706' : '#15803d', on ? 0.16 : 0.07, on ? 2.5 : 1.5)); });
+    T.pts.filter(q => q.kind === 'corner').forEach(q => o.push('<circle cx="' + sx(q.p.x) + '" cy="' + sy(q.p.y) + '" r="4" fill="#f59e0b" pointer-events="none"/>'));
+    marks.forEach((q, n) => {
+      const bad = bdOut(q.p), on = q.i === b.sel, a = q.a || {};
+      const acts = state.trig[b.trig].acts;
+      const lab = [BD_THEN[a.then] || '', num(a.wait, 0) > 0 ? '等' + num(a.wait, 0) + 's' : ''].concat(q.kind === 'xy' ? bdSubs(acts, q.i).map(j => bdShort(acts[j])) : []).filter(Boolean).join('·');
+      o.push('<circle cx="' + sx(q.p.x) + '" cy="' + sy(q.p.y) + '" r="' + (on ? 15 : 12) + '" fill="' + (bad ? '#dc2626' : q.kind === 'dist' ? '#64748b' : on ? '#d97706' : '#16a34a') + '" stroke="#fff" stroke-width="2"' + (q.kind === 'xy' ? ' data-bdpt="' + q.i + '" style="cursor:grab"' : '') + '/>' +
+        '<text x="' + sx(q.p.x) + '" y="' + (sy(q.p.y) + 4) + '" font-size="10" font-weight="700" fill="#fff" text-anchor="middle" pointer-events="none">P' + (n + 1) + '</text>' +
+        (lab ? '<text x="' + (sx(q.p.x) + 15) + '" y="' + (sy(q.p.y) - 9) + '" font-size="12" font-weight="700" fill="#b45309" pointer-events="none">' + lab + '</text>' : ''));
     });
-    o.push('<circle cx="' + sx(T.start.x) + '" cy="' + sy(T.start.y) + '" r="7" fill="#2563eb" stroke="#fff" stroke-width="2"/><text x="' + (sx(T.start.x) + 10) + '" y="' + (sy(T.start.y) + 18) + '" font-size="11" font-weight="700" fill="#1d4ed8" pointer-events="none">出發</text>');
+    o.push('<circle cx="' + sx(T.start.x) + '" cy="' + sy(T.start.y) + '" r="7" fill="#2563eb" stroke="#fff" stroke-width="2" pointer-events="none"/><text x="' + (sx(T.start.x) + 10) + '" y="' + (sy(T.start.y) + 18) + '" font-size="11" font-weight="700" fill="#1d4ed8" pointer-events="none">出發</text>');
     return '<svg id="bdSvg" viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;height:auto;display:block;border-radius:8px;touch-action:none;cursor:crosshair;background:#f8fafc">' + o.join('') + '</svg>';
   }
   function boardInfo() {
-    const T = bdTrace(), outs = T.pts.filter(q => bdOut(q.p)).length;
+    const T = bdTrace(), outs = T.pts.filter(q => bdOut(q.p)).length, n = T.pts.filter(q => q.kind !== 'corner').length;
     let len = 0, prev = T.start; T.pts.forEach(q => { len += Math.hypot(q.p.x - prev.x, q.p.y - prev.y); prev = q.p; });
-    return T.pts.length ? '共 ' + T.pts.length + ' 個移動點、約 ' + Math.round(len) + ' cm' + (outs ? '　<b style="color:#dc2626">⚠ ' + outs + ' 個點車身超出板子（紅色），請拖回板內</b>' : '　車身都在板內 ✓') : '在板子上點一下，就會加入第 1 個「前往定點」。';
+    return n ? '共 ' + n + ' 個路徑點、約 ' + Math.round(len) + ' cm' + (outs ? '　<b style="color:#dc2626">⚠ ' + outs + ' 處車身超出板子（紅色），請拖回板內</b>' : '　車身都在板內 ✓') : '在板子上點一下，就會加入第 1 個路徑點。';
+  }
+  function bdEditor() {   // 選到的路徑點：前進路徑、到點車頭、速度、到點動作、等待
+    const b = boardState(); if (b.sel < 0) return '<p class="muted" style="margin:8px 0 0;font-size:.86rem">點一下圖上的綠色路徑點，可以設定「前進路徑」和「到點動作」。</p>';
+    const acts = state.trig[b.trig].acts, a = acts[b.sel];
+    const n = bdTrace().pts.filter(q => q.kind !== 'corner' && q.i <= b.sel).length;
+    const pb = bdToBoard(bdOriginFor(b.sel), num(a.x, 0), num(a.y, 0)), f1 = v => Math.round(v * 10) / 10;
+    const opt = (list, v) => list.map(([k, l]) => '<option value="' + k + '"' + (String(k) === String(v) ? ' selected' : '') + '>' + l + '</option>').join('');
+    const spd = Object.keys(BD_SPD).find(k => BD_SPD[k][0] === num(a.vm, 600) && BD_SPD[k][1] === num(a.a, 800)) || 'custom';
+    const rr = num(a.r, 0);
+    const subs = bdSubs(acts, b.sel), tk = b.trig;
+    const subHtml = subs.map((j, k) => { const s2 = acts[j];
+      return '<div class="bd-sub"><div class="bd-sub-h"><b>P' + n + '-' + (k + 1) + '</b> ' + esc((ACTIONS[s2.type] || {}).label || s2.type) +
+        '<span><button class="btn small" type="button" data-bdop="sup" data-j="' + j + '"' + (k ? '' : ' disabled') + '>↑</button><button class="btn small" type="button" data-bdop="sdown" data-j="' + j + '"' + (k < subs.length - 1 ? '' : ' disabled') + '>↓</button><button class="btn small" type="button" data-bdop="sdel" data-j="' + j + '">刪除</button></span></div>' +
+        '<div class="act-fields">' + fieldsHtml(s2, tk + '|' + j) + '</div></div>'; }).join('');
+    const addSel = '<label>加入到點動作<select data-bdadd="1"><option value="">＋ 選擇要加入的動作…</option>' + BD_SUBS.filter(([t]) => ACTIONS[t]).map(([t, l]) => '<option value="' + t + '">' + l + '</option>').join('') + '</select></label>';
+    return '<div class="bd-ed"><b>P' + n + '　前往（' + f1(pb.x) + ', ' + f1(pb.y) + '）</b>' +
+      '<div class="act-fields" style="margin-top:6px">' +
+      '<label>板上 X（cm）<input type="number" step="0.5" data-bdf="bx" value="' + f1(pb.x) + '"></label>' +
+      '<label>板上 Y（cm）<input type="number" step="0.5" data-bdf="by" value="' + f1(pb.y) + '"></label>' +
+      '<label>前進路徑<select data-bdf="path">' + opt([['line', '直線斜走'], ['yx', '先前後、再左右（以出發車頭為準）'], ['xy', '先左右、再前後（以出發車頭為準）']], a.path || 'line') + '</select></label>' +
+      '<label>到點車頭<select data-bdf="r">' + opt([[0, '不轉'], [90, '右轉 90°'], [-90, '左轉 90°'], [180, '迴轉 180°']].concat([0, 90, -90, 180].includes(rr) ? [] : [[rr, '轉 ' + rr + '°']]), rr) + '</select></label>' +
+      '<label>速度<select data-bdf="spd">' + opt([['slow', '慢（停得準）'], ['mid', '中'], ['fast', '快']].concat(spd === 'custom' ? [['custom', '自訂 ' + num(a.vm, 600) + '／' + num(a.a, 800)]] : []), spd) + '</select></label>' +
+      '<label>快速到點動作<select data-bdf="then">' + opt([['none', '不動作'], ['grab', '夾取（張開→下降→合爪→抬升）'], ['place', '放置（下降→張開→抬升）'], ['open', '開爪'], ['close', '合爪'], ['lift', '手臂升降到角度']], a.then || 'none') + '</select></label>' +
+      (a.then === 'lift' || a.then === 'place' ? '<label>角度 °<input type="number" min="0" max="180" data-bdf="deg" value="' + num(a.deg, 0) + '"></label>' : '') +
+      '<label>到點後等待 秒<input type="number" min="0" step="0.1" data-bdf="wait" value="' + num(a.wait, 0) + '"></label>' +
+      '<button class="btn small" type="button" data-bdop="del">刪除這一點</button></div>' +
+      '<div class="bd-subs"><b>P' + n + ' 到點後的動作</b>（依序執行，可加入射擊、夾取、手臂、等待…）' + (subHtml || '<p class="muted" style="margin:4px 0;font-size:.85rem">還沒有動作。</p>') +
+      '<div class="act-fields">' + addSel + '</div></div></div>';
   }
   function boardHtml() {
     const b = boardState();
     const opts = TRIGGERS.filter(t => (t.mode ? state.kits.mode.on : (!t.kit || state.kits.on[t.kit]))).map(t => '<option value="' + t.key + '"' + (t.key === b.trig ? ' selected' : '') + '>' + esc(t.label) + '</option>').join('');
     const hs = [[0, '朝上（板子遠邊）'], [90, '朝右'], [180, '朝下（靠自己）'], [270, '朝左']].map(([v, l]) => '<option value="' + v + '"' + (v === b.h ? ' selected' : '') + '>' + l + '</option>').join('');
     return '<div class="trig" id="bdCard"><div class="trig-head">練習板路徑圖（100 × 60 cm 白色瓦楞板）</div><div class="trig-body">' +
-      '<p class="muted" style="margin:0 0 8px;font-size:.86rem">在板子上<b>點一下</b>＝加入「前往定點」；<b>拖曳</b>綠點可移動位置；格線每 10 cm。車子擺在藍色出發位置、車頭照箭頭方向，按啟動鍵就會照路線走。綠框是到點時的車身（約 20 × 23 cm），紅色代表超出板子。</p>' +
+      '<p class="muted" style="margin:0 0 8px;font-size:.86rem">在空白處<b>點一下</b>＝加入路徑點；<b>點路徑點</b>可設定前進路徑與到點動作；<b>拖曳</b>可移動位置。格線每 10 cm；藍框是出發位置（箭頭＝車頭），綠框是到點時的車身（約 20 × 23 cm），紅色代表超出板子。</p>' +
       '<div class="act-fields" style="margin-bottom:8px">' +
       '<label>流程<select data-bd="trig">' + opts + '</select></label>' +
       '<label>出發 X（cm）<input type="number" step="0.5" min="0" max="100" data-bd="sx" value="' + b.sx + '"></label>' +
@@ -2114,61 +2171,85 @@ void loop() {
       '<button class="btn small" type="button" data-bdop="undo">刪除最後一點</button>' +
       '<button class="btn small" type="button" data-bdop="clear">清除路徑點</button></div>' +
       '<div id="bdWrap">' + boardSvg() + '</div>' +
-      '<p class="muted" id="bdInfo" style="margin:8px 0 0;font-size:.86rem">' + boardInfo() + '</p></div></div>';
+      '<p class="muted" id="bdInfo" style="margin:8px 0 0;font-size:.86rem">' + boardInfo() + '</p>' +
+      '<div id="bdEdit">' + bdEditor() + '</div></div></div>';
   }
-  function boardRefresh() { const w = document.getElementById('bdWrap'), i = document.getElementById('bdInfo'); if (w) w.innerHTML = boardSvg(); if (i) i.innerHTML = boardInfo(); }
-  function bdPoint(ev) {   // 滑鼠／手指位置 → 板子座標（cm）
+  function boardRefresh(withEditor) {
+    const w = document.getElementById('bdWrap'), i = document.getElementById('bdInfo'), e = document.getElementById('bdEdit');
+    if (w) w.innerHTML = boardSvg(); if (i) i.innerHTML = boardInfo();
+    if (e && withEditor) e.innerHTML = bdEditor();
+  }
+  function bdPoint(ev) {   // 滑鼠／手指位置 → 板子座標（cm），0.5 cm 一格
     const svg = document.getElementById('bdSvg'), r = svg.getBoundingClientRect();
     const x = (ev.clientX - r.left) / r.width * BD.W, y = BD.H - (ev.clientY - r.top) / r.height * BD.H;
     const q = v => Math.round(v * 2) / 2;
     return { x: Math.min(BD.W, Math.max(0, q(x))), y: Math.min(BD.H, Math.max(0, q(y))) };
   }
-  function bdOriginFor(idx) {   // 第 idx 個動作所用的原點（之前最後一個「設定原點」時的車子位置）
-    const b = boardState(), acts = state.trig[b.trig].acts;
-    let cur = { x: b.sx, y: b.sy, h: b.h }, org = Object.assign({}, cur);
-    for (let i = 0; i < Math.min(idx, acts.length); i++) {
-      const a = acts[i];
-      if (a.type === 'origin') org = Object.assign({}, cur);
-      else if (a.type === 'goXY') { const q = bdToBoard(org, num(a.x, 0), num(a.y, 0)); cur = { x: q.x, y: q.y, h: ((cur.h + num(a.r, 0)) % 360 + 360) % 360 }; }
-      else if (a.type === 'goDist') { const cm = Math.abs(num(a.cm, 0)), v = { fwd: [0, cm], back: [0, -cm], left: [-cm, 0], right: [cm, 0] }[a.dir] || [0, cm]; const q = bdToBoard(cur, v[0], v[1]); cur = { x: q.x, y: q.y, h: cur.h }; }
-    }
-    return org;
-  }
   const r1 = v => Math.round(v * 10) / 10;
-  let bdDrag = null;
-  document.getElementById('bdBox').addEventListener('pointerdown', e => {
+  let bdDrag = null, bdMoved = false;
+  const bdBox = document.getElementById('bdBox');
+  bdBox.addEventListener('pointerdown', e => {
     const svg = e.target.closest('#bdSvg'); if (!svg) return;
     e.preventDefault();
-    const pt = e.target.closest('[data-bdpt]');
-    if (pt) { bdDrag = +pt.dataset.bdpt; svg.setPointerCapture && svg.setPointerCapture(e.pointerId); return; }
-    const b = boardState(), acts = state.trig[b.trig].acts;
+    const b = boardState(), pt = e.target.closest('[data-bdpt]');
+    if (pt) { bdDrag = +pt.dataset.bdpt; bdMoved = false; b.sel = bdDrag; svg.setPointerCapture && svg.setPointerCapture(e.pointerId); boardRefresh(true); return; }
+    const acts = state.trig[b.trig].acts;
     state.trig[b.trig].on = true;
     if (!acts.some(a => a.type === 'origin')) acts.unshift(mk('origin'));
     const p = bdPoint(e), rel = bdToRel(bdOriginFor(acts.length), p.x, p.y);
     acts.push(mk('goXY', { x: r1(rel.X), y: r1(rel.Y) }));
+    b.sel = acts.length - 1;
     render();
   });
-  document.getElementById('bdBox').addEventListener('pointermove', e => {
+  bdBox.addEventListener('pointermove', e => {
     if (bdDrag === null || !document.getElementById('bdSvg')) return;
     const b = boardState(), a = state.trig[b.trig].acts[bdDrag]; if (!a) return;
     const p = bdPoint(e), rel = bdToRel(bdOriginFor(bdDrag), p.x, p.y);
-    a.x = r1(rel.X); a.y = r1(rel.Y);
-    boardRefresh();
+    if (r1(rel.X) === num(a.x) && r1(rel.Y) === num(a.y)) return;
+    a.x = r1(rel.X); a.y = r1(rel.Y); bdMoved = true;
+    boardRefresh(false);
   });
-  const bdEnd = () => { if (bdDrag !== null) { bdDrag = null; render(); } };
-  document.getElementById('bdBox').addEventListener('pointerup', bdEnd);
-  document.getElementById('bdBox').addEventListener('pointercancel', bdEnd);
-  document.getElementById('bdBox').addEventListener('change', e => {
-    const k = e.target.dataset && e.target.dataset.bd; if (!k) return;
-    const b = boardState();
-    b[k] = k === 'trig' ? e.target.value : num(e.target.value, b[k]);
-    render();
+  const bdEnd = () => { if (bdDrag !== null) { bdDrag = null; if (bdMoved) render(); } };
+  bdBox.addEventListener('input', e => { const el = e.target; if (el.dataset.id && el.tagName !== 'SELECT' && el.type !== 'checkbox') { setField(el); update(); } });
+  bdBox.addEventListener('pointerup', bdEnd);
+  bdBox.addEventListener('pointercancel', bdEnd);
+  bdBox.addEventListener('change', e => {
+    const el = e.target, b = boardState();
+    if (el.dataset.bd) { b[el.dataset.bd] = el.dataset.bd === 'trig' ? el.value : num(el.value, b[el.dataset.bd]); if (el.dataset.bd === 'trig') b.sel = -1; setTimeout(render, 0); return; }
+    if (el.dataset.bdadd) {   // 在這一點的動作清單最後加入一個動作
+      const t = el.value; if (!t || b.sel < 0) return;
+      const acts = state.trig[b.trig].acts, subs = bdSubs(acts, b.sel), at = (subs.length ? subs[subs.length - 1] : b.sel) + 1;
+      acts.splice(at, 0, mk(t));
+      if (ACTIONS[t] && ACTIONS[t].kit) setKit(ACTIONS[t].kit, true);
+      setTimeout(render, 0); return;
+    }
+    if (el.dataset.id) { setField(el); setTimeout(render, 0); return; }   // 到點動作的欄位
+    const k = el.dataset.bdf; if (!k || b.sel < 0) return;
+    const a = state.trig[b.trig].acts[b.sel];
+    if (k === 'bx' || k === 'by') {
+      const o = bdOriginFor(b.sel), pb = bdToBoard(o, num(a.x, 0), num(a.y, 0));
+      if (k === 'bx') pb.x = Math.min(BD.W, Math.max(0, num(el.value, pb.x))); else pb.y = Math.min(BD.H, Math.max(0, num(el.value, pb.y)));
+      const rel = bdToRel(o, pb.x, pb.y); a.x = r1(rel.X); a.y = r1(rel.Y);
+    } else if (k === 'spd') { if (BD_SPD[el.value]) { a.vm = BD_SPD[el.value][0]; a.a = BD_SPD[el.value][1]; } }
+    else if (k === 'r') a.r = num(el.value, 0);
+    else if (k === 'deg' || k === 'wait') a[k] = Math.max(0, num(el.value, 0));
+    else { a[k] = el.value; if (k === 'then' && ['grab', 'place', 'open', 'close', 'lift'].includes(el.value)) setKit('arm', true); }
+    setTimeout(render, 0);   // 等輸入框失去焦點的事件跑完再重畫（避免重畫時正在移除的輸入框出錯）
   });
-  document.getElementById('bdBox').addEventListener('click', e => {
+  bdBox.addEventListener('click', e => {
     const op = e.target.closest('[data-bdop]'); if (!op) return;
     const b = boardState(), acts = state.trig[b.trig].acts;
     if (op.dataset.bdop === 'undo') { for (let i = acts.length - 1; i >= 0; i--) if (acts[i].type === 'goXY') { acts.splice(i, 1); break; } }
     if (op.dataset.bdop === 'clear') state.trig[b.trig].acts = acts.filter(a => a.type !== 'goXY');
+    if (['sdel', 'sup', 'sdown'].includes(op.dataset.bdop)) {   // 到點動作：刪除／上移／下移（選取的點不變）
+      const j = +op.dataset.j;
+      if (op.dataset.bdop === 'sdel') acts.splice(j, 1);
+      if (op.dataset.bdop === 'sup') [acts[j - 1], acts[j]] = [acts[j], acts[j - 1]];
+      if (op.dataset.bdop === 'sdown') [acts[j + 1], acts[j]] = [acts[j], acts[j + 1]];
+      render(); return;
+    }
+    if (op.dataset.bdop === 'del' && b.sel >= 0) { const n2 = bdSubs(acts, b.sel).length; acts.splice(b.sel, 1 + n2); }   // 刪除這一點（連同它的到點動作）
+    b.sel = -1;
     render();
   });
 
@@ -2212,7 +2293,7 @@ void loop() {
     }
     const g = generate();
     document.getElementById('code').textContent = g.code;
-    if (state.level === 'race') boardRefresh();   // 動作欄位改了座標，路徑圖跟著更新
+    if (state.level === 'race') boardRefresh(!(document.activeElement && document.activeElement.closest && document.activeElement.closest('#bdEdit')));   // 動作欄位改了座標，路徑圖跟著更新（正在設定框裡輸入時不重畫設定框，避免跳掉）
     const on = TRIGGERS.filter(t => state.trig[t.key].on);
     const n = on.reduce((s, t) => s + state.trig[t.key].acts.length, 0);
     const kits = Object.keys(KITS).filter(k => g.need[k]).map(k => KITS[k].label);

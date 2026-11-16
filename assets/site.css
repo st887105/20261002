@@ -201,3 +201,8 @@ dialog h3{margin-top:0}
 .figure.official figcaption{color:#5A6678}
 .figure.official figcaption a{color:#1C5DB8}
 .hidden{display:none}
+.bd-ed{margin-top:10px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
+.bd-subs{margin-top:10px;padding-top:8px;border-top:1px dashed var(--line)}
+.bd-sub{margin:6px 0;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
+.bd-sub-h{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px}
+.bd-sub-h span{margin-left:auto;display:flex;gap:4px}
